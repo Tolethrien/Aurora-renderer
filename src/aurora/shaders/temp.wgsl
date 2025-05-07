@@ -8,15 +8,11 @@ struct VertexOutput {
   @builtin(position) position: vec4<f32>,
   @location(0) fragColor: vec4<f32>,
 };
+const quad = array(vec2f(-0.25,-0.25), vec2f(0.25,-0.25), vec2f(-0.25, 0.25), vec2f(0.25, 0.25));
 
 @vertex
 fn vertexMain(props:VertexInput) -> VertexOutput {
-  let quad = array<vec2<f32>, 4>(
-    vec2<f32>(-0.25, -0.25),
-    vec2<f32>( 0.25, -0.25),
-    vec2<f32>(-0.25,  0.25),
-    vec2<f32>( 0.25,  0.25)
-  );
+  
 
   let localPos = quad[props.vertexIndex];
   let worldPos = localPos + props.instancePos;
