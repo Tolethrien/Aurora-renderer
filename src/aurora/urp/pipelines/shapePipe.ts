@@ -12,7 +12,6 @@ export default class ShapePipe {
   private static batchSize = 100;
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
-  public static wasUsed: boolean = false;
   public static createPipeline() {
     const shader = Aurora.createShader("temp", temp);
 
@@ -70,7 +69,7 @@ export default class ShapePipe {
     });
   }
 
-  public static createEmptyBatch() {
+  private static createEmptyBatch() {
     return {
       verts: new Float32Array(this.batchSize * 4),
       addData: new Uint32Array(this.batchSize * 5),
@@ -102,7 +101,6 @@ export default class ShapePipe {
         colorAttachments: [
           {
             view: textureView,
-            clearValue: { r: 0.1, g: 0.2, b: 0.6, a: 1.0 },
             loadOp: "load",
             storeOp: "store",
           },
@@ -123,6 +121,5 @@ export default class ShapePipe {
   }
   public static clearBatch() {
     this.drawBatch = [];
-    this.wasUsed = false;
   }
 }

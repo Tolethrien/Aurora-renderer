@@ -25,7 +25,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     let localPos = quad[props.vi] * halfSize;
     let worldPos = props.center + localPos;
 
-    out.Position   = camera * vec4<f32>(worldPos, 0.0, 1.0);
+    out.Position   = camera * vec4<f32>(worldPos, 1.0, 1.0);
 
     out.vCoord = localPos;
     out.vHalfSize = halfSize;

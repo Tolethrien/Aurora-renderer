@@ -17,6 +17,7 @@ interface AuroraRenderPipeline {
   shader: GPUShaderModule;
   buffers: GPUVertexBufferLayout[];
   colorTargets?: GPUColorTargetState[];
+  depthStencil?: GPUDepthStencilState;
 }
 interface AuroraComputePipeline {
   pipelineName: string;

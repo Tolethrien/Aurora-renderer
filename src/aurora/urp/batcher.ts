@@ -33,8 +33,7 @@ export default class Batcher {
       label: "indexBuffer",
     });
     if (!this.batcherOptions.customCamera) this.createBuildInCamera();
-
-    ShapePipe.createPipeline();
+    Object.values(PIPELINES).forEach((pipeline) => pipeline.createPipeline());
   }
   public static beginBatch() {
     this.clearTextures();

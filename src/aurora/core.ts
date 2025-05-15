@@ -124,6 +124,7 @@ export default class Aurora {
           this.getColorTargetTemplate("standard"),
         ],
       },
+      depthStencil: props.depthStencil,
     });
   }
   public static createVertexBufferLayout(layout: GPUVertexBufferLayout) {
