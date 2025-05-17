@@ -13,6 +13,7 @@ interface DrawSprite extends BaseDraw {}
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
     const batch = ShapePipe.getBatch();
+    Batcher.updateCameraBound(position.y);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;
@@ -28,6 +29,7 @@ export default class Draw {
 
   public static circle({ position, size, tint }: DrawCircle) {
     const batch = ShapePipe.getBatch();
+    Batcher.updateCameraBound(position.y);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;

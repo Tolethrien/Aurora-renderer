@@ -18,6 +18,7 @@ interface AuroraRenderPipeline {
   buffers: GPUVertexBufferLayout[];
   colorTargets?: GPUColorTargetState[];
   depthStencil?: GPUDepthStencilState;
+  primitive?: GPUPrimitiveState;
 }
 interface AuroraComputePipeline {
   pipelineName: string;

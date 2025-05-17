@@ -117,6 +117,7 @@ export default class Aurora {
         entryPoint: "vertexMain",
         buffers: props.buffers,
       },
+      primitive: props.primitive,
       fragment: {
         module: props.shader,
         entryPoint: "fragmentMain",

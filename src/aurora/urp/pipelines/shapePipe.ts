@@ -66,6 +66,12 @@ export default class ShapePipe {
       pipelineName: "main",
       buffers: [vertBuffLay, addDataBuffLay],
       pipelineLayout: pipelineLayout,
+      primitive: { topology: "triangle-list" },
+      depthStencil: {
+        format: "depth24plus",
+        depthWriteEnabled: true,
+        depthCompare: "greater-equal",
+      },
     });
   }
 
@@ -105,6 +111,11 @@ export default class ShapePipe {
             storeOp: "store",
           },
         ],
+        depthStencilAttachment: {
+          view: Batcher.depthTexture.createView(),
+          depthLoadOp: "load",
+          depthStoreOp: "store",
+        },
       });
       Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, batch.verts, 0);
       Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);

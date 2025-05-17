@@ -8,3 +8,10 @@ x zrob basic shader ktory pozwoli ci rysowac recty i circle
 
 - malowac na start texture canvas ale render na offscreen texture wiec ona nie musi miec koloru
 -
+
+## Tests
+
+[x] batchowanie na grupy
+[x] z-buffer
+[ ] text pipeline
+[ ] quad pipeline

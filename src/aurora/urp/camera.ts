@@ -24,7 +24,6 @@ export default class AuroraCamera {
     this.position.y = Aurora.canvas.height / 2;
     this.speed = 15;
     this.zoom = { current: 1, max: 10, min: 0.1 };
-
     window.onkeydown = (event: KeyboardEvent) => {
       const pressedKey = event.key === " " ? "space" : event.key;
       !event.repeat && cameraData.keyPressed.add(pressedKey);
@@ -61,7 +60,17 @@ export default class AuroraCamera {
       .multiply(this.view)
       .scale(this.zoom.current);
   }
+
   public static get getProjectionViewMatrix() {
     return this.projectionViewMatrix;
+  }
+  public static getVisibleBoundsY() {
+    const zoom = this.zoom.current;
+    const camY = this.position.y;
+    const halfHeight = Aurora.canvas.height / 2;
+    return new Float32Array([
+      (camY - Aurora.canvas.height / 2) * this.zoom.current,
+      (camY + Aurora.canvas.height / 2) * this.zoom.current,
+    ]);
   }
 }

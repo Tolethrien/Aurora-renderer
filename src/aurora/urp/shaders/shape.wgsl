@@ -1,4 +1,5 @@
 @group(0) @binding(0) var<uniform> camera: mat4x4<f32>;
+@group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
@@ -24,9 +25,9 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     let halfSize = props.size * 0.5;
     let localPos = quad[props.vi] * halfSize;
     let worldPos = props.center + localPos;
-
-    out.Position   = camera * vec4<f32>(worldPos, 1.0, 1.0);
-
+    let z = (props.center.y - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort
+    let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
+    out.Position = vec4<f32>(translatePosition.x, translatePosition.y, z, 1.0);
     out.vCoord = localPos;
     out.vHalfSize = halfSize;
     out.vShapeType = props.shapeType;

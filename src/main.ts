@@ -12,6 +12,7 @@ function create() {
 
   //============================================
 }
+// let x = 100;
 function start() {
   Batcher.beginBatch();
   Draw.circle({
@@ -20,15 +21,20 @@ function start() {
     tint: [1, 1, 1, 1],
   });
   Draw.rect({
-    position: { x: 200, y: 300 },
+    //pink
+    position: { x: 300, y: -100 },
     size: { height: 50, width: 50 },
     tint: [1, 0, 1, 1],
   });
   Draw.rect({
-    position: { x: 210, y: 310 },
+    //blue
+    position: { x: 310, y: 720 },
     size: { height: 50, width: 50 },
     tint: [0, 0, 1, 1],
   });
   Batcher.endBatch();
+  // console.log("s");
+  // x += 1;
+  requestAnimationFrame(start);
 }
 await preload();
