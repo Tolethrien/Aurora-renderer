@@ -46,9 +46,13 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
-    let color = vec4<f32>(props.color/255);
+    let color = convertColor(props.color);
+    if(props.textureIndex == 0){return color;};
     let finalColor = texture * color;
     
     return finalColor;
 }
 
+fn convertColor(color: vec4u) -> vec4f {
+  return vec4f(color)/255;
+}

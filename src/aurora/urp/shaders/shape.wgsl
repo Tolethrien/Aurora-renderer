@@ -41,17 +41,22 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     var dist: f32;
     var alpha: f32;
- 
+    let color = convertColor(props.color);
     if (props.vShapeType == 0u) {
         let d = abs(props.vCoord) - props.vHalfSize;
         dist = length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
-        alpha = f32(props.color.w);
+        alpha = color.w;
     } else if(props.vShapeType == 1u) {
         let unitDist = length(props.vCoord / props.vHalfSize) - 1.0;
         dist = unitDist * min(props.vHalfSize.x, props.vHalfSize.y);
         let smoothing: f32 = 0.5;
-        alpha = smoothstep(-smoothing, smoothing, -dist) * f32(props.color.w);
+        alpha = smoothstep(-smoothing, smoothing, -dist) * color.w;
     }
-    return vec4<f32>(vec3<f32>(props.color.xyz), alpha);
+
+    return vec4<f32>(color.xyz, alpha);
+}
+
+fn convertColor(color: vec4u) -> vec4f {
+  return vec4f(color)/255;
 }
 

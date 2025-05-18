@@ -216,7 +216,7 @@ export default class Batcher {
     const texture = this.userTextureIndexes.get(name);
     if (!texture)
       console.warn(
-        `WARNIRNG: No texture with name ${name} present in Batcher! fallback to color`
+        `WARNING: No texture with name ${name} present in Batcher! fallback to color`
       );
     return texture ?? 0;
   }
