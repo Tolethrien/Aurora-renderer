@@ -42,6 +42,7 @@ interface BaseTextureProps {
 }
 interface TextureEmptyProps extends BaseTextureProps {
   size: Size2D;
+  isStorage?: boolean;
 }
 interface TextureProps extends BaseTextureProps {
   url: string;
@@ -55,7 +56,6 @@ interface GenerateGPUTextureProps {
   format?: GPUTextureFormat;
   size: { w: number; h: number; z?: number };
   label: string;
-  isArray?: boolean;
   isStorage?: boolean;
 }
 interface GPUAuroraTexture {

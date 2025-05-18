@@ -221,12 +221,17 @@ export default class Aurora {
         };
     }
   }
-  public static createTextureEmpty({ label, format, size }: TextureEmptyProps) {
+  public static createTextureEmpty({
+    label,
+    format,
+    size,
+    isStorage = false,
+  }: TextureEmptyProps) {
     const gpuTexture = this.generateGPUTexture({
       label,
       size: { w: size.width, h: size.height },
       format,
-      isStorage: true,
+      isStorage: isStorage,
     });
 
     const textureData: GPUAuroraTexture = {
@@ -315,7 +320,6 @@ export default class Aurora {
       label,
       size: { w: textureWidth, h: textureHeight, z: textures.length },
       format,
-      isArray: true,
     });
 
     const textureData: GPUAuroraTexture = {
@@ -363,7 +367,6 @@ export default class Aurora {
     format,
     size,
     label,
-    isArray,
     isStorage,
   }: GenerateGPUTextureProps) {
     let usage =
@@ -371,16 +374,14 @@ export default class Aurora {
       GPUTextureUsage.TEXTURE_BINDING |
       GPUTextureUsage.RENDER_ATTACHMENT;
     if (isStorage) usage |= GPUTextureUsage.STORAGE_BINDING;
-
     return Aurora.device.createTexture({
       format: format ?? "bgra8unorm",
       size: {
         width: size.w,
         height: size.h,
-        depthOrArrayLayers: size.z ?? undefined,
+        depthOrArrayLayers: size.z ?? 1,
       },
       label,
-      dimension: isArray ? "2d" : "1d",
       usage,
     });
   }

@@ -25,7 +25,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     let halfSize = props.size * 0.5;
     let localPos = quad[props.vi] * halfSize;
     let worldPos = props.center + localPos;
-    let z = (props.center.y - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort
+    let z = (props.center.y + halfSize.y - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
     out.Position = vec4<f32>(translatePosition.x, translatePosition.y, z, 1.0);
     out.vCoord = localPos;

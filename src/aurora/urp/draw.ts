@@ -1,6 +1,7 @@
 import { HSLA, Position2D, Size2D } from "../aurora";
 import Batcher from "./batcher";
 import ShapePipe from "./pipelines/shapePipe";
+import SpritePipe from "./pipelines/spritePipe";
 
 interface BaseDraw {
   position: Position2D;
@@ -9,11 +10,14 @@ interface BaseDraw {
 }
 interface DrawRect extends BaseDraw {}
 interface DrawCircle extends BaseDraw {}
-interface DrawSprite extends BaseDraw {}
+interface DrawSprite extends BaseDraw {
+  crop: Position2D & Size2D;
+  textureToUse: string;
+}
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
     const batch = ShapePipe.getBatch();
-    Batcher.updateCameraBound(position.y);
+    Batcher.updateCameraBound(position.y + size.height * 0.5);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;
@@ -29,13 +33,39 @@ export default class Draw {
 
   public static circle({ position, size, tint }: DrawCircle) {
     const batch = ShapePipe.getBatch();
-    Batcher.updateCameraBound(position.y);
+    Batcher.updateCameraBound(position.y + size.height * 0.5);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;
     batch.verts[batch.count * 4 + 3] = size.height;
     const color: HSLA = tint ? tint : [1, 1, 1, 1];
     batch.addData[batch.count * 5] = 1;
+    batch.addData[batch.count * 5 + 1] = color[0];
+    batch.addData[batch.count * 5 + 2] = color[1];
+    batch.addData[batch.count * 5 + 3] = color[2];
+    batch.addData[batch.count * 5 + 4] = color[3];
+    batch.count++;
+  }
+  public static sprite({
+    position,
+    size,
+    tint,
+    crop,
+    textureToUse,
+  }: DrawSprite) {
+    const batch = SpritePipe.getBatch();
+    Batcher.updateCameraBound(position.y + size.height * 0.5);
+    const textureIndex = Batcher.getTextureIndex(textureToUse);
+    batch.verts[batch.count * 4] = position.x;
+    batch.verts[batch.count * 4 + 1] = position.y;
+    batch.verts[batch.count * 4 + 2] = size.width;
+    batch.verts[batch.count * 4 + 3] = size.height;
+    batch.verts[batch.count * 4 + 4] = crop.x;
+    batch.verts[batch.count * 4 + 5] = crop.y;
+    batch.verts[batch.count * 4 + 6] = crop.width;
+    batch.verts[batch.count * 4 + 7] = crop.height;
+    const color: HSLA = tint ? tint : [1, 1, 1, 1];
+    batch.addData[batch.count * 5] = textureIndex;
     batch.addData[batch.count * 5 + 1] = color[0];
     batch.addData[batch.count * 5 + 2] = color[1];
     batch.addData[batch.count * 5 + 3] = color[2];
