@@ -64,13 +64,4 @@ export default class AuroraCamera {
   public static get getProjectionViewMatrix() {
     return this.projectionViewMatrix;
   }
-  public static getVisibleBoundsY() {
-    const zoom = this.zoom.current;
-    const camY = this.position.y;
-    const halfHeight = Aurora.canvas.height / 2;
-    return new Float32Array([
-      (camY - Aurora.canvas.height / 2) * this.zoom.current,
-      (camY + Aurora.canvas.height / 2) * this.zoom.current,
-    ]);
-  }
 }

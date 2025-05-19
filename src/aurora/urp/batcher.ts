@@ -62,7 +62,6 @@ export default class Batcher {
     this.pipelinesUsedInFrame.forEach((name) => PIPELINES[name].clearBatch());
     this.pipelinesUsedInFrame.clear();
     AuroraCamera.update();
-
     Aurora.device.queue.writeBuffer(
       this.buildInCameraBuffer,
       0,
@@ -75,7 +74,12 @@ export default class Batcher {
       0,
       this.cameraBounds
     );
-    this.pipelinesUsedInFrame.forEach((name) => PIPELINES[name].usePipeline());
+    this.pipelinesUsedInFrame.forEach((name) =>
+      PIPELINES[name].usePipeline("opaque")
+    );
+    this.pipelinesUsedInFrame.forEach((name) =>
+      PIPELINES[name].usePipeline("transparent")
+    );
   }
   public static updateCameraBound(value: number) {
     this.cameraBounds[0] = Math.min(this.cameraBounds[0], value);

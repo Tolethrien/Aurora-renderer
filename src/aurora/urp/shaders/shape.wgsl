@@ -10,28 +10,30 @@ struct VertexInput {
 };
 
 struct VertexOutput {
-    @builtin(position) Position: vec4<f32>,
+    @builtin(position) position: vec4<f32>,
     @location(0) vCoord: vec2<f32>,
     @location(1) vHalfSize: vec2<f32>,
-    @location(2) @interpolate(flat) vShapeType: u32,
+    @location(2) @interpolate(flat) shapeType: u32,
     @location(3) @interpolate(flat) color: vec4<u32>,
 };
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 
 @vertex
 fn vertexMain(props: VertexInput) -> VertexOutput {
-    var out: VertexOutput;
 
     let halfSize = props.size * 0.5;
     let localPos = quad[props.vi] * halfSize;
     let worldPos = props.center + localPos;
-    let z = (props.center.y + halfSize.y - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
-    out.Position = vec4<f32>(translatePosition.x, translatePosition.y, z, 1.0);
+    let z = (props.center.y + halfSize.y - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
+    
+    var out: VertexOutput;
     out.vCoord = localPos;
     out.vHalfSize = halfSize;
-    out.vShapeType = props.shapeType;
+    out.shapeType = props.shapeType;
     out.color = props.color;
+    out.position = vec4<f32>(translatePosition.xy, z, 1.0);
+    
     return out;
 }
 
@@ -39,20 +41,21 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
-    var dist: f32;
-    var alpha: f32;
     let color = convertColor(props.color);
-    if (props.vShapeType == 0u) {
-        let d = abs(props.vCoord) - props.vHalfSize;
-        dist = length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
-        alpha = color.w;
-    } else if(props.vShapeType == 1u) {
+    var alpha: f32;
+    
+    if (props.shapeType == 0) {
+        return color;
+    } else if(props.shapeType == 1) {
+     
+        var dist: f32;
         let unitDist = length(props.vCoord / props.vHalfSize) - 1.0;
         dist = unitDist * min(props.vHalfSize.x, props.vHalfSize.y);
         let smoothing: f32 = 0.5;
         alpha = smoothstep(-smoothing, smoothing, -dist) * color.w;
+        if(alpha < 0.001){discard;};
     }
-
+    
     return vec4<f32>(color.xyz, alpha);
 }
 

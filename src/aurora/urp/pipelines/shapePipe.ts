@@ -3,15 +3,22 @@ import Batcher from "../batcher";
 import temp from "../shaders/shape.wgsl?raw";
 
 export default class ShapePipe {
-  public static drawBatch: {
+  public static opaqueDrawBatch: {
+    verts: Float32Array;
+    addData: Uint32Array;
+    count: number;
+  }[] = [];
+  public static transparentDrawBatch: {
     verts: Float32Array;
     addData: Uint32Array;
     count: number;
   }[] = [];
   private static pipeline: GPURenderPipeline;
+  private static pipelinetr: GPURenderPipeline;
   private static batchSize = 100;
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
+
   public static createPipeline() {
     const shader = Aurora.createShader("temp", temp);
 
@@ -82,26 +89,29 @@ export default class ShapePipe {
       count: 0,
     };
   }
-  public static getBatch() {
-    if (this.drawBatch.length === 0) {
-      this.drawBatch.push(this.createEmptyBatch());
+  public static getBatch(type: "opaque" | "transparent") {
+    const batchType =
+      type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
+    if (batchType.length === 0) {
+      batchType.push(this.createEmptyBatch());
     }
-    let batch = this.drawBatch[this.drawBatch.length - 1];
+    let batch = batchType[batchType.length - 1];
 
     if (batch.count >= this.batchSize) {
-      console.log(`Batch ${this.drawBatch.length} pełny. Tworzę nowy.`);
+      console.log(`Batch ${type}, ${batchType.length} pełny. Tworzę nowy.`);
       batch = this.createEmptyBatch();
-      this.drawBatch.push(batch);
+      batchType.push(batch);
     }
     Batcher.pipelinesUsedInFrame.add("shape");
     return batch;
   }
-  public static usePipeline(): void {
+  public static usePipeline(mode: "opaque" | "transparent"): void {
     const textureView = Aurora.context.getCurrentTexture().createView();
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = Batcher.getBuildInCameraBindGroup;
-
-    this.drawBatch.forEach((batch) => {
+    const drawBatch =
+      mode === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
+    drawBatch.forEach((batch) => {
       const commandEncoder = Aurora.device.createCommandEncoder();
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
@@ -131,6 +141,7 @@ export default class ShapePipe {
     });
   }
   public static clearBatch() {
-    this.drawBatch = [];
+    this.opaqueDrawBatch = [];
+    this.transparentDrawBatch = [];
   }
 }

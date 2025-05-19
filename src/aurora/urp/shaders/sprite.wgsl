@@ -2,6 +2,7 @@
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var universalSampler: sampler;
 @group(1) @binding(1) var userTextures: texture_2d_array<f32>;
+
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
     @location(0) center: vec2<f32>, // x,y
@@ -17,6 +18,7 @@ struct VertexOutput {
     @location(2) @interpolate(flat) color: vec4<u32>,
     @location(3) @interpolate(flat) textureIndex: u32,
 };
+
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
 
@@ -46,6 +48,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
+    if(texture.w < 0.01){discard;};
     let color = convertColor(props.color);
     if(props.textureIndex == 0){return color;};
     let finalColor = texture * color;

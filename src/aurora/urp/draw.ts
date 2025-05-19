@@ -16,13 +16,16 @@ interface DrawSprite extends BaseDraw {
 }
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
-    const batch = ShapePipe.getBatch();
+    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const batch = ShapePipe.getBatch(
+      color[3] === 255 ? "opaque" : "transparent"
+    );
     Batcher.updateCameraBound(position.y + size.height * 0.5);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;
     batch.verts[batch.count * 4 + 3] = size.height;
-    const color: HSLA = tint ? tint : [1, 1, 1, 1];
+
     batch.addData[batch.count * 5] = 0;
     batch.addData[batch.count * 5 + 1] = color[0];
     batch.addData[batch.count * 5 + 2] = color[1];
@@ -32,13 +35,16 @@ export default class Draw {
   }
 
   public static circle({ position, size, tint }: DrawCircle) {
-    const batch = ShapePipe.getBatch();
+    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const batch = ShapePipe.getBatch(
+      color[3] === 255 ? "opaque" : "transparent"
+    );
     Batcher.updateCameraBound(position.y + size.height * 0.5);
     batch.verts[batch.count * 4] = position.x;
     batch.verts[batch.count * 4 + 1] = position.y;
     batch.verts[batch.count * 4 + 2] = size.width;
     batch.verts[batch.count * 4 + 3] = size.height;
-    const color: HSLA = tint ? tint : [1, 1, 1, 1];
+
     batch.addData[batch.count * 5] = 1;
     batch.addData[batch.count * 5 + 1] = color[0];
     batch.addData[batch.count * 5 + 2] = color[1];
@@ -53,7 +59,10 @@ export default class Draw {
     crop,
     textureToUse,
   }: DrawSprite) {
-    const batch = SpritePipe.getBatch();
+    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const batch = SpritePipe.getBatch(
+      color[3] === 255 ? "opaque" : "transparent"
+    );
     Batcher.updateCameraBound(position.y + size.height * 0.5);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
     batch.verts[batch.count * 8] = position.x;
@@ -64,7 +73,6 @@ export default class Draw {
     batch.verts[batch.count * 8 + 5] = crop.y;
     batch.verts[batch.count * 8 + 6] = crop.width;
     batch.verts[batch.count * 8 + 7] = crop.height;
-    const color: HSLA = tint ? tint : [1, 1, 1, 1];
     batch.addData[batch.count * 5] = textureIndex;
     batch.addData[batch.count * 5 + 1] = color[0];
     batch.addData[batch.count * 5 + 2] = color[1];

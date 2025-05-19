@@ -1,17 +1,23 @@
 # Batcher
 
-x zrob basic shader ktory pozwoli ci rysowac recty i circle
-
-- zrob array w ktorym podajesz dane(base pipeline)
-- zrob funkcje drawRect drawShape
-- zrob klase batch by dalo sie do niej dodawac elementy takie same
-
 - malowac na start texture canvas ale render na offscreen texture wiec ona nie musi miec koloru
--
+- czy ja chce miec rysowanie od centrum (x,y) czy jednak wole od lewego gornego rogu?
+- problem z aplha i z-bufferem, rozwiazanie?: Weighted Blended OIT
 
 ## Tests
 
 [x] batchowanie na grupy
 [x] z-buffer
+[ ] transparency
 [ ] text pipeline
-[ ] quad pipeline
+[x] sprite pipeline
+[x] shape pipeline
+[ ] debug gpu (wyciaganie timestampow itp)
+[ ] budowane w shaderach swiatlo
+[ ] cieniowanie
+[ ] normal mapy
+[ ] sposoby renderowania - ortho/izo
+[ ] path2d (shape)
+[ ] UI pipeline(no camera no Y sort)
+[ ] post-processing
+[ ] bloom

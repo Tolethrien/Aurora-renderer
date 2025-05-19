@@ -3,7 +3,12 @@ import Batcher from "../batcher";
 import spriteShader from "../shaders/sprite.wgsl?raw";
 
 export default class SpritePipe {
-  public static drawBatch: {
+  public static opaqueDrawBatch: {
+    verts: Float32Array;
+    addData: Uint32Array;
+    count: number;
+  }[] = [];
+  public static transparentDrawBatch: {
     verts: Float32Array;
     addData: Uint32Array;
     count: number;
@@ -91,27 +96,31 @@ export default class SpritePipe {
       count: 0,
     };
   }
-  public static getBatch() {
-    if (this.drawBatch.length === 0) {
-      this.drawBatch.push(this.createEmptyBatch());
+  public static getBatch(type: "opaque" | "transparent") {
+    const batchType =
+      type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
+    if (batchType.length === 0) {
+      batchType.push(this.createEmptyBatch());
     }
-    let batch = this.drawBatch[this.drawBatch.length - 1];
+    let batch = batchType[batchType.length - 1];
 
     if (batch.count >= this.batchSize) {
-      console.log(`Batch ${this.drawBatch.length} pełny. Tworzę nowy.`);
+      console.log(`Batch ${batchType.length} pełny. Tworzę nowy.`);
       batch = this.createEmptyBatch();
-      this.drawBatch.push(batch);
+      batchType.push(batch);
     }
     Batcher.pipelinesUsedInFrame.add("sprite");
     return batch;
   }
-  public static usePipeline(): void {
+  public static usePipeline(type: "opaque" | "transparent"): void {
     const textureView = Aurora.context.getCurrentTexture().createView();
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = Batcher.getBuildInCameraBindGroup;
     const userTextureBind = Batcher.getUserTextureBindGroup;
 
-    this.drawBatch.forEach((batch) => {
+    const batchType =
+      type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
+    batchType.forEach((batch) => {
       const commandEncoder = Aurora.device.createCommandEncoder();
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
@@ -141,6 +150,7 @@ export default class SpritePipe {
     });
   }
   public static clearBatch() {
-    this.drawBatch = [];
+    this.opaqueDrawBatch = [];
+    this.transparentDrawBatch = [];
   }
 }

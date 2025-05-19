@@ -23,12 +23,12 @@ async function create() {
 function start() {
   Batcher.beginBatch();
   Draw.circle({
-    position: { x: 100, y: 300 },
+    position: { x: 320, y: 700 },
     size: { height: 50, width: 50 },
     tint: [255, 255, 255, 255],
   });
   Draw.sprite({
-    //blue
+    //char
     position: { x: 320, y: 720 },
     size: { height: 50, width: 50 },
     tint: [255, 255, 255, 255],
@@ -36,7 +36,7 @@ function start() {
     textureToUse: "char",
   });
   Draw.sprite({
-    //blue
+    //light
     position: { x: 450, y: 720 },
     size: { height: 50, width: 50 },
     tint: [255, 255, 255, 255],
@@ -44,16 +44,16 @@ function start() {
     textureToUse: "main",
   });
   Draw.rect({
+    //blue
+    position: { x: 310, y: 719 },
+    size: { height: 50, width: 50 },
+    tint: [0, 0, 255, 155],
+  });
+  Draw.rect({
     //pink
     position: { x: 300, y: 671 },
     size: { height: 150, width: 50 },
-    tint: [255, 0, 255, 255],
-  });
-  Draw.rect({
-    //blue
-    position: { x: 310, y: 720 },
-    size: { height: 50, width: 50 },
-    tint: [0, 0, 255, 255],
+    tint: [255, 0, 255, 200],
   });
   Batcher.endBatch();
   // console.log("s");
