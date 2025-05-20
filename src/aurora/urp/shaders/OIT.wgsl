@@ -19,9 +19,8 @@ struct VertexOutput {
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 
 struct FragmentOutput {
-    @location(0) canvas: vec4<f32>,
-    @location(1) accu: vec4<f32>,
-    @location(2) reve: vec4<f32>
+    @location(0) accu: vec4<f32>,
+    @location(1) reve: vec4<f32>
 }
 @vertex
 fn vertexMain(props: VertexInput) -> VertexOutput {
@@ -45,11 +44,17 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 
 @fragment
-fn fragmentMain(props: VertexOutput) ->  @location(0) vec4<f32> {
-    if(props.color.w != 255){discard;};
+fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     let color = convertColor(props.color);
-    return color;
-        
+    var out: FragmentOutput;
+    
+ 
+        let weightedColor = color.rgb * color.w;
+        out.accu = vec4<f32>(weightedColor,1.0);
+        out.reve = vec4<f32>(color.w,1.0,1.0,1.0);
+
+    
+    return out;
     
 }
 

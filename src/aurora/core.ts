@@ -159,7 +159,7 @@ export default class Aurora {
             },
             alpha: {
               srcFactor: "one",
-              dstFactor: "one",
+              dstFactor: "one-minus-src-alpha",
               operation: "add",
             },
           },
@@ -215,6 +215,40 @@ export default class Aurora {
             alpha: {
               srcFactor: "src-alpha",
               dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+          },
+        };
+      case "OITAccu":
+        return {
+          format: "rgba16float",
+          writeMask: GPUColorWrite.ALL,
+          blend: {
+            color: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+          },
+        };
+      case "OITReve":
+        return {
+          format: "r16float",
+          writeMask: GPUColorWrite.ALL,
+          blend: {
+            color: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one",
               operation: "add",
             },
           },

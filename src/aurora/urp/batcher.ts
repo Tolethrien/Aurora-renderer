@@ -5,6 +5,8 @@ import ShapePipe from "./pipelines/shapePipe";
 import SpritePipe from "./pipelines/spritePipe";
 import dummyTexture from "./assets/dummy.png";
 import { GPUAuroraTexture } from "../aurora";
+import screenQuadShader from "./shaders/screenQuad.wgsl?raw";
+import CompositePipe from "./pipelines/compositionPipe";
 export interface Pipeline {
   usePipeline: () => void;
   createPipeline: () => void;
@@ -23,23 +25,25 @@ const INIT_OPTIONS: BatcherOptions = {
 const PIPELINES = {
   shape: ShapePipe,
   // text: TextPipe,
-  sprite: SpritePipe,
+  // sprite: SpritePipe,
 };
-type PipelineBind = [GPUBindGroup, GPUBindGroupLayout] | undefined;
+export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
   private static indexBuffer: GPUBuffer;
-  private static buildInCameraBind: PipelineBind;
+  private static buildInCameraBind: PipelineBind | undefined;
   private static userTextureBind: PipelineBind;
   private static buildInCameraBuffer: GPUBuffer;
   private static buildInCameraBoundBuffer: GPUBuffer;
   public static pipelinesUsedInFrame: Set<keyof typeof PIPELINES> = new Set();
-  public static depthTexture: GPUAuroraTexture;
   private static userTexture: GPUAuroraTexture;
+  public static offscreenCanvas: GPUAuroraTexture;
+  public static depthTexture: GPUAuroraTexture;
+  public static depthAccumulativeTexture: GPUAuroraTexture;
+  public static depthRevealableTexture: GPUAuroraTexture;
   private static userTextureIndexes: Map<string, number> = new Map();
-  private static universalSampler: GPUSampler;
+  public static universalSampler: GPUSampler;
   private static cameraBounds = new Float32Array([0, 0]);
-
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
     this.indexBuffer = Aurora.createMappedBuffer({
@@ -55,6 +59,7 @@ export default class Batcher {
     if (!this.batcherOptions.customCamera) this.createBuildInCamera();
 
     Object.values(PIPELINES).forEach((pipeline) => pipeline.createPipeline());
+    CompositePipe.createPipeline();
   }
 
   public static beginBatch() {
@@ -80,19 +85,32 @@ export default class Batcher {
     this.pipelinesUsedInFrame.forEach((name) =>
       PIPELINES[name].usePipeline("transparent")
     );
+    CompositePipe.usePipeline();
   }
   public static updateCameraBound(value: number) {
     this.cameraBounds[0] = Math.min(this.cameraBounds[0], value);
     this.cameraBounds[1] = Math.max(this.cameraBounds[1], value);
   }
+
   private static clearTextures() {
-    const textureView = Aurora.context.getCurrentTexture().createView();
     const commandEncoder = Aurora.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
-          view: textureView,
-          clearValue: { r: 0.1, g: 0.2, b: 0.6, a: 1.0 },
+          view: this.offscreenCanvas.texture.createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+        {
+          view: this.depthAccumulativeTexture.texture.createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: "clear",
+          storeOp: "store",
+        },
+        {
+          view: this.depthRevealableTexture.texture.createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
         },
@@ -162,6 +180,14 @@ export default class Batcher {
     });
   }
   private static createDepthTexture() {
+    this.offscreenCanvas = Aurora.createTextureEmpty({
+      size: {
+        width: Aurora.canvas.width,
+        height: Aurora.canvas.height,
+      },
+      format: "bgra8unorm",
+      label: "offscreenCanvas",
+    });
     this.depthTexture = Aurora.createTextureEmpty({
       size: {
         width: Aurora.canvas.width,
@@ -169,6 +195,22 @@ export default class Batcher {
       },
       format: "depth24plus",
       label: "z-buffer Texture",
+    });
+    this.depthAccumulativeTexture = Aurora.createTextureEmpty({
+      size: {
+        width: Aurora.canvas.width,
+        height: Aurora.canvas.height,
+      },
+      format: "rgba16float",
+      label: "depthAccuTexture",
+    });
+    this.depthRevealableTexture = Aurora.createTextureEmpty({
+      size: {
+        width: Aurora.canvas.width,
+        height: Aurora.canvas.height,
+      },
+      format: "r16float",
+      label: "depthReveTexture",
     });
   }
   private static async createUserTextureArray() {
@@ -242,9 +284,9 @@ export default class Batcher {
     return this.buildInCameraBind[1];
   }
   public static get getUserTextureBindGroup() {
-    return this.userTextureBind![0];
+    return this.userTextureBind[0];
   }
   public static get getUserTextureBindGroupLayout() {
-    return this.userTextureBind![1];
+    return this.userTextureBind[1];
   }
 }

@@ -30,7 +30,9 @@ type ColorAttachments =
   | "standard"
   | "storage-read-write"
   | "post-process"
-  | "test-standard";
+  | "test-standard"
+  | "OITAccu"
+  | "OITReve";
 interface CreateBindGroup {
   name: string;
   layout: GPUBindGroupLayoutDescriptor;
