@@ -34,7 +34,6 @@ type ColorAttachments =
   | "OITAccu"
   | "OITReve";
 interface CreateBindGroup {
-  name: string;
   layout: GPUBindGroupLayoutDescriptor;
   data: { entries: Iterable<GPUBindGroupEntry>; label?: string };
 }
@@ -73,3 +72,10 @@ interface GPUAuroraTexture {
 type Size2D = { width: number; height: number };
 type Position2D = { x: number; y: number };
 type HSLA = [number, number, number, number];
+type DeepOmit<T, K extends string> = T extends Array<infer U>
+  ? Array<DeepOmit<U, K>>
+  : K extends `${infer Head}.${infer Tail}`
+  ? {
+      [P in keyof T]: P extends Head ? DeepOmit<T[P], Tail> : T[P];
+    }
+  : Omit<T, K>;

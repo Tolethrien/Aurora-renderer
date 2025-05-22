@@ -4,7 +4,7 @@ import AuroraCamera from "./camera";
 import ShapePipe from "./pipelines/shapePipe";
 import SpritePipe from "./pipelines/spritePipe";
 import dummyTexture from "./assets/dummy.png";
-import { GPUAuroraTexture } from "../aurora";
+import { GPUAuroraTexture, HSLA } from "../aurora";
 import screenQuadShader from "./shaders/screenQuad.wgsl?raw";
 import CompositePipe from "./pipelines/compositionPipe";
 export interface Pipeline {
@@ -16,6 +16,25 @@ export type BatcherOptions = {
   customCamera: boolean;
   zBuffer: "none" | "y" | "y-x";
   textures: { name: string; url: string }[];
+};
+type PostProcess = "grayscale";
+export type BatcherStats = {
+  drawCalls: number;
+  computeCalls: number;
+  usedPipelines: (keyof typeof PIPELINES)[];
+  totalBatches: number;
+  pointLights: number;
+  colorCorrection: HSLA;
+  appliedPostProcessing: PostProcess[];
+};
+const INIT_STATS: BatcherStats = {
+  drawCalls: 0,
+  computeCalls: 0,
+  usedPipelines: [],
+  pointLights: 0,
+  totalBatches: 0,
+  colorCorrection: [255, 255, 255, 255],
+  appliedPostProcessing: [],
 };
 const INIT_OPTIONS: BatcherOptions = {
   customCamera: false,
@@ -30,6 +49,7 @@ const PIPELINES = {
 export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
+  private static batcherStats: BatcherStats = structuredClone(INIT_STATS);
   private static indexBuffer: GPUBuffer;
   private static buildInCameraBind: PipelineBind | undefined;
   private static userTextureBind: PipelineBind;
@@ -154,7 +174,6 @@ export default class Batcher {
       this.cameraBounds
     );
     this.buildInCameraBind = Aurora.creteBindGroup({
-      name: "cameraBind",
       layout: {
         entries: [
           {
@@ -233,7 +252,6 @@ export default class Batcher {
       textures: textures,
     });
     this.userTextureBind = Aurora.creteBindGroup({
-      name: "userTextureBind",
       layout: {
         entries: [
           {
