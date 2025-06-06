@@ -7,6 +7,11 @@ import dummyTexture from "./assets/dummy.png";
 import { GPUAuroraTexture, HSLA } from "../aurora";
 import screenQuadShader from "./shaders/screenQuad.wgsl?raw";
 import CompositePipe from "./pipelines/compositionPipe";
+import TextPipe from "./pipelines/textPipe";
+import generateFont, { FontData } from "./msdf/generateFont";
+import ftex from "../../helps/mdfs/assets/ya-hei-ascii.png";
+import fjson from "../../helps/mdfs/assets/ya-hei-ascii-msdf.json";
+import Text2Pipe from "./msdf/tempPipe";
 export interface Pipeline {
   usePipeline: () => void;
   createPipeline: () => void;
@@ -43,7 +48,7 @@ const INIT_OPTIONS: BatcherOptions = {
 };
 const PIPELINES = {
   shape: ShapePipe,
-  // text: TextPipe,
+  text: TextPipe,
   // sprite: SpritePipe,
 };
 export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
@@ -64,6 +69,7 @@ export default class Batcher {
   private static userTextureIndexes: Map<string, number> = new Map();
   public static universalSampler: GPUSampler;
   private static cameraBounds = new Float32Array([0, 0]);
+  public static textData: generateFont;
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
     this.indexBuffer = Aurora.createMappedBuffer({
@@ -77,7 +83,13 @@ export default class Batcher {
     this.universalSampler = Aurora.createSampler();
     await this.createUserTextureArray();
     if (!this.batcherOptions.customCamera) this.createBuildInCamera();
-
+    this.textData = new generateFont({
+      fontName: "sds",
+      img: ftex,
+      json: fjson,
+    });
+    await this.textData.generateFont();
+    console.log(this.textData.getMeta);
     Object.values(PIPELINES).forEach((pipeline) => pipeline.createPipeline());
     CompositePipe.createPipeline();
   }
@@ -99,6 +111,7 @@ export default class Batcher {
       0,
       this.cameraBounds
     );
+    console.log(this.pipelinesUsedInFrame);
     this.pipelinesUsedInFrame.forEach((name) =>
       PIPELINES[name].usePipeline("opaque")
     );

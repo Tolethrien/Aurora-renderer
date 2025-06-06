@@ -21,23 +21,20 @@ async function create() {
     ],
   });
 
-  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-  const depthFormat = "depth24plus";
-  const textRenderer = new MsdfTextRenderer(
-    Aurora.device,
-    presentationFormat,
-    depthFormat
-  );
-  const textRendererF = await textRenderer.createFont(
-    new URL(
-      "./helps/mdfs/assets/ya-hei-ascii-msdf.json",
-      import.meta.url
-    ).toString()
-  );
-  console.log(textRendererF);
-  const myText = new generateFont("sds");
-  const myTextF = await myText.createFont({ img: ftex, json: fjson });
-  console.log(myTextF);
+  // const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+  // const depthFormat = "depth24plus";
+  // const textRenderer = new MsdfTextRenderer(
+  //   Aurora.device,
+  //   presentationFormat,
+  //   depthFormat
+  // );
+  // const textRendererF = await textRenderer.createFont(
+  //   new URL(
+  //     "./helps/mdfs/assets/ya-hei-ascii-msdf.json",
+  //     import.meta.url
+  //   ).toString()
+  // );
+  // console.log(textRendererF);
   //============================================
 }
 // let x = 100;
@@ -72,9 +69,16 @@ function start() {
     tint: [0, 255, 255, 155],
   });
   Draw.rect({
-    position: { x: 330, y: 210 },
+    position: { x: 330, y: 510 },
     size: { height: 50, width: 50 },
-    tint: [255, 255, 0, 155],
+    tint: [255, 255, 0, 255],
+  });
+  Draw.text({
+    position: { x: 130, y: 310 },
+    fontSize: 32,
+    fontColor: [255, 255, 255, 255],
+    font: "s",
+    text: "sranie xD",
   });
 
   Batcher.endBatch();

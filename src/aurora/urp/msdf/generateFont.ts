@@ -1,7 +1,6 @@
-import { loadImg } from "../../../utils/utils";
 import { DeepOmit } from "../../aurora";
 import Aurora from "../../core";
-interface MsdfChar {
+export interface MsdfChar {
   id: number;
   index: number;
   char: string;
@@ -31,45 +30,42 @@ interface FontJson {
   };
 }
 type KerningMap = Map<number, Map<number, number>>;
-interface FontData {
+export interface FontData {
   lineHeight: number;
   chars: Record<number, MsdfChar>;
   kernings?: KerningMap;
   defaultChar: MsdfChar;
   bind: [GPUBindGroup, GPUBindGroupLayout];
   charCount: number;
+  scale: { w: number; h: number };
+}
+interface Props {
+  fontName: string;
+  img: string;
+  json: DeepOmit<FontJson, "chars.charIndex">;
 }
 
 export default class generateFont {
-  name: string;
-
+  name: Props["fontName"];
+  imgUrl: Props["img"];
+  jsonData: Props["json"];
+  fontMeta!: FontData;
   //TODO: obecnie robisz jedna teksture zmaiast po prostu miec array tekstur w batcherze! potem to popraw
   //TODO: sampler przeniesc gdzies a nie tworzyc ciagle nowego
-  constructor(fontName: string) {
+  //TODO: zrobic inicjacje za pomoca Font.generate() bo to musi byc await a konstruktor nie moze byc
+  constructor({ fontName, img, json }: Props) {
     this.name = fontName;
+    this.imgUrl = img;
+    this.jsonData = json;
   }
-  //   getChar(charCode: number): MsdfChar {
-  //     let char = this.chars[charCode];
-  //     if (!char) char = this.defaultChar;
-  //     return char;
-  //   }
+  public get getMeta() {
+    return this.fontMeta;
+  }
+  public getCharDataByCode(code: number) {
+    return this.fontMeta?.chars[code];
+  }
 
-  //   getXAdvance(charCode: number, nextCharCode: number = -1): number {
-  //     const char = this.getChar(charCode);
-  //     if (nextCharCode >= 0) {
-  //       const kerning = this.kernings.get(charCode);
-  //       if (kerning) return char.xadvance + (kerning.get(nextCharCode) ?? 0);
-  //     }
-  //     return char.xadvance;
-  //   }
-  async createFont({
-    img,
-    json,
-  }: {
-    img: string;
-    json: DeepOmit<FontJson, "chars.charIndex">;
-  }): Promise<FontData> {
-    // const image = await loadImg(img);
+  async generateFont() {
     const sampler: GPUSampler = Aurora.createSampler({
       label: "msdf sampler",
       minFilter: "linear",
@@ -77,10 +73,10 @@ export default class generateFont {
       mipmapFilter: "linear",
       maxAnisotropy: 16,
     });
-    const u = 1 / json.common.scaleW;
-    const v = 1 / json.common.scaleH;
+    const u = 1 / this.jsonData.common.scaleW;
+    const v = 1 / this.jsonData.common.scaleH;
     const data: number[] = [];
-    (json.chars as MsdfChar[]).forEach((c, i) => {
+    (this.jsonData.chars as MsdfChar[]).forEach((c, i) => {
       const offset = i * 8;
       data[offset] = c.x * u;
       data[offset + 1] = c.y * v;
@@ -92,6 +88,7 @@ export default class generateFont {
       data[offset + 7] = -c.yoffset;
       c.charIndex = i;
     });
+    console.log("data", data[16]);
     const buffer = Aurora.createMappedBuffer({
       bufferType: "storage",
       data: data,
@@ -100,7 +97,7 @@ export default class generateFont {
     });
     const texture = await Aurora.createTexture({
       label: `MSDF font texture ${this.name}`,
-      url: img,
+      url: this.imgUrl,
       format: "rgba8unorm",
     });
     const bindGroup = Aurora.creteBindGroup({
@@ -125,14 +122,13 @@ export default class generateFont {
         label: `font-${this.name} BindData`,
       },
     });
-    const chars = json.chars.reduce<Record<number, MsdfChar>>(
-      (acc: any, c: any) => ({ ...acc, [c.id]: c }),
-      {}
-    );
+    const chars = (this.jsonData.chars as MsdfChar[]).reduce<
+      Record<number, MsdfChar>
+    >((acc, c) => ({ ...acc, [c.id]: c }), {});
     const charArray = Object.values(chars);
     const kernings: KerningMap = new Map();
-    if (json.kernings) {
-      json.kernings.forEach((kerning) => {
+    if (this.jsonData.kernings) {
+      this.jsonData.kernings.forEach((kerning) => {
         let kerningList = kernings.get(kerning.first);
         if (!kerningList) {
           kerningList = new Map();
@@ -141,13 +137,14 @@ export default class generateFont {
         kerningList.set(kerning.second, kerning.amount);
       });
     }
-    return {
+    this.fontMeta = {
       bind: bindGroup,
       chars,
       kernings,
-      lineHeight: json.common.lineHeight,
+      lineHeight: this.jsonData.common.lineHeight,
       charCount: charArray.length,
       defaultChar: charArray[0],
+      scale: { w: this.jsonData.common.scaleW, h: this.jsonData.common.scaleH },
     };
   }
 }

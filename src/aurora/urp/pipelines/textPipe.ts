@@ -1,6 +1,6 @@
 import Aurora from "../../core";
-import Batcher from "../batcher";
-import spriteShader from "../shaders/sprite.wgsl?raw";
+import Batcher, { PipelineBind } from "../batcher";
+import textShader from "../shaders/text.wgsl?raw";
 
 export default class TextPipe {
   public static opaqueDrawBatch: {
@@ -17,29 +17,32 @@ export default class TextPipe {
   private static batchSize = 1000;
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
+  private static textBind: PipelineBind;
+  private static VERTEX_STRIDE = 8;
+  private static ADD_STRIDE = 5;
   public static createPipeline() {
-    const shader = Aurora.createShader("spriteShader", spriteShader);
+    const shader = Aurora.createShader("textShader", textShader);
 
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "VertexBuffer",
-      dataLength: this.batchSize * 8,
+      dataLength: this.batchSize * this.VERTEX_STRIDE,
       dataType: "Float32Array",
     });
     this.addBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "addDataBuffer",
-      dataLength: this.batchSize * 5,
+      dataLength: this.batchSize * this.ADD_STRIDE,
       dataType: "Uint32Array",
     });
     const cameraBindLayout = Batcher.getBuildInCameraBindGroupLayout;
-    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
+    this.textBind = Batcher.textData.getMeta!.bind;
     const pipelineLayout = Aurora.createPipelineLayout([
       cameraBindLayout,
-      userTextureLayout,
+      this.textBind[1],
     ]);
     const vertBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: 8 * Float32Array.BYTES_PER_ELEMENT,
+      arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
       attributes: [
         {
@@ -60,7 +63,7 @@ export default class TextPipe {
       ],
     });
     const addDataBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: 5 * Uint32Array.BYTES_PER_ELEMENT,
+      arrayStride: this.ADD_STRIDE * Uint32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
       attributes: [
         {
@@ -69,14 +72,9 @@ export default class TextPipe {
           shaderLocation: 3, //textureIndex
         },
         {
-          format: "uint32",
-          offset: 1,
-          shaderLocation: 4, //charCode
-        },
-        {
           format: "uint32x4",
-          offset: 2 * Uint32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 5, //tint
+          offset: 1 * Uint32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 4, //tint
         },
       ],
     });
@@ -96,8 +94,8 @@ export default class TextPipe {
 
   private static createEmptyBatch() {
     return {
-      verts: new Float32Array(this.batchSize * 8),
-      addData: new Uint32Array(this.batchSize * 5),
+      verts: new Float32Array(this.batchSize * this.VERTEX_STRIDE),
+      addData: new Uint32Array(this.batchSize * this.ADD_STRIDE),
       count: 0,
     };
   }
@@ -118,10 +116,9 @@ export default class TextPipe {
     return batch;
   }
   public static usePipeline(type: "opaque" | "transparent"): void {
-    const textureView = Aurora.context.getCurrentTexture().createView();
+    const textureView = Batcher.offscreenCanvas.texture.createView();
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = Batcher.getBuildInCameraBindGroup;
-    const userTextureBind = Batcher.getUserTextureBindGroup;
 
     const batchType =
       type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
@@ -147,7 +144,7 @@ export default class TextPipe {
       passEncoder.setVertexBuffer(0, this.vertexBuffer);
       passEncoder.setVertexBuffer(1, this.addBuffer);
       passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, userTextureBind);
+      passEncoder.setBindGroup(1, this.textBind[0]);
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.count);
       passEncoder.end();
