@@ -1,72 +1,91 @@
 import Aurora from "../../core";
 import Batcher from "../batcher";
 import shapeShader from "../shaders/shape.wgsl?raw";
-import oitShader from "../shaders/OIT.wgsl?raw";
-
+import WBOITShader from "../shaders/WBOIT.wgsl?raw";
+interface BatchAccumulator {
+  verts: Float32Array;
+  addData: Uint32Array;
+  count: number;
+}
 export default class ShapePipe {
-  public static opaqueDrawBatch: {
-    verts: Float32Array;
-    addData: Uint32Array;
-    count: number;
-  }[] = [];
-  public static transparentDrawBatch: {
-    verts: Float32Array;
-    addData: Uint32Array;
-    count: number;
-  }[] = [];
+  private static BATCH_SIZE = 100;
+  private static VERTEX_STRIDE = 8;
+  private static ADD_STRIDE = 6;
+  public static opaqueDrawBatch: BatchAccumulator[] = [];
+  public static transparentDrawBatch: BatchAccumulator[] = [];
   private static pipeline: GPURenderPipeline;
   private static transparentPipeline: GPURenderPipeline;
-  private static batchSize = 100;
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
 
+  public static get getStride() {
+    return {
+      vertexStride: this.VERTEX_STRIDE,
+      addStride: this.ADD_STRIDE,
+    };
+  }
   public static createPipeline() {
     const shapeSh = Aurora.createShader("shapeShader", shapeShader);
-    const oitSh = Aurora.createShader("oitShader", oitShader);
+    const oitSh = Aurora.createShader("WBOITShader", WBOITShader);
 
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "VertexBuffer",
-      dataLength: this.batchSize * 4,
+      dataLength: this.BATCH_SIZE * this.VERTEX_STRIDE,
       dataType: "Float32Array",
     });
     this.addBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "addDataBuffer",
-      dataLength: this.batchSize * 5,
+      dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
       dataType: "Uint32Array",
     });
     const cameraBindLayout = Batcher.getBuildInCameraBindGroupLayout;
-    const pipelineLayout = Aurora.createPipelineLayout([cameraBindLayout]);
+    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
+
+    const pipelineLayout = Aurora.createPipelineLayout([
+      cameraBindLayout,
+      userTextureLayout,
+    ]);
     const vertBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
+      arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
       attributes: [
         {
           format: "float32x2",
           offset: 0,
-          shaderLocation: 0, // Position, see vertex shader
+          shaderLocation: 0, // Position
         },
         {
           format: "float32x2",
           offset: 2 * Float32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 1, // Position, see vertex shader
+          shaderLocation: 1, // Size
+        },
+        {
+          format: "float32x4",
+          offset: 4 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 2, // textureCrop
         },
       ],
     });
     const addDataBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: 5 * Uint32Array.BYTES_PER_ELEMENT,
+      arrayStride: this.ADD_STRIDE * Uint32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
       attributes: [
         {
           format: "uint32",
           offset: 0,
-          shaderLocation: 2, // Position, see vertex shader
+          shaderLocation: 3, // shapeType: 0 - rect, 1 - ellipse, 2 - sprite
+        },
+        {
+          format: "uint32",
+          offset: 1 * Uint32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 4, //textureIndex
         },
         {
           format: "uint32x4",
-          offset: 1 * Uint32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 3, // Position, see vertex shader
+          offset: 2 * Uint32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 5, //tint
         },
       ],
     });
@@ -103,8 +122,8 @@ export default class ShapePipe {
 
   private static createEmptyBatch() {
     return {
-      verts: new Float32Array(this.batchSize * 4),
-      addData: new Uint32Array(this.batchSize * 5),
+      verts: new Float32Array(this.BATCH_SIZE * this.VERTEX_STRIDE),
+      addData: new Uint32Array(this.BATCH_SIZE * this.ADD_STRIDE),
       count: 0,
     };
   }
@@ -116,7 +135,7 @@ export default class ShapePipe {
     }
     let batch = batchType[batchType.length - 1];
 
-    if (batch.count >= this.batchSize) {
+    if (batch.count >= this.BATCH_SIZE) {
       console.log(`Batch ${batchType.length} pełny. Tworzę nowy.`);
       batch = this.createEmptyBatch();
       batchType.push(batch);
@@ -128,6 +147,8 @@ export default class ShapePipe {
     const offscreenTexture = Batcher.offscreenCanvas.texture.createView();
     const accuTexture = Batcher.depthAccumulativeTexture.texture.createView();
     const reveTexture = Batcher.depthRevealableTexture.texture.createView();
+    const userTextureBind = Batcher.getUserTextureBindGroup;
+
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = Batcher.getBuildInCameraBindGroup;
     const batchType =
@@ -156,6 +177,8 @@ export default class ShapePipe {
         passEncoder.setVertexBuffer(0, this.vertexBuffer);
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
+        passEncoder.setBindGroup(1, userTextureBind);
+
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);
         passEncoder.end();
@@ -190,6 +213,8 @@ export default class ShapePipe {
         passEncoder.setVertexBuffer(0, this.vertexBuffer);
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
+        passEncoder.setBindGroup(1, userTextureBind);
+
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);
         passEncoder.end();

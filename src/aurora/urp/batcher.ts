@@ -6,12 +6,13 @@ import SpritePipe from "./pipelines/spritePipe";
 import dummyTexture from "./assets/dummy.png";
 import { GPUAuroraTexture, HSLA } from "../aurora";
 import screenQuadShader from "./shaders/screenQuad.wgsl?raw";
-import CompositePipe from "./pipelines/compositionPipe";
+import WBOITPipe from "./pipelines/WBOITPipe";
 import TextPipe from "./pipelines/textPipe";
 import generateFont, { FontData } from "./msdf/generateFont";
 import ftex from "../../helps/mdfs/assets/ya-hei-ascii.png";
 import fjson from "../../helps/mdfs/assets/ya-hei-ascii-msdf.json";
 import Text2Pipe from "./msdf/tempPipe";
+import PresentationPipe from "./pipelines/presentationPipe";
 export interface Pipeline {
   usePipeline: () => void;
   createPipeline: () => void;
@@ -48,7 +49,7 @@ const INIT_OPTIONS: BatcherOptions = {
 };
 const PIPELINES = {
   shape: ShapePipe,
-  text: TextPipe,
+  // text: TextPipe,
   // sprite: SpritePipe,
 };
 export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
@@ -91,7 +92,8 @@ export default class Batcher {
     await this.textData.generateFont();
     console.log(this.textData.getMeta);
     Object.values(PIPELINES).forEach((pipeline) => pipeline.createPipeline());
-    CompositePipe.createPipeline();
+    WBOITPipe.createPipeline();
+    PresentationPipe.createPipeline();
   }
 
   public static beginBatch() {
@@ -118,7 +120,8 @@ export default class Batcher {
     this.pipelinesUsedInFrame.forEach((name) =>
       PIPELINES[name].usePipeline("transparent")
     );
-    CompositePipe.usePipeline();
+    WBOITPipe.usePipeline();
+    PresentationPipe.usePipeline();
   }
   public static updateCameraBound(value: number) {
     this.cameraBounds[0] = Math.min(this.cameraBounds[0], value);
@@ -143,7 +146,7 @@ export default class Batcher {
         },
         {
           view: this.depthRevealableTexture.texture.createView(),
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          clearValue: { r: 1, g: 1, b: 1, a: 1 },
           loadOp: "clear",
           storeOp: "store",
         },
@@ -289,6 +292,7 @@ export default class Batcher {
       },
     });
   }
+
   public static getTextureIndex(name: string) {
     const texture = this.userTextureIndexes.get(name);
     if (!texture)

@@ -29,17 +29,23 @@ export default class Draw {
     const batch = ShapePipe.getBatch(
       color[3] === 255 ? "opaque" : "transparent"
     );
+    const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
-    batch.verts[batch.count * 4] = position.x;
-    batch.verts[batch.count * 4 + 1] = position.y;
-    batch.verts[batch.count * 4 + 2] = size.width;
-    batch.verts[batch.count * 4 + 3] = size.height;
+    batch.verts[batch.count * vertexStride] = position.x;
+    batch.verts[batch.count * vertexStride + 1] = position.y;
+    batch.verts[batch.count * vertexStride + 2] = size.width;
+    batch.verts[batch.count * vertexStride + 3] = size.height;
+    batch.verts[batch.count * vertexStride + 4] = 0;
+    batch.verts[batch.count * vertexStride + 5] = 0;
+    batch.verts[batch.count * vertexStride + 6] = 1;
+    batch.verts[batch.count * vertexStride + 7] = 1;
 
-    batch.addData[batch.count * 5] = 0;
-    batch.addData[batch.count * 5 + 1] = color[0];
-    batch.addData[batch.count * 5 + 2] = color[1];
-    batch.addData[batch.count * 5 + 3] = color[2];
-    batch.addData[batch.count * 5 + 4] = color[3];
+    batch.addData[batch.count * addStride] = 0;
+    batch.addData[batch.count * addStride + 1] = 0;
+    batch.addData[batch.count * addStride + 2] = color[0];
+    batch.addData[batch.count * addStride + 3] = color[1];
+    batch.addData[batch.count * addStride + 4] = color[2];
+    batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
   }
 
@@ -48,17 +54,23 @@ export default class Draw {
     const batch = ShapePipe.getBatch(
       color[3] === 255 ? "opaque" : "transparent"
     );
+    const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
-    batch.verts[batch.count * 4] = position.x;
-    batch.verts[batch.count * 4 + 1] = position.y;
-    batch.verts[batch.count * 4 + 2] = size.width;
-    batch.verts[batch.count * 4 + 3] = size.height;
+    batch.verts[batch.count * vertexStride] = position.x;
+    batch.verts[batch.count * vertexStride + 1] = position.y;
+    batch.verts[batch.count * vertexStride + 2] = size.width;
+    batch.verts[batch.count * vertexStride + 3] = size.height;
+    batch.verts[batch.count * vertexStride + 4] = 0;
+    batch.verts[batch.count * vertexStride + 5] = 0;
+    batch.verts[batch.count * vertexStride + 6] = 1;
+    batch.verts[batch.count * vertexStride + 7] = 1;
 
-    batch.addData[batch.count * 5] = 1;
-    batch.addData[batch.count * 5 + 1] = color[0];
-    batch.addData[batch.count * 5 + 2] = color[1];
-    batch.addData[batch.count * 5 + 3] = color[2];
-    batch.addData[batch.count * 5 + 4] = color[3];
+    batch.addData[batch.count * addStride] = 1;
+    batch.addData[batch.count * addStride + 1] = 0;
+    batch.addData[batch.count * addStride + 2] = color[0];
+    batch.addData[batch.count * addStride + 3] = color[1];
+    batch.addData[batch.count * addStride + 4] = color[2];
+    batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
   }
   public static sprite({
@@ -69,24 +81,27 @@ export default class Draw {
     textureToUse,
   }: DrawSprite) {
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = SpritePipe.getBatch(
+    const batch = ShapePipe.getBatch(
       color[3] === 255 ? "opaque" : "transparent"
     );
+    const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
-    batch.verts[batch.count * 8] = position.x;
-    batch.verts[batch.count * 8 + 1] = position.y;
-    batch.verts[batch.count * 8 + 2] = size.width;
-    batch.verts[batch.count * 8 + 3] = size.height;
-    batch.verts[batch.count * 8 + 4] = crop.x;
-    batch.verts[batch.count * 8 + 5] = crop.y;
-    batch.verts[batch.count * 8 + 6] = crop.width;
-    batch.verts[batch.count * 8 + 7] = crop.height;
-    batch.addData[batch.count * 5] = textureIndex;
-    batch.addData[batch.count * 5 + 1] = color[0];
-    batch.addData[batch.count * 5 + 2] = color[1];
-    batch.addData[batch.count * 5 + 3] = color[2];
-    batch.addData[batch.count * 5 + 4] = color[3];
+    batch.verts[batch.count * vertexStride] = position.x;
+    batch.verts[batch.count * vertexStride + 1] = position.y;
+    batch.verts[batch.count * vertexStride + 2] = size.width;
+    batch.verts[batch.count * vertexStride + 3] = size.height;
+    batch.verts[batch.count * vertexStride + 4] = crop.x;
+    batch.verts[batch.count * vertexStride + 5] = crop.y;
+    batch.verts[batch.count * vertexStride + 6] = crop.width;
+    batch.verts[batch.count * vertexStride + 7] = crop.height;
+
+    batch.addData[batch.count * addStride] = 2;
+    batch.addData[batch.count * addStride + 1] = textureIndex;
+    batch.addData[batch.count * addStride + 2] = color[0];
+    batch.addData[batch.count * addStride + 3] = color[1];
+    batch.addData[batch.count * addStride + 4] = color[2];
+    batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
   }
   public static text({ position, font, fontColor, fontSize, text }: DrawText) {
@@ -94,14 +109,14 @@ export default class Draw {
     const fontData = Batcher.textData.getMeta;
     if (!fontData) return;
     const { chars, kernings, lineHeight } = fontData;
-    const scale = (fontSize * 2) / lineHeight;
+    const scale = (fontSize * 1.5) / lineHeight;
 
     const color: HSLA = fontColor ? fontColor : [255, 255, 255, 255];
     const batch = TextPipe.getBatch(
       color[3] === 255 ? "opaque" : "transparent"
     );
 
-    Batcher.updateCameraBound(position.y + fontSize * 2);
+    Batcher.updateCameraBound(position.y + fontSize * 4);
 
     let xCursor = position.x;
     let yCursor = position.y;
@@ -144,6 +159,7 @@ export default class Draw {
       batch.verts[baseIndex + 5] = v;
       batch.verts[baseIndex + 6] = uWidth;
       batch.verts[baseIndex + 7] = vHeight;
+      batch.verts[baseIndex + 8] = vHeight;
 
       const addBase = batch.count * 5;
       batch.addData[addBase + 0] = /* textureIndex */ 0;

@@ -7,6 +7,8 @@
 - po co robic za kazdym createPipeline i generowac dane z jsona dla textu do sensownej formy, po prostu zapisac juz gotowe i uzywac! ale to przy budowie bardziej zaawansowanego systemu ktory bedzie juz przerbial ttf pliki
 - przebudowac pipeliny, by nie tworzyc tone encoderow dla kazdego batcha a raczej miec wielki buffer i offsetowac
 - polaczyc jednak shape i sprite pipeline w jedno, szkoda miejsca
+- textPipe dla world nie renderuje sie na srodku quada (0,0) to nie centrum a lewy gorny róg
+- WBOIT przezroczyste circle nie sa circlem
 
 ## TODO
 

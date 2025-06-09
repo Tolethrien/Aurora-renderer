@@ -37,50 +37,47 @@ async function create() {
   // console.log(textRendererF);
   //============================================
 }
-// let x = 100;
+let x = 200;
 function start() {
   Batcher.beginBatch();
   //
+  // Draw.rect({
+  //   //blue
+  //   position: { x: 340, y: 335 },
+  //   size: { height: 250, width: 250 },
+  //   tint: [0, 0, 0, 255],
+  // });
   Draw.rect({
     //blue
-    position: { x: 280, y: 235 },
-    size: { height: 50, width: 50 },
-    tint: [0, 0, 255, 255],
+    position: { x: 350, y: 250 },
+    size: { height: 100, width: 100 },
+    tint: [255, 0, 0, 255],
   });
   Draw.rect({
-    position: { x: 290, y: 230 },
-    size: { height: 50, width: 50 },
-    tint: [0, 255, 0, 155],
+    //blue
+    position: { x: 375, y: 275 },
+    size: { height: 100, width: 100 },
+    tint: [255, 255, 0, 200],
   });
   Draw.rect({
-    //pink
-    position: { x: 300, y: 225 },
+    //blue
+    position: { x: 400, y: 300 },
+    size: { height: 100, width: 100 },
+    tint: [0, 0, 255, 200],
+  });
+  Draw.sprite({
+    position: { x: 400, y: 300 },
     size: { height: 50, width: 50 },
-    tint: [255, 0, 0, 155],
+    tint: [255, 255, 255, 250],
+    crop: { x: 0, y: 0, width: 32, height: 32 },
+    textureToUse: "char",
   });
-  Draw.rect({
-    position: { x: 310, y: 220 },
+  Draw.circle({
+    position: { x: 480, y: 235 },
     size: { height: 50, width: 50 },
-    tint: [255, 0, 255, 155],
+    tint: [0, 255, 255, 250],
   });
-  Draw.rect({
-    position: { x: 320, y: 215 },
-    size: { height: 50, width: 50 },
-    tint: [0, 255, 255, 155],
-  });
-  Draw.rect({
-    position: { x: 330, y: 510 },
-    size: { height: 50, width: 50 },
-    tint: [255, 255, 0, 255],
-  });
-  Draw.text({
-    position: { x: 130, y: 310 },
-    fontSize: 32,
-    fontColor: [255, 255, 255, 255],
-    font: "s",
-    text: "sranie xD",
-  });
-
+  x += 0.5;
   Batcher.endBatch();
   // requestAnimationFrame(start);
 }

@@ -1,16 +1,17 @@
 import Aurora from "../../core";
 import Batcher, { PipelineBind } from "../batcher";
-import screenQUadShader from "../shaders/screenQuad.wgsl?raw";
+import presentationShader from "../shaders/presentation.wgsl?raw";
 
-export default class CompositePipe {
+export default class PresentationPipe {
   private static pipeline: GPURenderPipeline;
   private static presentationBind: PipelineBind;
-  //TODO: czy moge zrobic z tego array i zapisywac do 3 tekstur jednego arr jednoczesnie?
   public static createPipeline() {
-    const shader = Aurora.createShader("screenQUadShader", screenQUadShader);
+    const shader = Aurora.createShader(
+      "presentationShader",
+      presentationShader
+    );
 
     this.presentationBind = Aurora.creteBindGroup({
-      name: "presentationBind",
       layout: {
         entries: [
           {
@@ -23,34 +24,17 @@ export default class CompositePipe {
             visibility: GPUShaderStage.FRAGMENT,
             texture: { viewDimension: "2d" },
           },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-          {
-            binding: 3,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
         ],
-        label: "presentationBindLayout",
+        label: "PresentationBindLayout",
       },
       data: {
-        label: "presentationBindData",
+        label: "PresentationBindData",
         entries: [
           { binding: 0, resource: Batcher.universalSampler },
+
           {
             binding: 1,
             resource: Batcher.offscreenCanvas.texture.createView(),
-          },
-          {
-            binding: 2,
-            resource: Batcher.depthAccumulativeTexture.texture.createView(),
-          },
-          {
-            binding: 3,
-            resource: Batcher.depthRevealableTexture.texture.createView(),
           },
         ],
       },
@@ -61,7 +45,7 @@ export default class CompositePipe {
     ]);
     this.pipeline = Aurora.createRenderPipeline({
       shader: shader,
-      pipelineName: "compositePiepieline",
+      pipelineName: "PresentationPipeline",
       buffers: [],
       pipelineLayout: pipelineLayout,
     });
@@ -69,12 +53,13 @@ export default class CompositePipe {
 
   public static usePipeline(): void {
     const indexBuffer = Batcher.getIndexBuffer;
+
     const commandEncoder = Aurora.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
           view: Aurora.context.getCurrentTexture().createView(),
-          clearValue: { r: 0.3, g: 0, b: 0.6, a: 1.0 },
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
         },

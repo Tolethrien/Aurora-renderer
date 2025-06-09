@@ -89,6 +89,23 @@ export default class TextPipe {
         depthWriteEnabled: true,
         depthCompare: "greater-equal",
       },
+      colorTargets: [
+        {
+          format: "bgra8unorm",
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+          },
+        },
+      ],
     });
   }
 
