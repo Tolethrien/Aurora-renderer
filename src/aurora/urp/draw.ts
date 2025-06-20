@@ -1,8 +1,7 @@
 import { HSLA, Position2D, Size2D } from "../aurora";
-import Batcher from "./batcher";
+import Batcher from "./batcher/batcher";
 import { MsdfChar } from "./msdf/generateFont";
 import ShapePipe from "./pipelines/shapePipe";
-import SpritePipe from "./pipelines/spritePipe";
 import TextPipe from "./pipelines/textPipe";
 
 interface BaseDraw {
@@ -31,14 +30,14 @@ export default class Draw {
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
-    batch.verts[batch.count * vertexStride] = position.x;
-    batch.verts[batch.count * vertexStride + 1] = position.y;
-    batch.verts[batch.count * vertexStride + 2] = size.width;
-    batch.verts[batch.count * vertexStride + 3] = size.height;
-    batch.verts[batch.count * vertexStride + 4] = 0;
-    batch.verts[batch.count * vertexStride + 5] = 0;
-    batch.verts[batch.count * vertexStride + 6] = 1;
-    batch.verts[batch.count * vertexStride + 7] = 1;
+    batch.verticesData[batch.count * vertexStride] = position.x;
+    batch.verticesData[batch.count * vertexStride + 1] = position.y;
+    batch.verticesData[batch.count * vertexStride + 2] = size.width;
+    batch.verticesData[batch.count * vertexStride + 3] = size.height;
+    batch.verticesData[batch.count * vertexStride + 4] = 0;
+    batch.verticesData[batch.count * vertexStride + 5] = 0;
+    batch.verticesData[batch.count * vertexStride + 6] = 1;
+    batch.verticesData[batch.count * vertexStride + 7] = 1;
 
     batch.addData[batch.count * addStride] = 0;
     batch.addData[batch.count * addStride + 1] = 0;
@@ -56,14 +55,14 @@ export default class Draw {
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
-    batch.verts[batch.count * vertexStride] = position.x;
-    batch.verts[batch.count * vertexStride + 1] = position.y;
-    batch.verts[batch.count * vertexStride + 2] = size.width;
-    batch.verts[batch.count * vertexStride + 3] = size.height;
-    batch.verts[batch.count * vertexStride + 4] = 0;
-    batch.verts[batch.count * vertexStride + 5] = 0;
-    batch.verts[batch.count * vertexStride + 6] = 1;
-    batch.verts[batch.count * vertexStride + 7] = 1;
+    batch.verticesData[batch.count * vertexStride] = position.x;
+    batch.verticesData[batch.count * vertexStride + 1] = position.y;
+    batch.verticesData[batch.count * vertexStride + 2] = size.width;
+    batch.verticesData[batch.count * vertexStride + 3] = size.height;
+    batch.verticesData[batch.count * vertexStride + 4] = 0;
+    batch.verticesData[batch.count * vertexStride + 5] = 0;
+    batch.verticesData[batch.count * vertexStride + 6] = 1;
+    batch.verticesData[batch.count * vertexStride + 7] = 1;
 
     batch.addData[batch.count * addStride] = 1;
     batch.addData[batch.count * addStride + 1] = 0;
@@ -87,14 +86,14 @@ export default class Draw {
     const { addStride, vertexStride } = ShapePipe.getStride;
     Batcher.updateCameraBound(position.y + size.height * 0.5);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
-    batch.verts[batch.count * vertexStride] = position.x;
-    batch.verts[batch.count * vertexStride + 1] = position.y;
-    batch.verts[batch.count * vertexStride + 2] = size.width;
-    batch.verts[batch.count * vertexStride + 3] = size.height;
-    batch.verts[batch.count * vertexStride + 4] = crop.x;
-    batch.verts[batch.count * vertexStride + 5] = crop.y;
-    batch.verts[batch.count * vertexStride + 6] = crop.width;
-    batch.verts[batch.count * vertexStride + 7] = crop.height;
+    batch.verticesData[batch.count * vertexStride] = position.x;
+    batch.verticesData[batch.count * vertexStride + 1] = position.y;
+    batch.verticesData[batch.count * vertexStride + 2] = size.width;
+    batch.verticesData[batch.count * vertexStride + 3] = size.height;
+    batch.verticesData[batch.count * vertexStride + 4] = crop.x;
+    batch.verticesData[batch.count * vertexStride + 5] = crop.y;
+    batch.verticesData[batch.count * vertexStride + 6] = crop.width;
+    batch.verticesData[batch.count * vertexStride + 7] = crop.height;
 
     batch.addData[batch.count * addStride] = 2;
     batch.addData[batch.count * addStride + 1] = textureIndex;
@@ -151,15 +150,15 @@ export default class Draw {
       const vHeight = charData.height / fontData.scale.h;
 
       const baseIndex = batch.count * 8;
-      batch.verts[baseIndex + 0] = centerX;
-      batch.verts[baseIndex + 1] = centerY;
-      batch.verts[baseIndex + 2] = w;
-      batch.verts[baseIndex + 3] = h;
-      batch.verts[baseIndex + 4] = u;
-      batch.verts[baseIndex + 5] = v;
-      batch.verts[baseIndex + 6] = uWidth;
-      batch.verts[baseIndex + 7] = vHeight;
-      batch.verts[baseIndex + 8] = vHeight;
+      batch.verticesData[baseIndex + 0] = centerX;
+      batch.verticesData[baseIndex + 1] = centerY;
+      batch.verticesData[baseIndex + 2] = w;
+      batch.verticesData[baseIndex + 3] = h;
+      batch.verticesData[baseIndex + 4] = u;
+      batch.verticesData[baseIndex + 5] = v;
+      batch.verticesData[baseIndex + 6] = uWidth;
+      batch.verticesData[baseIndex + 7] = vHeight;
+      batch.verticesData[baseIndex + 8] = vHeight;
 
       const addBase = batch.count * 5;
       batch.addData[addBase + 0] = /* textureIndex */ 0;

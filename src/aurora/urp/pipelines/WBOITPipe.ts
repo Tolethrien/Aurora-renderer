@@ -1,12 +1,15 @@
 import Aurora from "../../core";
-import Batcher, { PipelineBind } from "../batcher";
+import Batcher, { PipelineBind } from "../batcher/batcher";
 import WBOITPresent from "../shaders/WBOITPresent.wgsl?raw";
 
+/**
+ * WBOIT second pipeline to calculate color and draw transparent objects onto offscreen
+ */
 export default class WBOITPipeline {
   private static pipeline: GPURenderPipeline;
   private static presentationBind: PipelineBind;
   //TODO: czy moge zrobic z tego array i zapisywac do 3 tekstur jednego arr jednoczesnie?
-  public static createPipeline() {
+  public static async createPipeline() {
     const shader = Aurora.createShader("WBOITPresent", WBOITPresent);
 
     this.presentationBind = Aurora.creteBindGroup({
@@ -50,7 +53,7 @@ export default class WBOITPipeline {
     const pipelineLayout = Aurora.createPipelineLayout([
       this.presentationBind[1],
     ]);
-    this.pipeline = Aurora.createRenderPipeline({
+    this.pipeline = await Aurora.createRenderPipeline({
       shader: shader,
       pipelineName: "WBOITPipeline",
       buffers: [],

@@ -1,11 +1,14 @@
 import Aurora from "../../core";
-import Batcher, { PipelineBind } from "../batcher";
+import Batcher, { PipelineBind } from "../batcher/batcher";
 import presentationShader from "../shaders/presentation.wgsl?raw";
 
+/**
+ * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
+ */
 export default class PresentationPipe {
   private static pipeline: GPURenderPipeline;
   private static presentationBind: PipelineBind;
-  public static createPipeline() {
+  public static async createPipeline() {
     const shader = Aurora.createShader(
       "presentationShader",
       presentationShader
@@ -43,7 +46,7 @@ export default class PresentationPipe {
     const pipelineLayout = Aurora.createPipelineLayout([
       this.presentationBind[1],
     ]);
-    this.pipeline = Aurora.createRenderPipeline({
+    this.pipeline = await Aurora.createRenderPipeline({
       shader: shader,
       pipelineName: "PresentationPipeline",
       buffers: [],

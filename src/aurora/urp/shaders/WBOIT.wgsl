@@ -64,29 +64,33 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     var color = convertColor(props.color);
     var weightedColor:vec3<f32>;
-    var weight = max(min(1.0, max(max(color.r, color.g), color.b) * color.a), color.a) * 
-                 clamp(0.03 / (1e-5 + pow(props.z / 200, 4.0)), 1e-2, 3e3);
-    
+    var opacity: f32; 
     if(props.shapeType == 2){
         let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
-         if(texture.w < 0.001){discard;};
+         if(texture.w < 0.001){discard;}
          color = texture * color;
-         weightedColor = color.rgb * color.w;
+         weightedColor = color.rgb * color.a;
+         opacity = color.a;
     }
     else if(props.shapeType == 1){
         let unitDist = length(props.localPos / props.vHalfSize) - 1.0;
         let dist = unitDist * min(props.vHalfSize.x, props.vHalfSize.y);
         let smoothing: f32 = 0.5;
         let alpha = smoothstep(-smoothing, smoothing, -dist);
+        if(alpha < 0.001){discard;}
         weightedColor = color.rgb * alpha;
+        opacity = color.a * alpha;
     }
     else{
-        weightedColor = color.rgb * color.w;
+        weightedColor = color.rgb * color.a;
+        opacity = color.a;
     } 
- 
+    var weight = max(min(1.0, max(max(color.r, color.g), color.b) * opacity), opacity) * 
+                 clamp(0.03 / (1e-5 + pow(props.z / 200, 4.0)), 1e-2, 3e3);
+    
     var out: FragmentOutput;
-    out.accu = vec4<f32>(weightedColor,color.w) * weight;
-    out.reve = vec4<f32>(color.w,1.0,1.0,1.0);
+    out.accu = vec4<f32>(weightedColor,opacity) * weight;
+    out.reve = vec4<f32>(opacity,1.0,1.0,1.0);
     
     return out;
     

@@ -1,12 +1,15 @@
 import Aurora from "../../core";
-import Batcher from "../batcher";
+import Batcher from "../batcher/batcher";
 import shapeShader from "../shaders/shape.wgsl?raw";
 import WBOITShader from "../shaders/WBOIT.wgsl?raw";
 interface BatchAccumulator {
-  verts: Float32Array;
+  verticesData: Float32Array;
   addData: Uint32Array;
   count: number;
 }
+/**
+ * Main pipeline to draw shapes,sprites etc. Uses WBOIT, so have 2 passes, opaque and transparent!
+ */
 export default class ShapePipe {
   private static BATCH_SIZE = 100;
   private static VERTEX_STRIDE = 8;
@@ -24,7 +27,7 @@ export default class ShapePipe {
       addStride: this.ADD_STRIDE,
     };
   }
-  public static createPipeline() {
+  public static async createPipeline() {
     const shapeSh = Aurora.createShader("shapeShader", shapeShader);
     const oitSh = Aurora.createShader("WBOITShader", WBOITShader);
 
@@ -89,7 +92,7 @@ export default class ShapePipe {
         },
       ],
     });
-    this.pipeline = Aurora.createRenderPipeline({
+    this.pipeline = await Aurora.createRenderPipeline({
       shader: shapeSh,
       pipelineName: "main",
       buffers: [vertBuffLay, addDataBuffLay],
@@ -102,7 +105,7 @@ export default class ShapePipe {
       },
       colorTargets: [Aurora.getColorTargetTemplate("standard")],
     });
-    this.transparentPipeline = Aurora.createRenderPipeline({
+    this.transparentPipeline = await Aurora.createRenderPipeline({
       shader: oitSh,
       pipelineName: "main",
       buffers: [vertBuffLay, addDataBuffLay],
@@ -120,9 +123,9 @@ export default class ShapePipe {
     });
   }
 
-  private static createEmptyBatch() {
+  private static createEmptyBatch(): BatchAccumulator {
     return {
-      verts: new Float32Array(this.BATCH_SIZE * this.VERTEX_STRIDE),
+      verticesData: new Float32Array(this.BATCH_SIZE * this.VERTEX_STRIDE),
       addData: new Uint32Array(this.BATCH_SIZE * this.ADD_STRIDE),
       count: 0,
     };
@@ -170,9 +173,13 @@ export default class ShapePipe {
             depthStoreOp: "store",
           },
         });
-        Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, batch.verts, 0);
+        Aurora.device.queue.writeBuffer(
+          this.vertexBuffer,
+          0,
+          batch.verticesData,
+          0
+        );
         Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);
-        //   passEncoder.setBindGroup(0,)
         passEncoder.setPipeline(this.pipeline);
         passEncoder.setVertexBuffer(0, this.vertexBuffer);
         passEncoder.setVertexBuffer(1, this.addBuffer);
@@ -206,7 +213,12 @@ export default class ShapePipe {
             depthStoreOp: "store",
           },
         });
-        Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, batch.verts, 0);
+        Aurora.device.queue.writeBuffer(
+          this.vertexBuffer,
+          0,
+          batch.verticesData,
+          0
+        );
         Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);
         //   passEncoder.setBindGroup(0,)
         passEncoder.setPipeline(this.transparentPipeline);

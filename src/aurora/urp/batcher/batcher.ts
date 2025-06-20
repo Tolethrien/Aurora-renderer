@@ -1,18 +1,15 @@
-import { assert } from "../../utils/utils";
-import Aurora from "../core";
-import AuroraCamera from "./camera";
-import ShapePipe from "./pipelines/shapePipe";
-import SpritePipe from "./pipelines/spritePipe";
-import dummyTexture from "./assets/dummy.png";
-import { GPUAuroraTexture, HSLA } from "../aurora";
-import screenQuadShader from "./shaders/screenQuad.wgsl?raw";
-import WBOITPipe from "./pipelines/WBOITPipe";
-import TextPipe from "./pipelines/textPipe";
-import generateFont, { FontData } from "./msdf/generateFont";
-import ftex from "../../helps/mdfs/assets/ya-hei-ascii.png";
-import fjson from "../../helps/mdfs/assets/ya-hei-ascii-msdf.json";
-import Text2Pipe from "./msdf/tempPipe";
-import PresentationPipe from "./pipelines/presentationPipe";
+import { assert } from "../../../utils/utils";
+import Aurora from "../../core";
+import AuroraCamera from "../camera";
+import ShapePipe from "../pipelines/shapePipe";
+import dummyTexture from "../assets/dummy.png";
+import { GPUAuroraTexture, HSLA } from "../../aurora";
+import WBOITPipe from "../pipelines/WBOITPipe";
+import TextPipe from "../pipelines/textPipe";
+import generateFont from "../msdf/generateFont";
+import ftex from "../../../helps/mdfs/assets/ya-hei-ascii.png";
+import fjson from "../../../helps/mdfs/assets/ya-hei-ascii-msdf.json";
+import PresentationPipe from "../pipelines/presentationPipe";
 export interface Pipeline {
   usePipeline: () => void;
   createPipeline: () => void;
@@ -33,15 +30,15 @@ export type BatcherStats = {
   colorCorrection: HSLA;
   appliedPostProcessing: PostProcess[];
 };
-const INIT_STATS: BatcherStats = {
-  drawCalls: 0,
-  computeCalls: 0,
-  usedPipelines: [],
-  pointLights: 0,
-  totalBatches: 0,
-  colorCorrection: [255, 255, 255, 255],
-  appliedPostProcessing: [],
-};
+// const INIT_STATS: BatcherStats = {
+//   drawCalls: 0,
+//   computeCalls: 0,
+//   usedPipelines: [],
+//   pointLights: 0,
+//   totalBatches: 0,
+//   colorCorrection: [255, 255, 255, 255],
+//   appliedPostProcessing: [],
+// };
 const INIT_OPTIONS: BatcherOptions = {
   customCamera: false,
   zBuffer: "y",
@@ -49,13 +46,12 @@ const INIT_OPTIONS: BatcherOptions = {
 };
 const PIPELINES = {
   shape: ShapePipe,
-  // text: TextPipe,
-  // sprite: SpritePipe,
+  text: TextPipe,
 };
 export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
-  private static batcherStats: BatcherStats = structuredClone(INIT_STATS);
+  // private static batcherStats: BatcherStats = structuredClone(INIT_STATS);
   private static indexBuffer: GPUBuffer;
   private static buildInCameraBind: PipelineBind | undefined;
   private static userTextureBind: PipelineBind;
@@ -90,10 +86,12 @@ export default class Batcher {
       json: fjson,
     });
     await this.textData.generateFont();
-    console.log(this.textData.getMeta);
-    Object.values(PIPELINES).forEach((pipeline) => pipeline.createPipeline());
-    WBOITPipe.createPipeline();
-    PresentationPipe.createPipeline();
+    //TODO: przerob to na rownolegle
+    for (const pipeline of Object.values(PIPELINES)) {
+      await pipeline.createPipeline();
+    }
+    await WBOITPipe.createPipeline();
+    await PresentationPipe.createPipeline();
   }
 
   public static beginBatch() {

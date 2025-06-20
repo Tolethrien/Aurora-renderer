@@ -10,13 +10,20 @@ struct VertexInput {
     @location(2) crop: vec4<f32>, // crop [x,y,w,h]
     @location(3) textureIndex: u32,    // index of texture in array
     @location(4) color: vec4<u32>,    // rgba
+
 }
 
 struct VertexOutput {
     @builtin(position) Position: vec4<f32>,
     @location(0) crop: vec2<f32>,       // współrzędne jednostkowe [0..1]
-    @location(3) @interpolate(flat) color: vec4<u32>,
+    @location(1) @interpolate(flat) color: vec4<u32>,
+    @location(2) z: f32,    // depth
 };
+struct FragmentOutput {
+    @location(0) accu: vec4<f32>,
+    @location(1) reve: vec4<f32>
+}
+
 
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
@@ -38,6 +45,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.crop = uv;
     out.color = props.color;
+    out.z = z;
     out.Position = vec4<f32>(translatePosition.xy, z, 1.0);
     
     return out;
@@ -45,28 +53,34 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
 }
 
 @fragment
-fn fragmentMain(props : VertexOutput) -> @location(0) vec4f {
+fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   // pxRange (AKA distanceRange) comes from the msdfgen tool. Don McCurdy's tool
   // uses the default which is 4.
-   let color = convertColor(props.color);
-  let pxRange = 4.0;
-  let sz = vec2f(textureDimensions(fontsTexture, 0));
-  let dx = sz.x*length(vec2f(dpdxFine(props.crop.x), dpdyFine(props.crop.x)));
-  let dy = sz.y*length(vec2f(dpdxFine(props.crop.y), dpdyFine(props.crop.y)));
-  let toPixels = pxRange * inverseSqrt(dx * dx + dy * dy);
-  let sigDist = sampleMsdf(props.crop) - 0.5;
-  let pxDist = sigDist * toPixels;
+    let color = convertColor(props.color);
+    let pxRange = 4.0;
+ 
+    let sz = vec2f(textureDimensions(fontsTexture, 0));
+    let dx = sz.x*length(vec2f(dpdxFine(props.crop.x), dpdyFine(props.crop.x)));
+    let dy = sz.y*length(vec2f(dpdxFine(props.crop.y), dpdyFine(props.crop.y)));
+    let toPixels = pxRange * inverseSqrt(dx * dx + dy * dy);
+    let sigDist = sampleMsdf(props.crop) - 0.5;
+    let pxDist = sigDist * toPixels;
 
-  let edgeWidth = 0.5;
+    let edgeWidth = 0.5;
 
-  var alpha = smoothstep(-edgeWidth, edgeWidth, pxDist);
+    var alpha = smoothstep(-edgeWidth, edgeWidth, pxDist);
 
-  if (alpha < 0.001) {
-    discard;
-  }
+  if (alpha < 0.001) {discard;}
 
-  alpha = pow(alpha, 0.4); // korekta gamma
-  return vec4f(color.rgb, color.a * alpha);
+    alpha = pow(alpha, 0.4); // korekta gamma
+    var opacity = color.a * alpha;
+    var weight = max(min(1.0, max(max(color.r, color.g), color.b) * opacity), opacity) * 
+                 clamp(0.03 / (1e-5 + pow(props.z / 200, 4.0)), 1e-2, 3e3);
+    var out: FragmentOutput;
+    out.accu = vec4<f32>(color.rgb * opacity,opacity) * weight;
+    out.reve = vec4<f32>(opacity,1.0,1.0,1.0);
+    
+    return out;
 
 }
 

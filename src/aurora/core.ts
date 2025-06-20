@@ -109,7 +109,7 @@ export default class Aurora {
     });
   }
   public static createRenderPipeline(props: AuroraRenderPipeline) {
-    return this.device.createRenderPipeline({
+    return this.device.createRenderPipelineAsync({
       label: props.pipelineName,
       layout: props.pipelineLayout,
       vertex: {
