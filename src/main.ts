@@ -6,10 +6,7 @@ import char from "./assets/char.png";
 import spritesheet from "./assets/radial.png";
 import ftex from "./assets/ya-hei-ascii.png";
 import fjson from "./assets/ya-hei-ascii-msdf.json";
-import ctex from "./assets/Jersey25-Regular.png";
-import cjson from "./assets/Jersey25-Regular-msdf.json";
-import ltex from "./assets/Lato-Regular.png";
-import ljson from "./assets/Lato-Regular-msdf.json";
+
 async function preload() {
   await Aurora.init();
   await create();
@@ -26,16 +23,6 @@ async function create() {
         fontName: "ya",
         img: ftex,
         json: fjson,
-      },
-      {
-        fontName: "roboto",
-        img: ctex,
-        json: cjson,
-      },
-      {
-        fontName: "lato",
-        img: ltex,
-        json: ljson,
       },
     ],
   });
@@ -88,13 +75,13 @@ function start() {
   });
   Draw.text({
     position: { x: 15, y: 480 },
-    font: "roboto",
+    font: "jersey",
     fontSize: 16,
     text: "Mini-My! small scalable text!",
     fontColor: [255, 255, 255, 255],
   });
   x += 0.5;
   Batcher.endBatch();
-  requestAnimationFrame(start);
+  // requestAnimationFrame(start);
 }
 await preload();

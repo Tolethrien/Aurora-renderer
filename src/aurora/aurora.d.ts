@@ -26,11 +26,9 @@ interface AuroraComputePipeline {
   shader: GPUShaderModule;
 }
 type ColorAttachments =
-  | "overSaturated"
+  | "HDR"
   | "standard"
   | "storage-read-write"
-  | "post-process"
-  | "test-standard"
   | "OITAccu"
   | "OITReve";
 interface CreateBindGroup {

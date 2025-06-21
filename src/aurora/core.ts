@@ -164,45 +164,7 @@ export default class Aurora {
             },
           },
         };
-      case "post-process":
-        return {
-          format: navigator.gpu.getPreferredCanvasFormat(),
-          writeMask: GPUColorWrite.ALL,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add",
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add",
-            },
-          },
-        };
-      case "test-standard":
-        return {
-          format: navigator.gpu.getPreferredCanvasFormat(),
-          writeMask: GPUColorWrite.ALL,
-          blend: {
-            color: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add",
-            },
-            alpha: {
-              srcFactor: "src-alpha",
-              dstFactor: "one-minus-src-alpha",
-              operation: "add",
-            },
-          },
-        };
-      case "storage-read-write":
-        return {
-          format: "r32uint",
-        };
-      case "overSaturated":
+      case "HDR":
         return {
           format: "rgba16float",
           writeMask: GPUColorWrite.ALL,
@@ -243,6 +205,23 @@ export default class Aurora {
           blend: {
             color: {
               srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one-minus-src-alpha",
+              operation: "add",
+            },
+          },
+        };
+      default:
+        return {
+          format: navigator.gpu.getPreferredCanvasFormat(),
+          writeMask: GPUColorWrite.ALL,
+          blend: {
+            color: {
+              srcFactor: "src-alpha",
               dstFactor: "one-minus-src-alpha",
               operation: "add",
             },

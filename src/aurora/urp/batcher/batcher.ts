@@ -11,7 +11,10 @@ import {
   DRAW_PIPES,
   startPipelines,
 } from "./pipes";
-
+import jerseyImg from "../assets/Jersey25-Regular.png";
+import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
+import latoImg from "../assets/Lato-Regular.png";
+import latoJson from "../assets/Lato-Regular-msdf.json";
 export type BatcherOptions = {
   zBuffer: "none" | "y" | "y-x";
   textures: { name: string; url: string }[];
@@ -38,6 +41,7 @@ export default class Batcher {
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
+    console.log(this.batcherOptions);
     this.indexBuffer = Aurora.createMappedBuffer({
       data: [0, 1, 2, 1, 2, 3],
       bufferType: "index",
@@ -66,6 +70,16 @@ export default class Batcher {
   }
 
   private static async generateFonts() {
+    this.batcherOptions.fonts.push({
+      fontName: "lato",
+      img: latoImg,
+      json: latoJson,
+    });
+    this.batcherOptions.fonts.push({
+      fontName: "jersey",
+      img: jerseyImg,
+      json: jerseyJson,
+    });
     let index = 0;
     for (const { img, json, fontName } of this.batcherOptions.fonts) {
       const font = await FontGen.generateFont({
