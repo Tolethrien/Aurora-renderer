@@ -1,5 +1,6 @@
+import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher, { PipelineBind } from "../batcher/batcher";
+import Batcher from "../batcher/batcher";
 import WBOITPresent from "../shaders/WBOITPresent.wgsl?raw";
 
 /**
@@ -36,15 +37,15 @@ export default class WBOITPipeline {
       data: {
         label: "WBOITBindData",
         entries: [
-          { binding: 0, resource: Batcher.universalSampler },
+          { binding: 0, resource: Batcher.getSampler("universal") },
 
           {
             binding: 1,
-            resource: Batcher.depthAccumulativeTexture.texture.createView(),
+            resource: Batcher.getTextureView("depthAccumulativeTexture"),
           },
           {
             binding: 2,
-            resource: Batcher.depthRevealableTexture.texture.createView(),
+            resource: Batcher.getTextureView("depthRevealableTexture"),
           },
         ],
       },
@@ -63,7 +64,7 @@ export default class WBOITPipeline {
 
   public static usePipeline(): void {
     const indexBuffer = Batcher.getIndexBuffer;
-    const offscreenTexture = Batcher.offscreenCanvas.texture.createView();
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
 
     const commandEncoder = Aurora.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({

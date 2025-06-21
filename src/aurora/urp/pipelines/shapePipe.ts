@@ -1,5 +1,6 @@
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
+import AuroraCamera from "../camera";
 import shapeShader from "../shaders/shape.wgsl?raw";
 import WBOITShader from "../shaders/WBOIT.wgsl?raw";
 interface BatchAccumulator {
@@ -43,7 +44,7 @@ export default class ShapePipe {
       dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
       dataType: "Uint32Array",
     });
-    const cameraBindLayout = Batcher.getBuildInCameraBindGroupLayout;
+    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
     const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
 
     const pipelineLayout = Aurora.createPipelineLayout([
@@ -147,13 +148,13 @@ export default class ShapePipe {
     return batch;
   }
   public static usePipeline(type: "opaque" | "transparent"): void {
-    const offscreenTexture = Batcher.offscreenCanvas.texture.createView();
-    const accuTexture = Batcher.depthAccumulativeTexture.texture.createView();
-    const reveTexture = Batcher.depthRevealableTexture.texture.createView();
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const accuTexture = Batcher.getTextureView("depthAccumulativeTexture");
+    const reveTexture = Batcher.getTextureView("depthRevealableTexture");
     const userTextureBind = Batcher.getUserTextureBindGroup;
 
     const indexBuffer = Batcher.getIndexBuffer;
-    const cameraBind = Batcher.getBuildInCameraBindGroup;
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
     const batchType =
       type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
     if (type === "opaque") {
@@ -168,7 +169,7 @@ export default class ShapePipe {
             },
           ],
           depthStencilAttachment: {
-            view: Batcher.depthTexture.texture.createView(),
+            view: Batcher.getTextureView("depthTexture"),
             depthLoadOp: "load",
             depthStoreOp: "store",
           },
@@ -208,7 +209,7 @@ export default class ShapePipe {
             },
           ],
           depthStencilAttachment: {
-            view: Batcher.depthTexture.texture.createView(),
+            view: Batcher.getTextureView("depthTexture"),
             depthLoadOp: "load",
             depthStoreOp: "store",
           },

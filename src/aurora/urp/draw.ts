@@ -1,6 +1,7 @@
 import { HSLA, Position2D, Size2D } from "../aurora";
 import Batcher from "./batcher/batcher";
-import { MsdfChar } from "./msdf/generateFont";
+import { MsdfChar } from "./batcher/fontGen";
+import AuroraCamera from "./camera";
 import ShapePipe from "./pipelines/shapePipe";
 import TextPipe from "./pipelines/textPipe";
 
@@ -29,7 +30,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    Batcher.updateCameraBound(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
     batch.verticesData[batch.count * vertexStride + 2] = size.width;
@@ -54,7 +55,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    Batcher.updateCameraBound(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
     batch.verticesData[batch.count * vertexStride + 2] = size.width;
@@ -84,7 +85,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    Batcher.updateCameraBound(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
@@ -104,18 +105,16 @@ export default class Draw {
     batch.count++;
   }
   public static text({ position, font, fontColor, fontSize, text }: DrawText) {
-    console.log(text);
-    const fontData = Batcher.textData.getMeta;
-    if (!fontData) return;
+    const fontData = Batcher.getUserFontData(font).getMeta;
+    const fontIndex = Batcher.getUserFontData(font).getIndex;
     const { chars, kernings, lineHeight } = fontData;
     const scale = (fontSize * 1.5) / lineHeight;
-
     const color: HSLA = fontColor ? fontColor : [255, 255, 255, 255];
     const batch = TextPipe.getBatch(
       color[3] === 255 ? "opaque" : "transparent"
     );
 
-    Batcher.updateCameraBound(position.y + fontSize * 4);
+    AuroraCamera.setCameraBounds(position.y + fontSize * 4);
 
     let xCursor = position.x;
     let yCursor = position.y;
@@ -136,12 +135,9 @@ export default class Draw {
       const w = charData.width * scale;
       const h = charData.height * scale;
 
-      // const x0 = xCursor + charData.xoffset * scale;
-      // const y0 = yCursor + charData.yoffset * scale;
       const x0 = xCursor + charData.xoffset * scale;
       const y0 = yCursor + charData.yoffset * scale;
 
-      // **Re-compute so that we send the _center_**, not the top-left.
       const centerX = x0 + w * 0.5;
       const centerY = y0 + h * 0.5;
       const u = charData.x / fontData.scale.w;
@@ -161,7 +157,7 @@ export default class Draw {
       batch.verticesData[baseIndex + 8] = vHeight;
 
       const addBase = batch.count * 5;
-      batch.addData[addBase + 0] = /* textureIndex */ 0;
+      batch.addData[addBase + 0] = fontIndex; // texturea
       batch.addData[addBase + 1] = color[0];
       batch.addData[addBase + 2] = color[1];
       batch.addData[addBase + 3] = color[2];

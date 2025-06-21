@@ -1,5 +1,7 @@
+import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher, { PipelineBind } from "../batcher/batcher";
+import Batcher from "../batcher/batcher";
+import AuroraCamera from "../camera";
 import textShader from "../shaders/text.wgsl?raw";
 import TextWBOITShader from "../shaders/textWBOIT.wgsl?raw";
 
@@ -22,7 +24,6 @@ export default class TextPipe {
 
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
-  private static textBind: PipelineBind;
   public static async createPipeline() {
     const shader = Aurora.createShader("textShader", textShader);
     const oitSh = Aurora.createShader("WBOITShader", TextWBOITShader);
@@ -39,11 +40,11 @@ export default class TextPipe {
       dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
       dataType: "Uint32Array",
     });
-    const cameraBindLayout = Batcher.getBuildInCameraBindGroupLayout;
-    this.textBind = Batcher.textData.getMeta!.bind;
+    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
+    const textBindLayout = Batcher.getUserFontBindGroupLayout;
     const pipelineLayout = Aurora.createPipelineLayout([
       cameraBindLayout,
-      this.textBind[1],
+      textBindLayout,
     ]);
     const vertBuffLay = Aurora.createVertexBufferLayout({
       arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
@@ -137,11 +138,12 @@ export default class TextPipe {
     return batch;
   }
   public static usePipeline(type: "opaque" | "transparent"): void {
-    const textureView = Batcher.offscreenCanvas.texture.createView();
     const indexBuffer = Batcher.getIndexBuffer;
-    const cameraBind = Batcher.getBuildInCameraBindGroup;
-    const accuTexture = Batcher.depthAccumulativeTexture.texture.createView();
-    const reveTexture = Batcher.depthRevealableTexture.texture.createView();
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const accuTexture = Batcher.getTextureView("depthAccumulativeTexture");
+    const reveTexture = Batcher.getTextureView("depthRevealableTexture");
+    const fontBind = Batcher.getUserFontBindGroup;
     const batchType =
       type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
     if (type === "opaque") {
@@ -150,13 +152,14 @@ export default class TextPipe {
         const passEncoder = commandEncoder.beginRenderPass({
           colorAttachments: [
             {
-              view: textureView,
+              view: offscreenTexture,
               loadOp: "load",
               storeOp: "store",
             },
           ],
           depthStencilAttachment: {
-            view: Batcher.depthTexture.texture.createView(),
+            view: Batcher.getTextureView("depthTexture"),
+
             depthLoadOp: "load",
             depthStoreOp: "store",
           },
@@ -172,7 +175,7 @@ export default class TextPipe {
         passEncoder.setVertexBuffer(0, this.vertexBuffer);
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
-        passEncoder.setBindGroup(1, this.textBind[0]);
+        passEncoder.setBindGroup(1, fontBind);
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);
         passEncoder.end();
@@ -195,7 +198,8 @@ export default class TextPipe {
             },
           ],
           depthStencilAttachment: {
-            view: Batcher.depthTexture.texture.createView(),
+            view: Batcher.getTextureView("depthTexture"),
+
             depthLoadOp: "load",
             depthStoreOp: "store",
           },
@@ -212,7 +216,7 @@ export default class TextPipe {
         passEncoder.setVertexBuffer(0, this.vertexBuffer);
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
-        passEncoder.setBindGroup(1, this.textBind[0]);
+        passEncoder.setBindGroup(1, fontBind);
 
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);

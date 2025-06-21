@@ -1,72 +1,41 @@
-import { assert } from "../../../utils/utils";
 import Aurora from "../../core";
 import AuroraCamera from "../camera";
-import ShapePipe from "../pipelines/shapePipe";
 import dummyTexture from "../assets/dummy.png";
-import { GPUAuroraTexture, HSLA } from "../../aurora";
-import WBOITPipe from "../pipelines/WBOITPipe";
-import TextPipe from "../pipelines/textPipe";
-import generateFont from "../msdf/generateFont";
-import ftex from "../../../helps/mdfs/assets/ya-hei-ascii.png";
-import fjson from "../../../helps/mdfs/assets/ya-hei-ascii-msdf.json";
-import PresentationPipe from "../pipelines/presentationPipe";
-export interface Pipeline {
-  usePipeline: () => void;
-  createPipeline: () => void;
-  clearBatch: () => void;
-}
+import { GPUAuroraTexture, PipelineBind } from "../../aurora";
+import generateFont, { FontGenProps } from "./fontGen";
+import FontGen from "./fontGen";
+import { generateInternalSamplers, generateInternalTextures } from "./textures";
+import {
+  clearPipelines,
+  createPipelines,
+  DRAW_PIPES,
+  startPipelines,
+} from "./pipes";
+
 export type BatcherOptions = {
-  customCamera: boolean;
   zBuffer: "none" | "y" | "y-x";
   textures: { name: string; url: string }[];
+  fonts: FontGenProps[];
 };
-type PostProcess = "grayscale";
-export type BatcherStats = {
-  drawCalls: number;
-  computeCalls: number;
-  usedPipelines: (keyof typeof PIPELINES)[];
-  totalBatches: number;
-  pointLights: number;
-  colorCorrection: HSLA;
-  appliedPostProcessing: PostProcess[];
-};
-// const INIT_STATS: BatcherStats = {
-//   drawCalls: 0,
-//   computeCalls: 0,
-//   usedPipelines: [],
-//   pointLights: 0,
-//   totalBatches: 0,
-//   colorCorrection: [255, 255, 255, 255],
-//   appliedPostProcessing: [],
-// };
+
 const INIT_OPTIONS: BatcherOptions = {
-  customCamera: false,
   zBuffer: "y",
   textures: [],
+  fonts: [],
 };
-const PIPELINES = {
-  shape: ShapePipe,
-  text: TextPipe,
-};
-export type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
+
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
-  // private static batcherStats: BatcherStats = structuredClone(INIT_STATS);
   private static indexBuffer: GPUBuffer;
-  private static buildInCameraBind: PipelineBind | undefined;
   private static userTextureBind: PipelineBind;
-  private static buildInCameraBuffer: GPUBuffer;
-  private static buildInCameraBoundBuffer: GPUBuffer;
-  public static pipelinesUsedInFrame: Set<keyof typeof PIPELINES> = new Set();
+  private static userFontBind: PipelineBind;
+  public static pipelinesUsedInFrame: Set<keyof typeof DRAW_PIPES> = new Set();
+  public static internatTextures: Map<string, GPUAuroraTexture> = new Map();
+  public static internatSamplers: Map<string, GPUSampler> = new Map();
   private static userTexture: GPUAuroraTexture;
-  public static offscreenCanvas: GPUAuroraTexture;
-  public static depthTexture: GPUAuroraTexture;
-  public static depthAccumulativeTexture: GPUAuroraTexture;
-  public static depthRevealableTexture: GPUAuroraTexture;
   private static userTextureIndexes: Map<string, number> = new Map();
-  public static universalSampler: GPUSampler;
-  private static cameraBounds = new Float32Array([0, 0]);
-  public static textData: generateFont;
+  public static userFonts: Map<string, generateFont> = new Map();
+
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
     this.indexBuffer = Aurora.createMappedBuffer({
@@ -76,81 +45,98 @@ export default class Batcher {
       label: "indexBuffer",
     });
 
-    if (this.batcherOptions.zBuffer !== "none") this.createDepthTexture();
-    this.universalSampler = Aurora.createSampler();
-    await this.createUserTextureArray();
-    if (!this.batcherOptions.customCamera) this.createBuildInCamera();
-    this.textData = new generateFont({
-      fontName: "sds",
-      img: ftex,
-      json: fjson,
-    });
-    await this.textData.generateFont();
-    //TODO: przerob to na rownolegle
-    for (const pipeline of Object.values(PIPELINES)) {
-      await pipeline.createPipeline();
-    }
-    await WBOITPipe.createPipeline();
-    await PresentationPipe.createPipeline();
-  }
+    generateInternalTextures();
+    generateInternalSamplers();
+    AuroraCamera.initialize();
 
+    await this.createUserTextureArray();
+    await this.generateFonts();
+
+    await createPipelines();
+  }
   public static beginBatch() {
     this.clearTextures();
-    this.pipelinesUsedInFrame.forEach((name) => PIPELINES[name].clearBatch());
-    this.pipelinesUsedInFrame.clear();
+    clearPipelines();
     AuroraCamera.update();
-    Aurora.device.queue.writeBuffer(
-      this.buildInCameraBuffer,
-      0,
-      AuroraCamera.getProjectionViewMatrix.getMatrix
-    );
   }
   public static endBatch() {
-    Aurora.device.queue.writeBuffer(
-      this.buildInCameraBoundBuffer,
-      0,
-      this.cameraBounds
-    );
+    AuroraCamera.updateCameraBound();
     console.log(this.pipelinesUsedInFrame);
-    this.pipelinesUsedInFrame.forEach((name) =>
-      PIPELINES[name].usePipeline("opaque")
-    );
-    this.pipelinesUsedInFrame.forEach((name) =>
-      PIPELINES[name].usePipeline("transparent")
-    );
-    WBOITPipe.usePipeline();
-    PresentationPipe.usePipeline();
-  }
-  public static updateCameraBound(value: number) {
-    this.cameraBounds[0] = Math.min(this.cameraBounds[0], value);
-    this.cameraBounds[1] = Math.max(this.cameraBounds[1], value);
+    startPipelines();
   }
 
+  private static async generateFonts() {
+    let index = 0;
+    for (const { img, json, fontName } of this.batcherOptions.fonts) {
+      const font = await FontGen.generateFont({
+        fontName,
+        img,
+        json,
+        index,
+      });
+      this.userFonts.set(fontName, font);
+      index++;
+    }
+
+    const textures = Array.from(this.userFonts.values()).map((text) => {
+      const data = text.getFontGenerationInfo;
+      return {
+        url: data.imgUrl,
+        name: data.name,
+      };
+    });
+    const texture = await Aurora.createTextureArray({
+      label: `MSDF font texture array`,
+      format: "rgba8unorm",
+      textures: textures,
+    });
+    console.log(texture.meta);
+    this.userFontBind = Aurora.creteBindGroup({
+      layout: {
+        entries: [
+          { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: { viewDimension: "2d-array" },
+          },
+        ],
+        label: `font-array BindLayout`,
+      },
+      data: {
+        entries: [
+          { binding: 0, resource: Batcher.getSampler("fontGen") },
+          { binding: 1, resource: texture.texture.createView() },
+        ],
+        label: `font-array BindData`,
+      },
+    });
+  }
   private static clearTextures() {
     const commandEncoder = Aurora.device.createCommandEncoder();
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
-          view: this.offscreenCanvas.texture.createView(),
+          view: this.getTextureView("offscreenCanvas"),
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
         },
         {
-          view: this.depthAccumulativeTexture.texture.createView(),
+          view: this.getTextureView("depthAccumulativeTexture"),
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
         },
         {
-          view: this.depthRevealableTexture.texture.createView(),
+          view: this.getTextureView("depthRevealableTexture"),
           clearValue: { r: 1, g: 1, b: 1, a: 1 },
           loadOp: "clear",
           storeOp: "store",
         },
       ],
       depthStencilAttachment: {
-        view: this.depthTexture.texture.createView(),
+        view: this.getTextureView("depthTexture"),
         depthClearValue: 0.0,
         depthLoadOp: "clear",
         depthStoreOp: "store",
@@ -159,93 +145,7 @@ export default class Batcher {
     passEncoder.end();
     Aurora.device.queue.submit([commandEncoder.finish()]);
   }
-  // private static
-  private static createBuildInCamera() {
-    AuroraCamera.initialize();
-    AuroraCamera.update();
 
-    this.buildInCameraBuffer = Aurora.createBuffer({
-      bufferType: "uniform",
-      dataType: "Float32Array",
-      dataLength: 16,
-      label: "CameraBuffer",
-    });
-    this.buildInCameraBoundBuffer = Aurora.createBuffer({
-      bufferType: "uniform",
-      dataType: "Float32Array",
-      dataLength: 2,
-      label: "CameraBufferBound",
-    });
-
-    Aurora.device.queue.writeBuffer(
-      this.buildInCameraBuffer,
-      0,
-      AuroraCamera.getProjectionViewMatrix.getMatrix
-    );
-    Aurora.device.queue.writeBuffer(
-      this.buildInCameraBoundBuffer,
-      0,
-      this.cameraBounds
-    );
-    this.buildInCameraBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: { type: "uniform" },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: { type: "uniform" },
-          },
-        ],
-        label: "cameraBindLayout",
-      },
-      data: {
-        label: "cameraBindData",
-        entries: [
-          { binding: 0, resource: { buffer: this.buildInCameraBuffer } },
-          { binding: 1, resource: { buffer: this.buildInCameraBoundBuffer } },
-        ],
-      },
-    });
-  }
-  private static createDepthTexture() {
-    this.offscreenCanvas = Aurora.createTextureEmpty({
-      size: {
-        width: Aurora.canvas.width,
-        height: Aurora.canvas.height,
-      },
-      format: "bgra8unorm",
-      label: "offscreenCanvas",
-    });
-    this.depthTexture = Aurora.createTextureEmpty({
-      size: {
-        width: Aurora.canvas.width,
-        height: Aurora.canvas.height,
-      },
-      format: "depth24plus",
-      label: "z-buffer Texture",
-    });
-    this.depthAccumulativeTexture = Aurora.createTextureEmpty({
-      size: {
-        width: Aurora.canvas.width,
-        height: Aurora.canvas.height,
-      },
-      format: "rgba16float",
-      label: "depthAccuTexture",
-    });
-    this.depthRevealableTexture = Aurora.createTextureEmpty({
-      size: {
-        width: Aurora.canvas.width,
-        height: Aurora.canvas.height,
-      },
-      format: "r16float",
-      label: "depthReveTexture",
-    });
-  }
   private static async createUserTextureArray() {
     let textures: BatcherOptions["textures"] = [];
     if (this.batcherOptions.textures.length === 0) {
@@ -284,13 +184,35 @@ export default class Batcher {
       data: {
         label: "userTextureBindData",
         entries: [
-          { binding: 0, resource: this.universalSampler },
+          { binding: 0, resource: this.getSampler("universal") },
           { binding: 1, resource: this.userTexture.texture.createView() },
         ],
       },
     });
   }
-
+  public static getTexture(name: string) {
+    const texture = this.internatTextures.get(name);
+    if (!texture) throw new Error(`no internal texture with name ${texture}`);
+    return texture;
+  }
+  public static getUserFontData(fontName: string) {
+    const font = this.userFonts.get(fontName);
+    if (!font) throw new Error(`there is no userFont with name ${fontName}`);
+    return font;
+  }
+  public static getTextureView(name: string) {
+    const texture = this.internatTextures.get(name);
+    if (!texture)
+      throw new Error(
+        `no internal texture with name ${texture} to create view from`
+      );
+    return texture.texture.createView();
+  }
+  public static getSampler(name: string) {
+    const sampler = this.internatSamplers.get(name);
+    if (!sampler) throw new Error(`No internal sampler with name ${name}`);
+    return sampler;
+  }
   public static getTextureIndex(name: string) {
     const texture = this.userTextureIndexes.get(name);
     if (!texture)
@@ -302,24 +224,17 @@ export default class Batcher {
   public static get getIndexBuffer() {
     return this.indexBuffer;
   }
-  public static get getBuildInCameraBindGroup() {
-    assert(
-      this.buildInCameraBind !== undefined,
-      "trying to get buildIn camera binds but batcher is set to custom camera"
-    );
-    return this.buildInCameraBind[0];
-  }
-  public static get getBuildInCameraBindGroupLayout() {
-    assert(
-      this.buildInCameraBind !== undefined,
-      "trying to get buildIn camera binds but batcher is set to custom camera"
-    );
-    return this.buildInCameraBind[1];
-  }
   public static get getUserTextureBindGroup() {
     return this.userTextureBind[0];
   }
+
   public static get getUserTextureBindGroupLayout() {
     return this.userTextureBind[1];
+  }
+  public static get getUserFontBindGroup() {
+    return this.userFontBind[0];
+  }
+  public static get getUserFontBindGroupLayout() {
+    return this.userFontBind[1];
   }
 }

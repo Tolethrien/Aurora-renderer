@@ -1,7 +1,7 @@
 @group(0) @binding(0) var<uniform> camera: mat4x4<f32>;
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var fontSampler: sampler;
-@group(1) @binding(1) var fontsTexture: texture_2d<f32>;
+@group(1) @binding(1) var fontsTexture: texture_2d_array<f32>;
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
@@ -17,7 +17,8 @@ struct VertexOutput {
     @builtin(position) Position: vec4<f32>,
     @location(0) crop: vec2<f32>,       // współrzędne jednostkowe [0..1]
     @location(1) @interpolate(flat) color: vec4<u32>,
-    @location(2) z: f32,    // depth
+    @location(2) @interpolate(flat) textureIndex: u32,
+    @location(3) z: f32,    // depth
 };
 struct FragmentOutput {
     @location(0) accu: vec4<f32>,
@@ -46,6 +47,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
     out.crop = uv;
     out.color = props.color;
     out.z = z;
+    out.textureIndex = props.textureIndex;
     out.Position = vec4<f32>(translatePosition.xy, z, 1.0);
     
     return out;
@@ -63,7 +65,7 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
     let dx = sz.x*length(vec2f(dpdxFine(props.crop.x), dpdyFine(props.crop.x)));
     let dy = sz.y*length(vec2f(dpdxFine(props.crop.y), dpdyFine(props.crop.y)));
     let toPixels = pxRange * inverseSqrt(dx * dx + dy * dy);
-    let sigDist = sampleMsdf(props.crop) - 0.5;
+    let sigDist = sampleMsdf(props.crop,props.textureIndex) - 0.5;
     let pxDist = sigDist * toPixels;
 
     let edgeWidth = 0.5;
@@ -84,8 +86,8 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
 
 }
 
-fn sampleMsdf(texcoord: vec2f) -> f32 {
-  let c = textureSample(fontsTexture, fontSampler, texcoord);
+fn sampleMsdf(texcoord: vec2f,index:u32) -> f32 {
+  let c = textureSample(fontsTexture, fontSampler, texcoord,index);
   return max(min(c.r, c.g), min(max(c.r, c.g), c.b));
 }
 

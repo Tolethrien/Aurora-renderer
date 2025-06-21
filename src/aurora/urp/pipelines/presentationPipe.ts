@@ -1,5 +1,6 @@
+import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher, { PipelineBind } from "../batcher/batcher";
+import Batcher from "../batcher/batcher";
 import presentationShader from "../shaders/presentation.wgsl?raw";
 
 /**
@@ -33,11 +34,11 @@ export default class PresentationPipe {
       data: {
         label: "PresentationBindData",
         entries: [
-          { binding: 0, resource: Batcher.universalSampler },
+          { binding: 0, resource: Batcher.getSampler("universal") },
 
           {
             binding: 1,
-            resource: Batcher.offscreenCanvas.texture.createView(),
+            resource: Batcher.getTextureView("offscreenCanvas"),
           },
         ],
       },
