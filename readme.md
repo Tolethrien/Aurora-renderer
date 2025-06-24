@@ -2,6 +2,8 @@
 
 nauczony wiedzą z pierwszej próby przystępuję do ulepszenia renderera!
 
+![Current State](/public/current.png)
+
 ## zmiany wzgledem starej wersji!
 
 - zamiast jednego shadera multishadering

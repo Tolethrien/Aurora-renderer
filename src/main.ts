@@ -14,6 +14,7 @@ async function preload() {
 }
 async function create() {
   await Batcher.Initialize({
+    drawOrigin: "center",
     textures: [
       { name: "main", url: spritesheet },
       { name: "char", url: char },
@@ -27,7 +28,7 @@ async function create() {
     ],
   });
 }
-let x = 200;
+let x = 10;
 function start() {
   Batcher.beginBatch();
 
@@ -47,34 +48,34 @@ function start() {
     tint: [0, 0, 255, 200],
   });
   Draw.sprite({
-    position: { x: 310, y: 500 },
+    position: { x: 310, y: 480 },
     size: { height: 50, width: 50 },
     tint: [255, 255, 255, 255],
     crop: { x: 0, y: 0, width: 32, height: 32 },
     textureToUse: "char",
   });
+  Draw.circle({
+    position: { x: 425, y: 240 },
+    size: { height: 50, width: 50 },
+    tint: [0, 255, 255, 255],
+  });
   Draw.text({
-    position: { x: 260, y: 450 },
+    position: { x: 310, y: 450 },
     font: "ya",
     fontSize: 14,
     text: "Player One",
     fontColor: [255, 0, 255, 255],
   });
-  Draw.circle({
-    position: { x: 400, y: 235 },
-    size: { height: 50, width: 50 },
-    tint: [0, 255, 255, 255],
-  });
 
   Draw.text({
-    position: { x: 30, y: 500 },
+    position: { x: 300, y: 550 },
     font: "lato",
     fontSize: 50,
     text: "Scalable big text!",
     fontColor: [255, 255, 0, 255],
   });
   Draw.text({
-    position: { x: 15, y: 480 },
+    position: { x: 150, y: 480 },
     font: "jersey",
     fontSize: 16,
     text: "Mini-My! small scalable text!",

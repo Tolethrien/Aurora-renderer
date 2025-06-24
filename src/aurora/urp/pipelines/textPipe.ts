@@ -1,4 +1,3 @@
-import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
 import AuroraCamera from "../camera";

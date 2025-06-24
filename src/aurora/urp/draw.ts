@@ -1,6 +1,6 @@
 import { HSLA, Position2D, Size2D } from "../aurora";
 import Batcher from "./batcher/batcher";
-import { MsdfChar } from "./batcher/fontGen";
+import FontGen, { MsdfChar } from "./batcher/fontGen";
 import AuroraCamera from "./camera";
 import ShapePipe from "./pipelines/shapePipe";
 import TextPipe from "./pipelines/textPipe";
@@ -30,7 +30,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
     batch.verticesData[batch.count * vertexStride + 2] = size.width;
@@ -55,7 +55,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
     batch.verticesData[batch.count * vertexStride + 2] = size.width;
@@ -85,7 +85,7 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
     const { addStride, vertexStride } = ShapePipe.getStride;
-    AuroraCamera.setCameraBounds(position.y + size.height * 0.5);
+    AuroraCamera.setCameraBounds(position.y + size.height);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
@@ -115,9 +115,9 @@ export default class Draw {
     );
 
     AuroraCamera.setCameraBounds(position.y + fontSize * 4);
-
-    let xCursor = position.x;
-    let yCursor = position.y;
+    const textMeasure = FontGen.measureText({ fontName: font, fontSize, text });
+    let xCursor = position.x - textMeasure.width / 2;
+    let yCursor = position.y - textMeasure.height / 2;
 
     let prevCharCode: number | null = null;
 
@@ -157,7 +157,7 @@ export default class Draw {
       batch.verticesData[baseIndex + 8] = vHeight;
 
       const addBase = batch.count * 5;
-      batch.addData[addBase + 0] = fontIndex; // texturea
+      batch.addData[addBase + 0] = fontIndex;
       batch.addData[addBase + 1] = color[0];
       batch.addData[addBase + 2] = color[1];
       batch.addData[addBase + 3] = color[2];

@@ -19,10 +19,12 @@ export type BatcherOptions = {
   zBuffer: "none" | "y" | "y-x";
   textures: { name: string; url: string }[];
   fonts: FontGenProps[];
+  drawOrigin: "center" | "topLeft";
 };
 
 const INIT_OPTIONS: BatcherOptions = {
   zBuffer: "y",
+  drawOrigin: "center",
   textures: [],
   fonts: [],
 };
@@ -32,11 +34,13 @@ export default class Batcher {
   private static indexBuffer: GPUBuffer;
   private static userTextureBind: PipelineBind;
   private static userFontBind: PipelineBind;
+  private static batcherOptionsBind: PipelineBind;
   public static pipelinesUsedInFrame: Set<keyof typeof DRAW_PIPES> = new Set();
   public static internatTextures: Map<string, GPUAuroraTexture> = new Map();
   public static internatSamplers: Map<string, GPUSampler> = new Map();
   private static userTexture: GPUAuroraTexture;
   private static userTextureIndexes: Map<string, number> = new Map();
+
   public static userFonts: Map<string, generateFont> = new Map();
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
@@ -52,7 +56,7 @@ export default class Batcher {
     generateInternalTextures();
     generateInternalSamplers();
     AuroraCamera.initialize();
-
+    this.createBatcherOptionsBind();
     await this.createUserTextureArray();
     await this.generateFonts();
 
@@ -204,6 +208,39 @@ export default class Batcher {
       },
     });
   }
+  private static createBatcherOptionsBind() {
+    //tutaj mozesz dawac pozniej wszystkie potrzebne globalnie w gbpu dane jak ellapsedTime czy wlasnie opcje itp
+    //zmienic wtedy z mapped na zwykle
+    const isCenter = this.batcherOptions.drawOrigin == "center" ? 0 : 1;
+    console.log(isCenter);
+    const optionsBindBuffer = Aurora.createMappedBuffer({
+      bufferType: "uniform",
+      data: [isCenter],
+      dataType: "Uint32Array",
+      label: "batcherOptionsBuffer",
+    });
+    this.batcherOptionsBind = Aurora.creteBindGroup({
+      layout: {
+        label: "batcherOptionsBindLayout",
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+            buffer: { type: "uniform" },
+          },
+        ],
+      },
+      data: {
+        label: "batcherOptionsBindData",
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: optionsBindBuffer },
+          },
+        ],
+      },
+    });
+  }
   public static getTexture(name: string) {
     const texture = this.internatTextures.get(name);
     if (!texture) throw new Error(`no internal texture with name ${texture}`);
@@ -250,5 +287,11 @@ export default class Batcher {
   }
   public static get getUserFontBindGroupLayout() {
     return this.userFontBind[1];
+  }
+  public static get getBatcherOptionsBindGroup() {
+    return this.batcherOptionsBind[0];
+  }
+  public static get getBatcherOptionsGroupLayout() {
+    return this.batcherOptionsBind[1];
   }
 }

@@ -1,6 +1,5 @@
 # Think
 
-- textPipe dla world nie renderuje sie na srodku quada (0,0) to nie centrum a lewy gorny róg
 - przezroczysty text ma lekki problem ze smoothstepem kiedy jest nakladany na stały obiekt, generalnie to problem WBOIT ze smoothstep nie do konca dobrze z nim dziala - prawie nie widoczne, ale jednak jest
 
 ## TODO
@@ -11,9 +10,6 @@
 [x] text pipeline
 [x] sprite pipeline
 [x] shape pipeline
-[ ] pixelDencity/deviceRatio
-[ ] Draw.video
-[ ] Draw.gif
 [ ] Draw musi miec opcje rotacja
 [ ] batcher option - renderowanie (centrum,leftTop)
 [ ] batcher option - dodawania i usuwanie dynamiczne textur
@@ -21,17 +17,23 @@
 [x] batcher option - add fonts
 [ ] debug gpu (wyciaganie timestampow itp)
 [ ] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
+[ ] UI pipeline(no camera no Y sort inne text renderowanie)
+[ ] pixelDencity/deviceRatio
+[ ] post-processing
 [ ] budowane w shaderach swiatlo
+[ ] bloom
+[ ] Draw.video
+[ ] Draw.gif
 [ ] cieniowanie
 [ ] normal mapy
 [ ] sposoby renderowania - ortho/izo
 [ ] path2d (shape)
-[ ] UI pipeline(no camera no Y sort inne text renderowanie)
-[ ] post-processing
-[ ] bloom
+[ ] lepsze budowanie shaderow z fragmentow kodu (by nie powtarzac tego samego kodu w 4 plikach shaderow tylko jakos je budowac/laczyc)
+[ ]
 
 # Done
 
+- textPipe dla world nie renderuje sie na srodku quada (0,0) to nie centrum a lewy gorny róg
 - vertex buffer ma floatx2 dla pos i float2 dla size a moze lepiej po prostu float4 jak crop? - NIE xD
 - rozdzielic Batcher na kilka mniejszych bo szybko zrobi sie 5k linii
 - dodaj wbudowany chociaz jeden font (najlepiej 2)

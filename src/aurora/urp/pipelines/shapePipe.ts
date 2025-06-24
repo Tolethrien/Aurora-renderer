@@ -46,10 +46,12 @@ export default class ShapePipe {
     });
     const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
     const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
+    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
 
     const pipelineLayout = Aurora.createPipelineLayout([
       cameraBindLayout,
       userTextureLayout,
+      batcherOptionsLayout,
     ]);
     const vertBuffLay = Aurora.createVertexBufferLayout({
       arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
@@ -155,6 +157,7 @@ export default class ShapePipe {
 
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
     const batchType =
       type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
     if (type === "opaque") {
@@ -186,6 +189,7 @@ export default class ShapePipe {
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
         passEncoder.setBindGroup(1, userTextureBind);
+        passEncoder.setBindGroup(2, batcherOptionsBind);
 
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);
@@ -227,6 +231,7 @@ export default class ShapePipe {
         passEncoder.setVertexBuffer(1, this.addBuffer);
         passEncoder.setBindGroup(0, cameraBind);
         passEncoder.setBindGroup(1, userTextureBind);
+        passEncoder.setBindGroup(2, batcherOptionsBind);
 
         passEncoder.setIndexBuffer(indexBuffer, "uint32");
         passEncoder.drawIndexed(6, batch.count);

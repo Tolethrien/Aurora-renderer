@@ -1,4 +1,5 @@
 import { DeepOmit } from "../../aurora";
+import Batcher from "./batcher";
 // chars: QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890[];',./ -=_+{}:"<>?!@#$%^&*()|\żźćŻŹĆęĘóÓłŁńŃąĄ`~
 export interface MsdfChar {
   id: number;
@@ -14,6 +15,11 @@ export interface MsdfChar {
   y: number;
   page: number;
   charIndex: number;
+}
+interface Messure {
+  text: string;
+  fontSize: number;
+  fontName: string;
 }
 interface KerningChar {
   first: number;
@@ -92,6 +98,27 @@ export default class FontGen {
   public getCharDataByCode(code: number) {
     return this.meta.chars[code];
   }
+  public static measureText({ fontName, fontSize, text }: Messure) {
+    const fontMeta = Batcher.getUserFontData(fontName).getMeta;
+    const { chars, kernings, lineHeight } = fontMeta;
+    const scale = (fontSize * 1.5) / lineHeight;
+    let width = 0;
+    const height = lineHeight * scale;
+    let lastCode: number | null = null;
+
+    for (const char of text) {
+      const code = char.charCodeAt(0);
+      const charData: MsdfChar = chars[code] ?? fontMeta.defaultChar;
+      width += charData.xadvance * scale;
+      if (!kernings || lastCode === null) continue;
+      const kernRow = kernings.get(lastCode);
+      if (!kernRow) continue;
+      const kernAmount = kernRow.get(code) || 0;
+      width += kernAmount * scale;
+      lastCode = code;
+    }
+    return { width, height };
+  }
 
   private async generator() {
     const u = 1 / this.jsonData.common.scaleW;
@@ -109,6 +136,7 @@ export default class FontGen {
       data[offset + 7] = -c.yoffset;
       c.charIndex = i;
     });
+    //TODO: for the ui version
     // const buffer = Aurora.createMappedBuffer({
     //   bufferType: "storage",
     //   data: data,
