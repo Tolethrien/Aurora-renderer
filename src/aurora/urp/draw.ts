@@ -114,10 +114,20 @@ export default class Draw {
       color[3] === 255 ? "opaque" : "transparent"
     );
 
-    AuroraCamera.setCameraBounds(position.y + fontSize * 4);
+    AuroraCamera.setCameraBounds(position.y + fontSize * (lineHeight * 2));
+
     const textMeasure = FontGen.measureText({ fontName: font, fontSize, text });
-    let xCursor = position.x - textMeasure.width / 2;
-    let yCursor = position.y - textMeasure.height / 2;
+    const originX =
+      Batcher.getBatcherOptions.drawOrigin === "center"
+        ? textMeasure.width / 2
+        : 0;
+    const originY =
+      Batcher.getBatcherOptions.drawOrigin === "center"
+        ? textMeasure.height / 2
+        : 0;
+    console.log(originX);
+    let xCursor = position.x - originX;
+    let yCursor = position.y - originY;
 
     let prevCharCode: number | null = null;
 

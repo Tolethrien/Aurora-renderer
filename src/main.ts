@@ -14,7 +14,7 @@ async function preload() {
 }
 async function create() {
   await Batcher.Initialize({
-    drawOrigin: "center",
+    drawOrigin: "topLeft",
     textures: [
       { name: "main", url: spritesheet },
       { name: "char", url: char },

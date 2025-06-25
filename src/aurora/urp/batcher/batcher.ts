@@ -275,6 +275,9 @@ export default class Batcher {
   public static get getIndexBuffer() {
     return this.indexBuffer;
   }
+  public static get getBatcherOptions() {
+    return this.batcherOptions;
+  }
   public static get getUserTextureBindGroup() {
     return this.userTextureBind[0];
   }
