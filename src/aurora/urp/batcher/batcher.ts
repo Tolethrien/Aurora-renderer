@@ -16,7 +16,7 @@ import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
 import latoImg from "../assets/Lato-Regular.png";
 import latoJson from "../assets/Lato-Regular-msdf.json";
 export type BatcherOptions = {
-  zBuffer: "none" | "y" | "y-x";
+  zBuffer: "none" | "y";
   textures: { name: string; url: string }[];
   fonts: FontGenProps[];
   drawOrigin: "center" | "topLeft";
@@ -45,7 +45,6 @@ export default class Batcher {
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
-    console.log(this.batcherOptions);
     this.indexBuffer = Aurora.createMappedBuffer({
       data: [0, 1, 2, 1, 2, 3],
       bufferType: "index",
@@ -108,7 +107,6 @@ export default class Batcher {
       format: "rgba8unorm",
       textures: textures,
     });
-    console.log(texture.meta);
     this.userFontBind = Aurora.creteBindGroup({
       layout: {
         entries: [
@@ -212,10 +210,10 @@ export default class Batcher {
     //tutaj mozesz dawac pozniej wszystkie potrzebne globalnie w gbpu dane jak ellapsedTime czy wlasnie opcje itp
     //zmienic wtedy z mapped na zwykle
     const isCenter = this.batcherOptions.drawOrigin == "center" ? 0 : 1;
-    console.log(isCenter);
+    const zSort = this.batcherOptions.zBuffer == "none" ? 0 : 1;
     const optionsBindBuffer = Aurora.createMappedBuffer({
       bufferType: "uniform",
-      data: [isCenter],
+      data: [isCenter, zSort],
       dataType: "Uint32Array",
       label: "batcherOptionsBuffer",
     });

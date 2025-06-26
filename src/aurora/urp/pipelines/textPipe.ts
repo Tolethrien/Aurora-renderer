@@ -24,8 +24,12 @@ export default class TextPipe {
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
   public static async createPipeline() {
+    const isZSorted = Batcher.getBatcherOptions.zBuffer === "y";
+
     const shader = Aurora.createShader("textShader", textShader);
-    const oitSh = Aurora.createShader("WBOITShader", TextWBOITShader);
+
+    let oitSh = undefined;
+    if (isZSorted) oitSh = Aurora.createShader("WBOITShader", TextWBOITShader);
 
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
@@ -41,9 +45,11 @@ export default class TextPipe {
     });
     const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
     const textBindLayout = Batcher.getUserFontBindGroupLayout;
+    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
     const pipelineLayout = Aurora.createPipelineLayout([
       cameraBindLayout,
       textBindLayout,
+      batcherOptionsLayout,
     ]);
     const vertBuffLay = Aurora.createVertexBufferLayout({
       arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
@@ -82,35 +88,33 @@ export default class TextPipe {
         },
       ],
     });
+    const stencil: GPUDepthStencilState = {
+      format: "depth24plus",
+      depthWriteEnabled: true,
+      depthCompare: "greater-equal",
+    };
     this.pipeline = await Aurora.createRenderPipeline({
       shader: shader,
       pipelineName: "main",
       buffers: [vertBuffLay, addDataBuffLay],
       pipelineLayout: pipelineLayout,
       primitive: { topology: "triangle-list" },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: true,
-        depthCompare: "greater-equal",
-      },
+      depthStencil: isZSorted ? stencil : undefined,
       colorTargets: [Aurora.getColorTargetTemplate("standard")],
     });
-    this.transparentPipeline = await Aurora.createRenderPipeline({
-      shader: oitSh,
-      pipelineName: "main",
-      buffers: [vertBuffLay, addDataBuffLay],
-      pipelineLayout: pipelineLayout,
-      primitive: { topology: "triangle-list" },
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "greater-equal",
-      },
-      colorTargets: [
-        Aurora.getColorTargetTemplate("OITAccu"),
-        Aurora.getColorTargetTemplate("OITReve"),
-      ],
-    });
+    if (isZSorted)
+      this.transparentPipeline = await Aurora.createRenderPipeline({
+        shader: oitSh!,
+        pipelineName: "main",
+        buffers: [vertBuffLay, addDataBuffLay],
+        pipelineLayout: pipelineLayout,
+        primitive: { topology: "triangle-list" },
+        depthStencil: stencil,
+        colorTargets: [
+          Aurora.getColorTargetTemplate("OITAccu"),
+          Aurora.getColorTargetTemplate("OITReve"),
+        ],
+      });
   }
 
   private static createEmptyBatch(): BatchAccumulator {
@@ -120,21 +124,165 @@ export default class TextPipe {
       count: 0,
     };
   }
-  public static getBatch(type: "opaque" | "transparent") {
-    const batchType =
-      type === "opaque" ? this.opaqueDrawBatch : this.transparentDrawBatch;
-    if (batchType.length === 0) {
-      batchType.push(this.createEmptyBatch());
-    }
-    let batch = batchType[batchType.length - 1];
-
-    if (batch.count >= this.BATCH_SIZE) {
-      console.log(`Batch ${batchType.length} pełny. Tworzę nowy.`);
-      batch = this.createEmptyBatch();
-      batchType.push(batch);
+  public static getBatch(alpha: number) {
+    let batch: BatchAccumulator;
+    const isZSorted = Batcher.getBatcherOptions.zBuffer === "y";
+    if (!isZSorted) {
+      if (this.opaqueDrawBatch.length === 0)
+        this.opaqueDrawBatch.push(this.createEmptyBatch());
+      batch = this.opaqueDrawBatch.at(-1)!;
+      if (batch.count >= this.BATCH_SIZE) {
+        console.log(`Batch ${this.opaqueDrawBatch.length} pełny. Tworzę nowy.`);
+        batch = this.createEmptyBatch();
+        this.opaqueDrawBatch.push(batch);
+      }
+    } else {
+      const batchType =
+        alpha === 255 ? this.opaqueDrawBatch : this.transparentDrawBatch;
+      if (batchType.length === 0) {
+        batchType.push(this.createEmptyBatch());
+      }
+      batch = batchType.at(-1)!;
+      if (batch.count >= this.BATCH_SIZE) {
+        console.log(`Batch ${batchType.length} pełny. Tworzę nowy.`);
+        batch = this.createEmptyBatch();
+        batchType.push(batch);
+      }
     }
     Batcher.pipelinesUsedInFrame.add("text");
     return batch;
+  }
+  public static useUnsortedPipeline() {
+    const indexBuffer = Batcher.getIndexBuffer;
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
+
+    const fontBind = Batcher.getUserFontBindGroup;
+    this.opaqueDrawBatch.forEach((batch) => {
+      const commandEncoder = Aurora.device.createCommandEncoder();
+      const passEncoder = commandEncoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: offscreenTexture,
+            loadOp: "load",
+            storeOp: "store",
+          },
+        ],
+      });
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        0,
+        batch.verticesData,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);
+      passEncoder.setPipeline(this.pipeline);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer);
+      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setBindGroup(0, cameraBind);
+      passEncoder.setBindGroup(1, fontBind);
+      passEncoder.setBindGroup(2, batcherOptionsBind);
+
+      passEncoder.setIndexBuffer(indexBuffer, "uint32");
+      passEncoder.drawIndexed(6, batch.count);
+      passEncoder.end();
+      Aurora.device.queue.submit([commandEncoder.finish()]);
+    });
+  }
+  public static useOpaquePipeline() {
+    const indexBuffer = Batcher.getIndexBuffer;
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const fontBind = Batcher.getUserFontBindGroup;
+    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
+
+    this.opaqueDrawBatch.forEach((batch) => {
+      const commandEncoder = Aurora.device.createCommandEncoder();
+      const passEncoder = commandEncoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: offscreenTexture,
+            loadOp: "load",
+            storeOp: "store",
+          },
+        ],
+        depthStencilAttachment: {
+          view: Batcher.getTextureView("depthTexture"),
+
+          depthLoadOp: "load",
+          depthStoreOp: "store",
+        },
+      });
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        0,
+        batch.verticesData,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);
+      passEncoder.setPipeline(this.pipeline);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer);
+      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setBindGroup(0, cameraBind);
+      passEncoder.setBindGroup(1, fontBind);
+      passEncoder.setBindGroup(2, batcherOptionsBind);
+
+      passEncoder.setIndexBuffer(indexBuffer, "uint32");
+      passEncoder.drawIndexed(6, batch.count);
+      passEncoder.end();
+      Aurora.device.queue.submit([commandEncoder.finish()]);
+    });
+  }
+  public static useTransparentPipeline() {
+    const indexBuffer = Batcher.getIndexBuffer;
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const accuTexture = Batcher.getTextureView("depthAccumulativeTexture");
+    const reveTexture = Batcher.getTextureView("depthRevealableTexture");
+    const fontBind = Batcher.getUserFontBindGroup;
+    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
+
+    this.transparentDrawBatch.forEach((batch) => {
+      const commandEncoder = Aurora.device.createCommandEncoder();
+      const passEncoder = commandEncoder.beginRenderPass({
+        colorAttachments: [
+          {
+            view: accuTexture,
+            loadOp: "load",
+            storeOp: "store",
+          },
+          {
+            view: reveTexture,
+            loadOp: "load",
+            storeOp: "store",
+          },
+        ],
+        depthStencilAttachment: {
+          view: Batcher.getTextureView("depthTexture"),
+
+          depthLoadOp: "load",
+          depthStoreOp: "store",
+        },
+      });
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        0,
+        batch.verticesData,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, 0, batch.addData, 0);
+      passEncoder.setPipeline(this.transparentPipeline);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer);
+      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setBindGroup(0, cameraBind);
+      passEncoder.setBindGroup(1, fontBind);
+      passEncoder.setBindGroup(2, batcherOptionsBind);
+
+      passEncoder.setIndexBuffer(indexBuffer, "uint32");
+      passEncoder.drawIndexed(6, batch.count);
+      passEncoder.end();
+      Aurora.device.queue.submit([commandEncoder.finish()]);
+    });
   }
   public static usePipeline(type: "opaque" | "transparent"): void {
     const indexBuffer = Batcher.getIndexBuffer;

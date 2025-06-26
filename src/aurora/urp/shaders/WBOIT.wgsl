@@ -2,7 +2,7 @@
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var universalSampler: sampler;
 @group(1) @binding(1) var userTextures: texture_2d_array<f32>;
-@group(2) @binding(0) var<uniform> drawOrigin: u32; // 0 - center, 1 - topLeft
+@group(2) @binding(0) var<uniform> batcherOption: vec2<u32>;
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
@@ -39,7 +39,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     
     let centerSize = quad[props.vi] * (props.size * 0.5);
     let fullSize = ((quad[props.vi] + vec2f(1.0)) * 0.5) * props.size;
-    
+    let drawOrigin = batcherOption.x;
     let localPos = select(centerSize,fullSize, drawOrigin == 1u);
     let worldPos = props.pos + localPos;
     
@@ -80,6 +80,7 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          opacity = color.a;
     }
     else if(props.shapeType == 1){
+        let drawOrigin = batcherOption.x;
         let halfSize = props.size * 0.5;
         let size = select(props.size * 0.5,props.size * 0.5,drawOrigin == 1u);
         let unitDist = length(props.centerSize / halfSize) - 1.0;
@@ -93,10 +94,10 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     else{
         weightedColor = color.rgb * color.a;
         opacity = color.a;
-    } 
-    var weight = max(min(1.0, max(max(color.r, color.g), color.b) * opacity), opacity) * 
-                 clamp(0.03 / (1e-5 + pow(props.z / 200, 4.0)), 1e-2, 3e3);
-    
+    } var z = props.z;
+    // var weight = max(min(1.0, max(max(color.r, color.g), color.b) * opacity), opacity) * 
+    //              clamp(0.03 / (1e-5 + pow(props.z / 200, 4.0)), 1e-2, 3e3);
+    var weight = opacity * clamp(0.1 / (z*z*z*z + 1e-5), 1e-2, 3e3);
     var out: FragmentOutput;
     out.accu = vec4<f32>(weightedColor,opacity) * weight;
     out.reve = vec4<f32>(opacity,1.0,1.0,1.0);

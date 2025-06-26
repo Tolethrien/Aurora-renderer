@@ -4,22 +4,15 @@ import TextPipe from "../pipelines/textPipe";
 import WBOITPipe from "../pipelines/WBOITPipe";
 import Batcher from "./batcher";
 
-export interface Pipeline {
-  usePipeline: () => void;
-  createPipeline: () => void;
-  clearBatch: () => void;
-}
+//TODO: przerobic ten plik caly jak bedzie wiecej pipow
 export const DRAW_PIPES = {
   shape: ShapePipe,
   text: TextPipe,
 };
+export const ALL_PIPES = [ShapePipe, TextPipe, WBOITPipe, PresentationPipe];
 export async function createPipelines() {
   try {
-    await Promise.all(
-      Object.values(DRAW_PIPES).map((pipeline) => pipeline.createPipeline())
-    );
-    await WBOITPipe.createPipeline();
-    await PresentationPipe.createPipeline();
+    await Promise.all(ALL_PIPES.map((pipe) => pipe.createPipeline()));
   } catch (error) {
     throw new Error(`error while creating pipelines: ${error}`);
   }
@@ -29,12 +22,19 @@ export function clearPipelines() {
   Batcher.pipelinesUsedInFrame.clear();
 }
 export function startPipelines() {
-  Batcher.pipelinesUsedInFrame.forEach((name) =>
-    DRAW_PIPES[name].usePipeline("opaque")
-  );
-  Batcher.pipelinesUsedInFrame.forEach((name) =>
-    DRAW_PIPES[name].usePipeline("transparent")
-  );
-  WBOITPipe.usePipeline();
+  const isZSorted = Batcher.getBatcherOptions.zBuffer === "y";
+  if (!isZSorted) {
+    Batcher.pipelinesUsedInFrame.forEach((name) =>
+      DRAW_PIPES[name].useUnsortedPipeline()
+    );
+  } else {
+    Batcher.pipelinesUsedInFrame.forEach((name) =>
+      DRAW_PIPES[name].useOpaquePipeline()
+    );
+    Batcher.pipelinesUsedInFrame.forEach((name) =>
+      DRAW_PIPES[name].usePipeline("transparent")
+    );
+    WBOITPipe.usePipeline();
+  }
   PresentationPipe.usePipeline();
 }

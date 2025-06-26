@@ -2,10 +2,11 @@
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var fontSampler: sampler;
 @group(1) @binding(1) var fontsTexture: texture_2d_array<f32>;
+@group(2) @binding(0) var<uniform> batcherOption: vec2<u32>;
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
-    @location(0) center: vec2<f32>, // x,y
+    @location(0) pos: vec2<f32>, // x,y
     @location(1) size: vec2<f32>, // w,h
     @location(2) crop: vec4<f32>, // crop [x,y,w,h]
     @location(3) textureIndex: u32,    // index of texture in array
@@ -25,11 +26,14 @@ const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
 
 @vertex
 fn vertexMain(props : VertexInput) -> VertexOutput {
- let halfSize = props.size * 0.5;
+    let halfSize = props.size * 0.5;
     let localPos = quad[props.vi] * halfSize;
-    let worldPos = props.center + localPos;
+    let worldPos = props.pos + localPos;
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
-    let z = (props.center.y + halfSize.y - cameraBound.x) / (cameraBound.y - cameraBound.x);  
+    
+    let useSort = batcherOption.y; 
+    let z = (props.pos.y + halfSize.y - cameraBound.x) / (cameraBound.y - cameraBound.x);  
+    let zValue = select(1.0,z,useSort == 1u); 
     
     let uvScale = textureQuad[props.vi] * props.crop.zw;
     let uv = props.crop.xy + uvScale;      
@@ -40,7 +44,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
     out.crop = uv;
     out.color = props.color;
     out.textureIndex = props.textureIndex;
-    out.Position = vec4<f32>(translatePosition.xy, z, 1.0);
+    out.Position = vec4<f32>(translatePosition.xy, zValue, 1.0);
     
     return out;
 

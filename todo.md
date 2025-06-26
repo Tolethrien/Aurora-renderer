@@ -1,6 +1,9 @@
 # Think
 
 - przezroczysty text ma lekki problem ze smoothstepem kiedy jest nakladany na stały obiekt, generalnie to problem WBOIT ze smoothstep nie do konca dobrze z nim dziala - prawie nie widoczne, ale jednak jest
+- chyba dalej nie dziala WBOIT dobrze... zle blendowanie kolorow?
+
+- jednak musi miec osobny caly pipeline dla unsorted
 
 ## TODO
 
@@ -11,8 +14,7 @@
 [x] sprite pipeline
 [x] shape pipeline
 [ ] Draw musi miec opcje rotacja
-[ ] batcher option - renderowanie (centrum,leftTop)
-[ ] batcher option - dodawania i usuwanie dynamiczne textur
+[x] batcher option - renderowanie (centrum,leftTop)
 [ ] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
 [x] batcher option - add fonts
 [ ] debug gpu (wyciaganie timestampow itp)
@@ -24,8 +26,8 @@
 [ ] bloom
 [ ] Draw.video
 [ ] Draw.gif
-[ ] cieniowanie
-[ ] normal mapy
+[ ] cieniowanie?
+[ ] normal mapy?
 [ ] sposoby renderowania - ortho/izo
 [ ] path2d (shape)
 [ ] lepsze budowanie shaderow z fragmentow kodu (by nie powtarzac tego samego kodu w 4 plikach shaderow tylko jakos je budowac/laczyc)

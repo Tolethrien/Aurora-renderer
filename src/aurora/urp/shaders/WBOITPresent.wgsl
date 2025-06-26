@@ -31,5 +31,5 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   
   if(reve == 1){ discard;}; 
   
-   return vec4(accu.rgb / max(accu.a, 1e-5), reve);
+   return vec4(accu.rgb / max(accu.a, 1e-5), 1.0 - reve);
 }

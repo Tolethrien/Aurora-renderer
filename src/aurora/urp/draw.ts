@@ -26,9 +26,7 @@ interface DrawText {
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(
-      color[3] === 255 ? "opaque" : "transparent"
-    );
+    const batch = ShapePipe.getBatch(color[3]);
     const { addStride, vertexStride } = ShapePipe.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
@@ -51,9 +49,7 @@ export default class Draw {
 
   public static circle({ position, size, tint }: DrawCircle) {
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(
-      color[3] === 255 ? "opaque" : "transparent"
-    );
+    const batch = ShapePipe.getBatch(color[3]);
     const { addStride, vertexStride } = ShapePipe.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
@@ -81,9 +77,7 @@ export default class Draw {
     textureToUse,
   }: DrawSprite) {
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(
-      color[3] === 255 ? "opaque" : "transparent"
-    );
+    const batch = ShapePipe.getBatch(color[3]);
     const { addStride, vertexStride } = ShapePipe.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
@@ -110,9 +104,7 @@ export default class Draw {
     const { chars, kernings, lineHeight } = fontData;
     const scale = (fontSize * 1.5) / lineHeight;
     const color: HSLA = fontColor ? fontColor : [255, 255, 255, 255];
-    const batch = TextPipe.getBatch(
-      color[3] === 255 ? "opaque" : "transparent"
-    );
+    const batch = TextPipe.getBatch(color[3]);
 
     AuroraCamera.setCameraBounds(position.y + fontSize * (lineHeight * 2));
 
@@ -125,7 +117,6 @@ export default class Draw {
       Batcher.getBatcherOptions.drawOrigin === "center"
         ? textMeasure.height / 2
         : 0;
-    console.log(originX);
     let xCursor = position.x - originX;
     let yCursor = position.y - originY;
 

@@ -2,7 +2,8 @@
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var universalSampler: sampler;
 @group(1) @binding(1) var userTextures: texture_2d_array<f32>;
-@group(2) @binding(0) var<uniform> drawOrigin: u32; // 0 - center, 1 - topLeft
+@group(2) @binding(0) var<uniform> batcherOption: vec2<u32>;
+
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
@@ -32,14 +33,16 @@ const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
 fn vertexMain(props: VertexInput) -> VertexOutput {
     let centerSize = quad[props.vi] * (props.size * 0.5);
     let fullSize = ((quad[props.vi] + vec2f(1.0)) * 0.5) * props.size;
-    
+    let drawOrigin = batcherOption.x;
     let localPos = select(centerSize,fullSize, drawOrigin == 1u);
     let worldPos = props.pos + localPos;
-    
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
+    
+    
+    let useSort = batcherOption.y; 
     let quadSize = select(props.size.y * 0.5,props.size.y,drawOrigin == 1u);
     let z = (props.pos.y + quadSize - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
-     
+    let zValue = select(1.0,z,useSort == 1u); 
     let textureSize = textureDimensions(userTextures, 0);
     let textureSizeFloat = vec2<f32>(f32(textureSize.x), f32(textureSize.y));
     let normalizeCrop = vec4<f32>(props.crop.xy / textureSizeFloat, props.crop.zw / textureSizeFloat);
@@ -52,7 +55,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     out.shapeType = props.shapeType;
     out.color = props.color;
     out.textureIndex = props.textureIndex;
-    out.position = vec4<f32>(translatePosition.xy, z, 1.0);
+    out.position = vec4<f32>(translatePosition.xy, zValue, 1.0);
     
     return out;
 }
@@ -69,6 +72,7 @@ fn fragmentMain(props: VertexOutput) ->  @location(0) vec4<f32> {
         return vec4f(texture * color);
     }
     else if(props.shapeType == 1){
+        let drawOrigin = batcherOption.x;
         let halfSize = props.size * 0.5;
         let size = select(props.size * 0.5,props.size * 0.5,drawOrigin == 1u);
         let unitDist = length(props.centerSize / halfSize) - 1.0;

@@ -14,7 +14,8 @@ async function preload() {
 }
 async function create() {
   await Batcher.Initialize({
-    drawOrigin: "topLeft",
+    drawOrigin: "center",
+    zBuffer: "y",
     textures: [
       { name: "main", url: spritesheet },
       { name: "char", url: char },
@@ -28,60 +29,61 @@ async function create() {
     ],
   });
 }
-let x = 10;
+let w = 135;
+let h = 114;
 function start() {
   Batcher.beginBatch();
 
   Draw.rect({
     position: { x: 350, y: 250 },
-    size: { height: 100, width: 100 },
+    size: { height: h, width: w },
     tint: [255, 0, 0, 255],
   });
   Draw.rect({
     position: { x: 375, y: 275 },
-    size: { height: 100, width: 100 },
-    tint: [255, 255, 0, 200],
-  });
-  Draw.rect({
-    position: { x: 400, y: 300 },
-    size: { height: 100, width: 100 },
-    tint: [0, 0, 255, 200],
-  });
-  Draw.sprite({
-    position: { x: 310, y: 480 },
-    size: { height: 50, width: 50 },
-    tint: [255, 255, 255, 255],
-    crop: { x: 0, y: 0, width: 32, height: 32 },
-    textureToUse: "char",
-  });
-  Draw.circle({
-    position: { x: 425, y: 240 },
-    size: { height: 50, width: 50 },
-    tint: [0, 255, 255, 255],
-  });
-  Draw.text({
-    position: { x: 310, y: 450 },
-    font: "ya",
-    fontSize: 14,
-    text: "Player One",
-    fontColor: [255, 0, 255, 255],
+    size: { height: h, width: w },
+    tint: [0, 255, 0, 255 / 2],
   });
 
-  Draw.text({
-    position: { x: 300, y: 550 },
-    font: "lato",
-    fontSize: 50,
-    text: "Scalable big text!",
-    fontColor: [255, 255, 0, 255],
+  Draw.rect({
+    position: { x: 400, y: 300 },
+    size: { height: h, width: w },
+    tint: [0, 0, 255, 255 / 2],
   });
-  Draw.text({
-    position: { x: 150, y: 480 },
-    font: "jersey",
-    fontSize: 16,
-    text: "Mini-My! small scalable text!",
-    fontColor: [255, 255, 255, 255],
+  Draw.rect({
+    position: { x: 425, y: 325 },
+    size: { height: h, width: w },
+    tint: [255, 255, 255, 255 / 2],
   });
-  x += 0.5;
+  // Draw.text({
+  //   position: { x: 310, y: 470 },
+  //   font: "ya",
+  //   fontSize: 14,
+  //   text: "Player One",
+  //   fontColor: [255, 0, 255, 255],
+  // });
+  // Draw.sprite({
+  //   position: { x: 310, y: 480 },
+  //   size: { height: 50, width: 50 },
+  //   tint: [255, 255, 255, 255],
+  //   crop: { x: 0, y: 0, width: 32, height: 32 },
+  //   textureToUse: "char",
+  // });
+
+  // Draw.text({
+  //   position: { x: 300, y: 550 },
+  //   font: "lato",
+  //   fontSize: 50,
+  //   text: "Scalable big text!",
+  //   fontColor: [255, 255, 0, 255],
+  // });
+  // Draw.text({
+  //   position: { x: 150, y: 480 },
+  //   font: "jersey",
+  //   fontSize: 16,
+  //   text: "Mini-My! small scalable text!",
+  //   fontColor: [255, 255, 255, 255],
+  // });
   Batcher.endBatch();
   // requestAnimationFrame(start);
 }
