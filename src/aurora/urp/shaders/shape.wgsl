@@ -79,6 +79,7 @@ fn fragmentMain(props: VertexOutput) ->  @location(0) vec4<f32> {
         let dist = unitDist * min(halfSize.x, halfSize.y);
         let smoothing: f32 = 0.5;
         let alpha = smoothstep(-smoothing, smoothing, -dist);
+         if(alpha == 0){discard;};
         return vec4f(color.rgb,alpha);
     }
     else{

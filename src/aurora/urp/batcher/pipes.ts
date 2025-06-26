@@ -1,15 +1,18 @@
+import UnsortedDrawPipeline from "../pipelines/unsortedDrawPipe";
 import PresentationPipe from "../pipelines/presentationPipe";
-import ShapePipe from "../pipelines/shapePipe";
-import TextPipe from "../pipelines/textPipe";
-import WBOITPipe from "../pipelines/WBOITPipe";
 import Batcher from "./batcher";
+import SortedDrawPipeline from "../pipelines/sortedDrawPipe";
 
 //TODO: przerobic ten plik caly jak bedzie wiecej pipow
 export const DRAW_PIPES = {
-  shape: ShapePipe,
-  text: TextPipe,
+  unsortedDraw: UnsortedDrawPipeline,
+  sortedDraw: SortedDrawPipeline,
 };
-export const ALL_PIPES = [ShapePipe, TextPipe, WBOITPipe, PresentationPipe];
+export const ALL_PIPES = [
+  UnsortedDrawPipeline,
+  SortedDrawPipeline,
+  PresentationPipe,
+];
 export async function createPipelines() {
   try {
     await Promise.all(ALL_PIPES.map((pipe) => pipe.createPipeline()));
@@ -22,19 +25,14 @@ export function clearPipelines() {
   Batcher.pipelinesUsedInFrame.clear();
 }
 export function startPipelines() {
-  const isZSorted = Batcher.getBatcherOptions.zBuffer === "y";
-  if (!isZSorted) {
-    Batcher.pipelinesUsedInFrame.forEach((name) =>
-      DRAW_PIPES[name].useUnsortedPipeline()
-    );
-  } else {
-    Batcher.pipelinesUsedInFrame.forEach((name) =>
-      DRAW_PIPES[name].useOpaquePipeline()
-    );
-    Batcher.pipelinesUsedInFrame.forEach((name) =>
-      DRAW_PIPES[name].usePipeline("transparent")
-    );
-    WBOITPipe.usePipeline();
-  }
+  console.log("s");
+  Batcher.pipelinesUsedInFrame.forEach((name) =>
+    DRAW_PIPES[name].usePipeline()
+  );
   PresentationPipe.usePipeline();
+}
+export function getDrawPipeline() {
+  return Batcher.getBatcherOptions.sortOrder === "none"
+    ? UnsortedDrawPipeline
+    : SortedDrawPipeline;
 }

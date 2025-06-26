@@ -10,7 +10,8 @@ struct VertexInput {
     @location(1) size: vec2<f32>, // w,h
     @location(2) crop: vec4<f32>, // crop [x,y,w,h]
     @location(3) textureIndex: u32,    // index of texture in array
-    @location(4) color: vec4<u32>,    // rgba
+    @location(4) paading: u32,    // index of texture in array
+    @location(5) color: vec4<u32>,    // rgba
 }
 
 struct VertexOutput {

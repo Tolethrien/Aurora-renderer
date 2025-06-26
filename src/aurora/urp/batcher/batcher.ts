@@ -15,15 +15,17 @@ import jerseyImg from "../assets/Jersey25-Regular.png";
 import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
 import latoImg from "../assets/Lato-Regular.png";
 import latoJson from "../assets/Lato-Regular-msdf.json";
+import { compileShaders } from "./shaders";
+import Draw from "../draw";
 export type BatcherOptions = {
-  zBuffer: "none" | "y";
+  sortOrder: "none" | "y";
   textures: { name: string; url: string }[];
   fonts: FontGenProps[];
   drawOrigin: "center" | "topLeft";
 };
 
 const INIT_OPTIONS: BatcherOptions = {
-  zBuffer: "y",
+  sortOrder: "y",
   drawOrigin: "center",
   textures: [],
   fonts: [],
@@ -37,6 +39,7 @@ export default class Batcher {
   private static batcherOptionsBind: PipelineBind;
   public static pipelinesUsedInFrame: Set<keyof typeof DRAW_PIPES> = new Set();
   public static internatTextures: Map<string, GPUAuroraTexture> = new Map();
+  public static loadedShaders: Map<string, GPUShaderModule> = new Map();
   public static internatSamplers: Map<string, GPUSampler> = new Map();
   private static userTexture: GPUAuroraTexture;
   private static userTextureIndexes: Map<string, number> = new Map();
@@ -51,9 +54,9 @@ export default class Batcher {
       dataType: "Uint32Array",
       label: "indexBuffer",
     });
-
     generateInternalTextures();
     generateInternalSamplers();
+    compileShaders();
     AuroraCamera.initialize();
     this.createBatcherOptionsBind();
     await this.createUserTextureArray();
@@ -210,7 +213,7 @@ export default class Batcher {
     //tutaj mozesz dawac pozniej wszystkie potrzebne globalnie w gbpu dane jak ellapsedTime czy wlasnie opcje itp
     //zmienic wtedy z mapped na zwykle
     const isCenter = this.batcherOptions.drawOrigin == "center" ? 0 : 1;
-    const zSort = this.batcherOptions.zBuffer == "none" ? 0 : 1;
+    const zSort = this.batcherOptions.sortOrder == "none" ? 0 : 1;
     const optionsBindBuffer = Aurora.createMappedBuffer({
       bufferType: "uniform",
       data: [isCenter, zSort],
@@ -294,5 +297,10 @@ export default class Batcher {
   }
   public static get getBatcherOptionsGroupLayout() {
     return this.batcherOptionsBind[1];
+  }
+  public static getShader(name: string) {
+    const shader = this.loadedShaders.get(name);
+    if (!shader) throw new Error(`No shader to load with name ${name}`);
+    return shader;
   }
 }

@@ -2,8 +2,7 @@ import { HSLA, Position2D, Size2D } from "../aurora";
 import Batcher from "./batcher/batcher";
 import FontGen, { MsdfChar } from "./batcher/fontGen";
 import AuroraCamera from "./camera";
-import ShapePipe from "./pipelines/shapePipe";
-import TextPipe from "./pipelines/textPipe";
+import { getDrawPipeline } from "./batcher/pipes";
 
 interface BaseDraw {
   position: Position2D;
@@ -23,11 +22,23 @@ interface DrawText {
   fontSize: number;
   fontColor?: HSLA;
 }
+export type BatchType = "text" | "shape";
+export interface GetBatch {
+  type: BatchType;
+  alpha?: number;
+}
+export interface BatchAccumulator {
+  verticesData: number[];
+  addData: number[];
+  count: number;
+  type: GetBatch["type"];
+}
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
+    const pipeline = getDrawPipeline();
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(color[3]);
-    const { addStride, vertexStride } = ShapePipe.getStride;
+    const batch = pipeline.getBatch("shape", color[3]);
+    const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
@@ -37,7 +48,6 @@ export default class Draw {
     batch.verticesData[batch.count * vertexStride + 5] = 0;
     batch.verticesData[batch.count * vertexStride + 6] = 1;
     batch.verticesData[batch.count * vertexStride + 7] = 1;
-
     batch.addData[batch.count * addStride] = 0;
     batch.addData[batch.count * addStride + 1] = 0;
     batch.addData[batch.count * addStride + 2] = color[0];
@@ -48,9 +58,11 @@ export default class Draw {
   }
 
   public static circle({ position, size, tint }: DrawCircle) {
+    const pipeline = getDrawPipeline();
+
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(color[3]);
-    const { addStride, vertexStride } = ShapePipe.getStride;
+    const batch = pipeline.getBatch("shape", color[3]);
+    const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
@@ -76,9 +88,11 @@ export default class Draw {
     crop,
     textureToUse,
   }: DrawSprite) {
+    const pipeline = getDrawPipeline();
+
     const color: HSLA = tint ? tint : [255, 255, 255, 255];
-    const batch = ShapePipe.getBatch(color[3]);
-    const { addStride, vertexStride } = ShapePipe.getStride;
+    const batch = pipeline.getBatch("shape", color[3]);
+    const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
     const textureIndex = Batcher.getTextureIndex(textureToUse);
     batch.verticesData[batch.count * vertexStride] = position.x;
@@ -99,12 +113,14 @@ export default class Draw {
     batch.count++;
   }
   public static text({ position, font, fontColor, fontSize, text }: DrawText) {
+    const pipeline = getDrawPipeline();
+
     const fontData = Batcher.getUserFontData(font).getMeta;
     const fontIndex = Batcher.getUserFontData(font).getIndex;
     const { chars, kernings, lineHeight } = fontData;
     const scale = (fontSize * 1.5) / lineHeight;
     const color: HSLA = fontColor ? fontColor : [255, 255, 255, 255];
-    const batch = TextPipe.getBatch(color[3]);
+    const { addStride, vertexStride } = pipeline.getStride;
 
     AuroraCamera.setCameraBounds(position.y + fontSize * (lineHeight * 2));
 
@@ -123,6 +139,7 @@ export default class Draw {
     let prevCharCode: number | null = null;
 
     for (const char of text) {
+      const batch = pipeline.getBatch("text", color[3]);
       const code = char.charCodeAt(0);
       const charData: MsdfChar = chars[code] ?? fontData.defaultChar;
       if (prevCharCode !== null && kernings) {
@@ -146,23 +163,21 @@ export default class Draw {
       const uWidth = charData.width / fontData.scale.w;
       const vHeight = charData.height / fontData.scale.h;
 
-      const baseIndex = batch.count * 8;
-      batch.verticesData[baseIndex + 0] = centerX;
-      batch.verticesData[baseIndex + 1] = centerY;
-      batch.verticesData[baseIndex + 2] = w;
-      batch.verticesData[baseIndex + 3] = h;
-      batch.verticesData[baseIndex + 4] = u;
-      batch.verticesData[baseIndex + 5] = v;
-      batch.verticesData[baseIndex + 6] = uWidth;
-      batch.verticesData[baseIndex + 7] = vHeight;
-      batch.verticesData[baseIndex + 8] = vHeight;
+      batch.verticesData[batch.count * vertexStride] = centerX;
+      batch.verticesData[batch.count * vertexStride + 1] = centerY;
+      batch.verticesData[batch.count * vertexStride + 2] = w;
+      batch.verticesData[batch.count * vertexStride + 3] = h;
+      batch.verticesData[batch.count * vertexStride + 4] = u;
+      batch.verticesData[batch.count * vertexStride + 5] = v;
+      batch.verticesData[batch.count * vertexStride + 6] = uWidth;
+      batch.verticesData[batch.count * vertexStride + 7] = vHeight;
 
-      const addBase = batch.count * 5;
-      batch.addData[addBase + 0] = fontIndex;
-      batch.addData[addBase + 1] = color[0];
-      batch.addData[addBase + 2] = color[1];
-      batch.addData[addBase + 3] = color[2];
-      batch.addData[addBase + 4] = color[3];
+      batch.addData[batch.count * addStride] = fontIndex;
+      batch.addData[batch.count * addStride + 1] = 0;
+      batch.addData[batch.count * addStride + 2] = color[0];
+      batch.addData[batch.count * addStride + 3] = color[1];
+      batch.addData[batch.count * addStride + 4] = color[2];
+      batch.addData[batch.count * addStride + 5] = color[3];
 
       batch.count++;
 

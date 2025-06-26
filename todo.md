@@ -4,6 +4,8 @@
 - chyba dalej nie dziala WBOIT dobrze... zle blendowanie kolorow?
 
 - jednak musi miec osobny caly pipeline dla unsorted
+- ujednolicic vertexData z AddData w jedno float32 z offsetem
+- czy text moze potencjalnie przekroczyc wielkosc vertexa bo przeciez dajesz kilkanascie znakow a nie jeden jak w shape
 
 ## TODO
 
@@ -15,7 +17,7 @@
 [x] shape pipeline
 [ ] Draw musi miec opcje rotacja
 [x] batcher option - renderowanie (centrum,leftTop)
-[ ] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
+[x] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
 [x] batcher option - add fonts
 [ ] debug gpu (wyciaganie timestampow itp)
 [ ] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
