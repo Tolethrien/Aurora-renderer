@@ -1,6 +1,7 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
+import AuroraDebugInfo from "../debugger/debugInfo";
 import presentationShader from "../shaders/presentation.wgsl?raw";
 
 /**
@@ -57,8 +58,7 @@ export default class PresentationPipe {
 
   public static usePipeline(): void {
     const indexBuffer = Batcher.getIndexBuffer;
-
-    const commandEncoder = Aurora.device.createCommandEncoder();
+    const commandEncoder = Batcher.getEncoder;
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
@@ -68,12 +68,19 @@ export default class PresentationPipe {
           storeOp: "store",
         },
       ],
+      timestampWrites: AuroraDebugInfo.isWorking
+        ? {
+            querySet: AuroraDebugInfo.getQuery().qSet,
+            endOfPassWriteIndex: 1,
+          }
+        : undefined,
     });
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.presentationBind[0]);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();
-    Aurora.device.queue.submit([commandEncoder.finish()]);
+    AuroraDebugInfo.accumulate("drawCalls", 1);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["presentation"]);
   }
 }

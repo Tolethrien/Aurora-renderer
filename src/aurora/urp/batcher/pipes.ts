@@ -25,7 +25,6 @@ export function clearPipelines() {
   Batcher.pipelinesUsedInFrame.clear();
 }
 export function startPipelines() {
-  console.log("s");
   Batcher.pipelinesUsedInFrame.forEach((name) =>
     DRAW_PIPES[name].usePipeline()
   );

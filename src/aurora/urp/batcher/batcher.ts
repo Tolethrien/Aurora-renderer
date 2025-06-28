@@ -16,12 +16,14 @@ import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
 import latoImg from "../assets/Lato-Regular.png";
 import latoJson from "../assets/Lato-Regular-msdf.json";
 import { compileShaders } from "./shaders";
-import Draw from "../draw";
+import AuroraDebugInfo from "../debugger/debugInfo";
+
 export type BatcherOptions = {
   sortOrder: "none" | "y";
   textures: { name: string; url: string }[];
   fonts: FontGenProps[];
   drawOrigin: "center" | "topLeft";
+  debugger: boolean;
 };
 
 const INIT_OPTIONS: BatcherOptions = {
@@ -29,8 +31,8 @@ const INIT_OPTIONS: BatcherOptions = {
   drawOrigin: "center",
   textures: [],
   fonts: [],
+  debugger: true,
 };
-
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
   private static indexBuffer: GPUBuffer;
@@ -43,17 +45,21 @@ export default class Batcher {
   public static internatSamplers: Map<string, GPUSampler> = new Map();
   private static userTexture: GPUAuroraTexture;
   private static userTextureIndexes: Map<string, number> = new Map();
-
+  private static batchEncoder: GPUCommandEncoder;
   public static userFonts: Map<string, generateFont> = new Map();
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
+
+    if (this.batcherOptions.debugger) AuroraDebugInfo.setWorking(true);
+
     this.indexBuffer = Aurora.createMappedBuffer({
       data: [0, 1, 2, 1, 2, 3],
       bufferType: "index",
       dataType: "Uint32Array",
       label: "indexBuffer",
     });
+
     generateInternalTextures();
     generateInternalSamplers();
     compileShaders();
@@ -65,16 +71,47 @@ export default class Batcher {
     await createPipelines();
   }
   public static beginBatch() {
+    this.batchEncoder = Aurora.device.createCommandEncoder();
     this.clearTextures();
     clearPipelines();
     AuroraCamera.update();
   }
   public static endBatch() {
     AuroraCamera.updateCameraBound();
-    console.log(this.pipelinesUsedInFrame);
     startPipelines();
-  }
 
+    if (AuroraDebugInfo.isWorking) this.updateQuery();
+    Aurora.device.queue.submit([this.getEncoder.finish()]);
+    if (AuroraDebugInfo.isWorking) this.updateDebugData();
+  }
+  private static updateQuery() {
+    const { qRead, qSet, qWrite } = AuroraDebugInfo.getQuery();
+    this.batchEncoder.resolveQuerySet(qSet, 0, 2, qWrite, 0);
+    if (qRead.mapState === "unmapped") {
+      this.batchEncoder.copyBufferToBuffer(qWrite, 0, qRead, 0, qRead.size);
+    }
+  }
+  private static updateDebugData() {
+    const { qRead } = AuroraDebugInfo.getQuery();
+
+    if (qRead.mapState === "unmapped") {
+      qRead.mapAsync(GPUMapMode.READ).then(() => {
+        const times = new BigInt64Array(qRead.getMappedRange());
+        const time = Number(times[1] - times[0]);
+        const gpuTime = Number((time / 1000 / 1000).toFixed(1));
+        AuroraDebugInfo.update("GPUTime", gpuTime);
+        qRead.unmap();
+      });
+    }
+    const { drawnQuads, drawnLights, drawCalls, computeCalls } =
+      AuroraDebugInfo.getAllData;
+    AuroraDebugInfo.update("drawnTriangles", drawnQuads * 2 + drawnLights * 2);
+    AuroraDebugInfo.update(
+      "drawnVertices",
+      drawnQuads * 2 * 6 + drawnLights * 2 * 6
+    );
+    AuroraDebugInfo.update("totalCalls", drawCalls + computeCalls);
+  }
   private static async generateFonts() {
     this.batcherOptions.fonts.push({
       fontName: "lato",
@@ -132,7 +169,7 @@ export default class Batcher {
     });
   }
   private static clearTextures() {
-    const commandEncoder = Aurora.device.createCommandEncoder();
+    const commandEncoder = this.batchEncoder;
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
@@ -160,9 +197,14 @@ export default class Batcher {
         depthLoadOp: "clear",
         depthStoreOp: "store",
       },
+      timestampWrites: AuroraDebugInfo.isWorking
+        ? {
+            querySet: AuroraDebugInfo.getQuery().qSet,
+            beginningOfPassWriteIndex: 0,
+          }
+        : undefined,
     });
     passEncoder.end();
-    Aurora.device.queue.submit([commandEncoder.finish()]);
   }
 
   private static async createUserTextureArray() {
@@ -297,6 +339,9 @@ export default class Batcher {
   }
   public static get getBatcherOptionsGroupLayout() {
     return this.batcherOptionsBind[1];
+  }
+  public static get getEncoder() {
+    return this.batchEncoder;
   }
   public static getShader(name: string) {
     const shader = this.loadedShaders.get(name);

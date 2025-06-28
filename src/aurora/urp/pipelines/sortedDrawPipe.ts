@@ -1,5 +1,6 @@
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
+import AuroraDebugInfo from "../debugger/debugInfo";
 import AuroraCamera from "../camera";
 import { BatchAccumulator, GetBatch } from "../draw";
 
@@ -191,24 +192,27 @@ export default class SortedDrawPipeline {
     Batcher.pipelinesUsedInFrame.add("sortedDraw");
     return batch;
   }
-
   public static usePipeline() {
-    //drawShapes
-    //drawText
-    //drawTransparent
     const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
     const userTextureBind = Batcher.getUserTextureBindGroup;
     const fontBind = Batcher.getUserFontBindGroup;
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
     const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
-
+    let byteOffsetVert = 0;
+    let byteOffsetAdd = 0;
+    const commandEncoder = Batcher.getEncoder;
     this.drawBatch.shape.forEach((batch) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
-      Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, vert, 0);
-      Aurora.device.queue.writeBuffer(this.addBuffer, 0, add, 0);
-      const commandEncoder = Aurora.device.createCommandEncoder();
+      AuroraDebugInfo.accumulate("drawCalls", 1);
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        byteOffsetVert,
+        vert,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
@@ -224,24 +228,31 @@ export default class SortedDrawPipeline {
         },
       });
       passEncoder.setPipeline(this.shapePipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer);
-      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
+      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
       passEncoder.setBindGroup(0, cameraBind);
       passEncoder.setBindGroup(1, userTextureBind);
       passEncoder.setBindGroup(2, batcherOptionsBind);
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.count);
       passEncoder.end();
-      Aurora.device.queue.submit([commandEncoder.finish()]);
+      byteOffsetVert += vert.byteLength;
+      byteOffsetAdd += add.byteLength;
     });
 
     this.drawBatch.text.forEach((batch) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
-      Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, vert, 0);
-      Aurora.device.queue.writeBuffer(this.addBuffer, 0, add, 0);
+      AuroraDebugInfo.accumulate("drawCalls", 1);
 
-      const commandEncoder = Aurora.device.createCommandEncoder();
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        byteOffsetVert,
+        vert,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
+
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
@@ -257,8 +268,8 @@ export default class SortedDrawPipeline {
         },
       });
       passEncoder.setPipeline(this.textPipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer);
-      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
+      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
       passEncoder.setBindGroup(0, cameraBind);
       passEncoder.setBindGroup(1, fontBind);
       passEncoder.setBindGroup(2, batcherOptionsBind);
@@ -266,11 +277,11 @@ export default class SortedDrawPipeline {
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.count);
       passEncoder.end();
-      Aurora.device.queue.submit([commandEncoder.finish()]);
+      byteOffsetVert += vert.byteLength;
+      byteOffsetAdd += add.byteLength;
     });
 
     this.drawBatch.transparent.forEach((batch) => {
-      console.log(batch);
       const pipeline =
         batch.type === "shape"
           ? this.transparentShapePipeline
@@ -279,9 +290,15 @@ export default class SortedDrawPipeline {
       const { add, verts } = this.sortData(batch.verticesData, batch.addData);
       const vertArr = new Float32Array(verts);
       const addArr = new Uint32Array(add);
-      Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, vertArr, 0);
-      Aurora.device.queue.writeBuffer(this.addBuffer, 0, addArr, 0);
-      const commandEncoder = Aurora.device.createCommandEncoder();
+      AuroraDebugInfo.accumulate("drawCalls", 1);
+
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        byteOffsetVert,
+        vertArr,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, addArr, 0);
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
@@ -297,8 +314,8 @@ export default class SortedDrawPipeline {
         },
       });
       passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer);
-      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
+      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
       passEncoder.setBindGroup(0, cameraBind);
       passEncoder.setBindGroup(1, textureBind);
       passEncoder.setBindGroup(2, batcherOptionsBind);
@@ -306,8 +323,10 @@ export default class SortedDrawPipeline {
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.count);
       passEncoder.end();
-      Aurora.device.queue.submit([commandEncoder.finish()]);
+      byteOffsetVert += vertArr.byteLength;
+      byteOffsetAdd += addArr.byteLength;
     });
+    AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
   }
 
   private static sortData(dataVert: number[], dataAdd: number[]) {

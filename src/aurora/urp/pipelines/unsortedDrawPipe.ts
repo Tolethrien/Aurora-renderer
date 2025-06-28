@@ -1,6 +1,7 @@
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
 import AuroraCamera from "../camera";
+import AuroraDebugger from "../debugger/core";
 import { BatchAccumulator, GetBatch } from "../draw";
 
 /**

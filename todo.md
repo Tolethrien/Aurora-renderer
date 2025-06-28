@@ -1,11 +1,9 @@
 # Think
 
-- przezroczysty text ma lekki problem ze smoothstepem kiedy jest nakladany na stały obiekt, generalnie to problem WBOIT ze smoothstep nie do konca dobrze z nim dziala - prawie nie widoczne, ale jednak jest
-- chyba dalej nie dziala WBOIT dobrze... zle blendowanie kolorow?
-
-- jednak musi miec osobny caly pipeline dla unsorted
 - ujednolicic vertexData z AddData w jedno float32 z offsetem
-- czy text moze potencjalnie przekroczyc wielkosc vertexa bo przeciez dajesz kilkanascie znakow a nie jeden jak w shape
+- zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
+- lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
+- zamiast miec buffer z opcjami batchera mozesz miec fragment constants
 
 ## TODO
 
@@ -37,6 +35,10 @@
 
 # Done
 
+- czy text moze potencjalnie przekroczyc wielkosc vertexa bo przeciez dajesz kilkanascie znakow a nie jeden jak w shape
+- jednak musi miec osobny caly pipeline dla unsorted
+- przezroczysty text ma lekki problem ze smoothstepem kiedy jest nakladany na stały obiekt, generalnie to problem WBOIT ze smoothstep nie do konca dobrze z nim dziala - prawie nie widoczne, ale jednak jest
+- chyba dalej nie dziala WBOIT dobrze... zle blendowanie kolorow?
 - textPipe dla world nie renderuje sie na srodku quada (0,0) to nie centrum a lewy gorny róg
 - vertex buffer ma floatx2 dla pos i float2 dla size a moze lepiej po prostu float4 jak crop? - NIE xD
 - rozdzielic Batcher na kilka mniejszych bo szybko zrobi sie 5k linii

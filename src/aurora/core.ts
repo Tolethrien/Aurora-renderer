@@ -52,7 +52,9 @@ export default class Aurora {
     const adapter = await navigator.gpu.requestAdapter();
     assert(adapter !== null, "Failed to get GPU adapter.");
     this.adapter = adapter;
-    this.device = await adapter.requestDevice();
+    this.device = await adapter.requestDevice({
+      requiredFeatures: ["timestamp-query"],
+    });
 
     const format = navigator.gpu.getPreferredCanvasFormat();
     ctx.configure({

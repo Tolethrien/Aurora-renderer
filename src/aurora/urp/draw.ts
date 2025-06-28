@@ -3,6 +3,7 @@ import Batcher from "./batcher/batcher";
 import FontGen, { MsdfChar } from "./batcher/fontGen";
 import AuroraCamera from "./camera";
 import { getDrawPipeline } from "./batcher/pipes";
+import AuroraDebugInfo from "./debugger/debugInfo";
 
 interface BaseDraw {
   position: Position2D;
@@ -55,6 +56,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
+    AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
 
   public static circle({ position, size, tint }: DrawCircle) {
@@ -80,6 +82,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
+    AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
   public static sprite({
     position,
@@ -111,6 +114,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
     batch.count++;
+    AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
   public static text({ position, font, fontColor, fontSize, text }: DrawText) {
     const pipeline = getDrawPipeline();
@@ -180,6 +184,7 @@ export default class Draw {
       batch.addData[batch.count * addStride + 5] = color[3];
 
       batch.count++;
+      AuroraDebugInfo.accumulate("drawnQuads", 1);
 
       xCursor += charData.xadvance * scale;
       prevCharCode = code;

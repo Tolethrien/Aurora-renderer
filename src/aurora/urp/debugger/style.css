@@ -1,0 +1,11 @@
+#dbgw {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  #dragTitle {
+    cursor: move;
+    padding: 0.5rem;
+    background-color: aqua;
+    user-select: none;
+  }
+}
