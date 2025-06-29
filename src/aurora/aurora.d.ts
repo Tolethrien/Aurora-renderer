@@ -29,8 +29,7 @@ type ColorAttachments =
   | "HDR"
   | "standard"
   | "storage-read-write"
-  | "OITAccu"
-  | "OITReve";
+  | "zBufferDump";
 interface CreateBindGroup {
   layout: GPUBindGroupLayoutDescriptor;
   data: { entries: Iterable<GPUBindGroupEntry>; label?: string };

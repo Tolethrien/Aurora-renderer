@@ -145,6 +145,17 @@ export default class Aurora {
     });
     return [bindGroup, bindLayout];
   }
+  public static swapBindGroupData(
+    data: CreateBindGroup["data"],
+    layout: GPUBindGroupLayout
+  ) {
+    const bindGroup = this.device.createBindGroup({
+      entries: data.entries,
+      layout: layout,
+      label: data.label,
+    });
+    return bindGroup;
+  }
   public static getColorTargetTemplate(
     type: ColorAttachments
   ): GPUColorTargetState {
@@ -183,36 +194,19 @@ export default class Aurora {
             },
           },
         };
-      case "OITAccu":
-        return {
-          format: "rgba16float",
-          writeMask: GPUColorWrite.ALL,
-          blend: {
-            color: {
-              srcFactor: "one",
-              dstFactor: "one",
-              operation: "add",
-            },
-            alpha: {
-              srcFactor: "one",
-              dstFactor: "one",
-              operation: "add",
-            },
-          },
-        };
-      case "OITReve":
+      case "zBufferDump":
         return {
           format: "r16float",
-          writeMask: GPUColorWrite.ALL,
+          writeMask: GPUColorWrite.RED,
           blend: {
             color: {
               srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
+              dstFactor: "zero",
               operation: "add",
             },
             alpha: {
               srcFactor: "one",
-              dstFactor: "one-minus-src-alpha",
+              dstFactor: "zero",
               operation: "add",
             },
           },

@@ -2,21 +2,24 @@ import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import presentationShader from "../shaders/presentation.wgsl?raw";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
-export default class PresentationPipe {
+export default class DebugTexturePipe {
   private static pipeline: GPURenderPipeline;
-  private static presentationBind: PipelineBind;
+  private static dataBind: PipelineBind;
+  private static texturesBind: PipelineBind;
+  private static uniformTexturePicker: GPUBuffer;
   public static async createPipeline() {
-    const shader = Aurora.createShader(
-      "presentationShader",
-      presentationShader
-    );
-
-    this.presentationBind = Aurora.creteBindGroup({
+    const textureArrayShader = Batcher.getShader("textureFromArray");
+    this.uniformTexturePicker = Aurora.createBuffer({
+      bufferType: "uniform",
+      dataLength: 1,
+      dataType: "Uint32Array",
+      label: "DebugTextureIndex",
+    });
+    this.dataBind = Aurora.creteBindGroup({
       layout: {
         entries: [
           {
@@ -27,15 +30,43 @@ export default class PresentationPipe {
           {
             binding: 1,
             visibility: GPUShaderStage.FRAGMENT,
+            buffer: { type: "uniform" },
+          },
+        ],
+        label: "DebugTextureSamplersBindLayout",
+      },
+      data: {
+        label: "DebugTextureSamplersBindLayout",
+        entries: [
+          { binding: 0, resource: Batcher.getSampler("universal") },
+
+          {
+            binding: 1,
+            resource: { buffer: this.uniformTexturePicker },
+          },
+        ],
+      },
+    });
+    this.texturesBind = Aurora.creteBindGroup({
+      layout: {
+        entries: [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: { viewDimension: "2d" },
+          },
+          {
+            binding: 1,
+            visibility: GPUShaderStage.FRAGMENT,
             texture: { viewDimension: "2d" },
           },
         ],
-        label: "PresentationBindLayout",
+        label: "DebugTextureTexturesBindLayout",
       },
       data: {
-        label: "PresentationBindData",
+        label: "DebugTextureTexturesBindData",
         entries: [
-          { binding: 0, resource: Batcher.getSampler("universal") },
+          { binding: 0, resource: Batcher.getTextureView("zBufferDump") },
 
           {
             binding: 1,
@@ -46,11 +77,12 @@ export default class PresentationPipe {
     });
 
     const pipelineLayout = Aurora.createPipelineLayout([
-      this.presentationBind[1],
+      this.dataBind[1],
+      this.texturesBind[1],
     ]);
     this.pipeline = await Aurora.createRenderPipeline({
-      shader: shader,
-      pipelineName: "PresentationPipeline",
+      shader: textureArrayShader,
+      pipelineName: "DebugTexturePipeline",
       buffers: [],
       pipelineLayout: pipelineLayout,
     });
@@ -59,8 +91,14 @@ export default class PresentationPipe {
   public static usePipeline(): void {
     const indexBuffer = Batcher.getIndexBuffer;
     const commandEncoder = Batcher.getEncoder;
+    Aurora.device.queue.writeBuffer(
+      this.uniformTexturePicker,
+      0,
+      AuroraDebugInfo.getVisibleTexture,
+      0
+    );
     const passEncoder = commandEncoder.beginRenderPass({
-      label: "presentationRenderPass",
+      label: "debugTextureRenderPass",
       colorAttachments: [
         {
           view: Aurora.context.getCurrentTexture().createView(),
@@ -77,11 +115,12 @@ export default class PresentationPipe {
         : undefined,
     });
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.presentationBind[0]);
+    passEncoder.setBindGroup(0, this.dataBind[0]);
+    passEncoder.setBindGroup(1, this.texturesBind[0]);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
-    AuroraDebugInfo.accumulate("pipelineInUse", ["presentation"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["debugTexture"]);
   }
 }

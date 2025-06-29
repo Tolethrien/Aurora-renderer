@@ -18,7 +18,7 @@ async function create() {
   await Batcher.Initialize({
     drawOrigin: "center",
     sortOrder: "y",
-    debugger: true,
+    debugger: false,
     textures: [
       { name: "main", url: spritesheet },
       { name: "char", url: char },
@@ -40,8 +40,8 @@ let w = 135;
 let h = 114;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
-
   Batcher.beginBatch();
+
   arr.forEach((el) => {
     Draw.sprite({
       position: { x: el[0], y: el[1] },
@@ -100,10 +100,10 @@ function start(timestamp: number) {
     text: "Mini-My! small scalable text!",
     fontColor: [255, 255, 255, 255],
   });
-  Batcher.endBatch();
 
+  Batcher.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(200);
+  AuroraDebugInfo.displayEveryFrame(600);
   requestAnimationFrame(start);
 }
 await preload();

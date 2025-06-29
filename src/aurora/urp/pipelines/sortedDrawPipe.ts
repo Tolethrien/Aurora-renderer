@@ -13,7 +13,7 @@ interface DrawBatch {
  * Main sorted pipeline to draw shapes,sprites etc.
  */
 export default class SortedDrawPipeline {
-  private static BATCH_SIZE = 1000;
+  private static BATCH_SIZE = 100000;
   private static VERTEX_STRIDE = 8;
   private static ADD_STRIDE = 6;
 
@@ -42,13 +42,13 @@ export default class SortedDrawPipeline {
 
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
-      label: "VertexBuffer",
+      label: "sortedDrawVertexBuffer",
       dataLength: this.BATCH_SIZE * this.VERTEX_STRIDE,
       dataType: "Float32Array",
     });
     this.addBuffer = Aurora.createBuffer({
       bufferType: "vertex",
-      label: "addDataBuffer",
+      label: "sortedDrawAddDataBuffer",
       dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
       dataType: "Uint32Array",
     });
@@ -110,13 +110,19 @@ export default class SortedDrawPipeline {
         },
       ],
     });
-
+    const targets = AuroraDebugInfo.isWorking
+      ? [
+          Aurora.getColorTargetTemplate("standard"),
+          Aurora.getColorTargetTemplate("zBufferDump"),
+        ]
+      : [Aurora.getColorTargetTemplate("standard")];
     this.shapePipeline = await Aurora.createRenderPipeline({
       shader: shapeSh,
-      pipelineName: "unsortedDrawShape",
+      pipelineName: "sortedDrawShape",
       buffers: [vertBuffLay, AddDataBuffLay],
       pipelineLayout: shapePipelineLayout,
       primitive: { topology: "triangle-list" },
+      colorTargets: targets,
       depthStencil: {
         format: "depth24plus",
         depthWriteEnabled: true,
@@ -125,10 +131,11 @@ export default class SortedDrawPipeline {
     });
     this.textPipeline = await Aurora.createRenderPipeline({
       shader: textSh,
-      pipelineName: "unsortedDrawText",
+      pipelineName: "sortedDrawText",
       buffers: [vertBuffLay, AddDataBuffLay],
       pipelineLayout: textPipelineLayout,
       primitive: { topology: "triangle-list" },
+      colorTargets: targets,
       depthStencil: {
         format: "depth24plus",
         depthWriteEnabled: true,
@@ -137,10 +144,11 @@ export default class SortedDrawPipeline {
     });
     this.transparentShapePipeline = await Aurora.createRenderPipeline({
       shader: shapeSh,
-      pipelineName: "unsortedDrawText",
+      pipelineName: "ortedDrawTransparentShape",
       buffers: [vertBuffLay, AddDataBuffLay],
       pipelineLayout: shapePipelineLayout,
       primitive: { topology: "triangle-list" },
+      colorTargets: targets,
       depthStencil: {
         format: "depth24plus",
         depthWriteEnabled: false,
@@ -149,10 +157,11 @@ export default class SortedDrawPipeline {
     });
     this.transparentTextPipeline = await Aurora.createRenderPipeline({
       shader: textSh,
-      pipelineName: "unsortedDrawText",
+      pipelineName: "sortedDrawTransparentText",
       buffers: [vertBuffLay, AddDataBuffLay],
       pipelineLayout: textPipelineLayout,
       primitive: { topology: "triangle-list" },
+      colorTargets: targets,
       depthStencil: {
         format: "depth24plus",
         depthWriteEnabled: false,
@@ -194,6 +203,7 @@ export default class SortedDrawPipeline {
   }
   public static usePipeline() {
     const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const zBufferTexture = Batcher.getTextureView("zBufferDump");
     const userTextureBind = Batcher.getUserTextureBindGroup;
     const fontBind = Batcher.getUserFontBindGroup;
     const indexBuffer = Batcher.getIndexBuffer;
@@ -201,8 +211,21 @@ export default class SortedDrawPipeline {
     const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
     let byteOffsetVert = 0;
     let byteOffsetAdd = 0;
+    const colorAttachments: GPURenderPassColorAttachment[] = [
+      {
+        view: offscreenTexture,
+        loadOp: "load",
+        storeOp: "store",
+      },
+    ];
+    if (AuroraDebugInfo.isWorking)
+      colorAttachments.push({
+        view: zBufferTexture,
+        loadOp: "load",
+        storeOp: "store",
+      });
     const commandEncoder = Batcher.getEncoder;
-    this.drawBatch.shape.forEach((batch) => {
+    this.drawBatch.shape.forEach((batch, index) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
       AuroraDebugInfo.accumulate("drawCalls", 1);
@@ -214,13 +237,8 @@ export default class SortedDrawPipeline {
       );
       Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
       const passEncoder = commandEncoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: "load",
-            storeOp: "store",
-          },
-        ],
+        label: `SortedDrawShapeRenderPass:${index}`,
+        colorAttachments: colorAttachments,
         depthStencilAttachment: {
           view: Batcher.getTextureView("depthTexture"),
           depthLoadOp: "load",
@@ -240,7 +258,7 @@ export default class SortedDrawPipeline {
       byteOffsetAdd += add.byteLength;
     });
 
-    this.drawBatch.text.forEach((batch) => {
+    this.drawBatch.text.forEach((batch, index) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
       AuroraDebugInfo.accumulate("drawCalls", 1);
@@ -254,13 +272,9 @@ export default class SortedDrawPipeline {
       Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
 
       const passEncoder = commandEncoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: "load",
-            storeOp: "store",
-          },
-        ],
+        label: `SortedDrawTextRenderPass:${index}`,
+
+        colorAttachments: colorAttachments,
         depthStencilAttachment: {
           view: Batcher.getTextureView("depthTexture"),
           depthLoadOp: "load",
@@ -281,7 +295,7 @@ export default class SortedDrawPipeline {
       byteOffsetAdd += add.byteLength;
     });
 
-    this.drawBatch.transparent.forEach((batch) => {
+    this.drawBatch.transparent.forEach((batch, index) => {
       const pipeline =
         batch.type === "shape"
           ? this.transparentShapePipeline
@@ -300,13 +314,10 @@ export default class SortedDrawPipeline {
       );
       Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, addArr, 0);
       const passEncoder = commandEncoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: "load",
-            storeOp: "store",
-          },
-        ],
+        label: `SortedDrawTransparentRenderPass:${index}(${
+          batch.type === "shape" ? "shape" : "text"
+        })`,
+        colorAttachments: colorAttachments,
         depthStencilAttachment: {
           view: Batcher.getTextureView("depthTexture"),
           depthLoadOp: "load",
@@ -326,6 +337,7 @@ export default class SortedDrawPipeline {
       byteOffsetVert += vertArr.byteLength;
       byteOffsetAdd += addArr.byteLength;
     });
+
     AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
   }
 

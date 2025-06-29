@@ -2,6 +2,7 @@ import Mat4 from "../../utils/mat4";
 import { assert } from "../../utils/utils";
 import { PipelineBind } from "../aurora";
 import Aurora from "../core";
+import AuroraDebugInfo from "./debugger/debugInfo";
 type CameraZoom = { current: number; max: number; min: number };
 type CameraPosition = { x: number; y: number };
 const cameraData = {
@@ -90,6 +91,7 @@ export default class AuroraCamera {
     else if (cameraData.keyPressed.has("ArrowUp"))
       this.zoom.current < this.zoom.max &&
         (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
+    if (cameraData.keyPressed.has("p")) AuroraDebugInfo.changeVisibleTexture();
 
     this.projectionViewMatrix = Mat4.create()
       .ortho(

@@ -2,6 +2,7 @@ import UnsortedDrawPipeline from "../pipelines/unsortedDrawPipe";
 import PresentationPipe from "../pipelines/presentationPipe";
 import Batcher from "./batcher";
 import SortedDrawPipeline from "../pipelines/sortedDrawPipe";
+import DebugTexturePipe from "../pipelines/debugTexturePipeline";
 
 //TODO: przerobic ten plik caly jak bedzie wiecej pipow
 export const DRAW_PIPES = {
@@ -11,7 +12,8 @@ export const DRAW_PIPES = {
 export const ALL_PIPES = [
   UnsortedDrawPipeline,
   SortedDrawPipeline,
-  PresentationPipe,
+  // PresentationPipe,
+  DebugTexturePipe,
 ];
 export async function createPipelines() {
   try {
@@ -28,7 +30,8 @@ export function startPipelines() {
   Batcher.pipelinesUsedInFrame.forEach((name) =>
     DRAW_PIPES[name].usePipeline()
   );
-  PresentationPipe.usePipeline();
+  // PresentationPipe.usePipeline();
+  DebugTexturePipe.usePipeline();
 }
 export function getDrawPipeline() {
   return Batcher.getBatcherOptions.sortOrder === "none"

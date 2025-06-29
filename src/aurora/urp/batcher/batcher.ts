@@ -47,6 +47,7 @@ export default class Batcher {
   private static userTextureIndexes: Map<string, number> = new Map();
   private static batchEncoder: GPUCommandEncoder;
   public static userFonts: Map<string, generateFont> = new Map();
+  public static debugVisibleTextureIndex = 0;
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
@@ -179,14 +180,8 @@ export default class Batcher {
           storeOp: "store",
         },
         {
-          view: this.getTextureView("depthAccumulativeTexture"),
+          view: this.getTextureView("zBufferDump"),
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          loadOp: "clear",
-          storeOp: "store",
-        },
-        {
-          view: this.getTextureView("depthRevealableTexture"),
-          clearValue: { r: 1, g: 1, b: 1, a: 1 },
           loadOp: "clear",
           storeOp: "store",
         },
@@ -284,6 +279,7 @@ export default class Batcher {
       },
     });
   }
+
   public static getTexture(name: string) {
     const texture = this.internatTextures.get(name);
     if (!texture) throw new Error(`no internal texture with name ${texture}`);

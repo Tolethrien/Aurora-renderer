@@ -27,27 +27,27 @@ export function generateInternalTextures() {
     })
   );
   Batcher.internatTextures.set(
-    "depthAccumulativeTexture",
-    Aurora.createTextureEmpty({
-      size: {
-        width: Aurora.canvas.width,
-        height: Aurora.canvas.height,
-      },
-      format: "rgba16float",
-      label: "depthAccuTexture",
-    })
-  );
-  Batcher.internatTextures.set(
-    "depthRevealableTexture",
+    "zBufferDump",
     Aurora.createTextureEmpty({
       size: {
         width: Aurora.canvas.width,
         height: Aurora.canvas.height,
       },
       format: "r16float",
-      label: "depthReveTexture",
+      label: "zBufferDump",
     })
   );
+  // Batcher.internatTextures.set(
+  //   "depthRevealableTexture",
+  //   Aurora.createTextureEmpty({
+  //     size: {
+  //       width: Aurora.canvas.width,
+  //       height: Aurora.canvas.height,
+  //     },
+  //     format: "r16float",
+  //     label: "depthReveTexture",
+  //   })
+  // );
 }
 /**
  * generates internal samplers for textures
@@ -63,5 +63,9 @@ export function generateInternalSamplers() {
       mipmapFilter: "linear",
       maxAnisotropy: 16,
     })
+  );
+  Batcher.internatSamplers.set(
+    "sortedDrawZBuffer",
+    Aurora.createSampler({ compare: "greater-equal" })
   );
 }

@@ -44,12 +44,15 @@ export default class AuroraDebugInfo {
   private static readBuffer: GPUBuffer;
   private static lastFrameTime = 0;
   private static frameTimeStart = 0;
+  public static debugVisibleTextureIndex = new Uint32Array([0]);
+  //0 offscreen/1 depth
 
   public static get isWorking() {
     return this.isGathering;
   }
   public static setWorking(val: boolean) {
     this.isGathering = val;
+
     this.query = Aurora.device.createQuerySet({
       type: "timestamp",
       count: 2,
@@ -89,28 +92,47 @@ export default class AuroraDebugInfo {
   public static get getAllData() {
     return this.data;
   }
+  public static changeVisibleTexture() {
+    if (!this.isGathering) return;
+    if (this.debugVisibleTextureIndex[0] === 0)
+      this.debugVisibleTextureIndex[0] = 1;
+    else this.debugVisibleTextureIndex[0] = 0;
+    this.update(
+      "displayedTexture",
+      this.debugVisibleTextureIndex[0] === 0 ? "canvas" : "zBuffer"
+    );
+  }
+  public static get getVisibleTexture() {
+    return this.debugVisibleTextureIndex;
+  }
   public static getSpecific<T extends keyof DebugData>(data: T) {
     return this.data[data];
   }
   public static clearData() {
     const gpuTime = this.data["GPUTime"];
+    const texture = this.data["displayedTexture"];
     this.data = structuredClone(DATA_INIT);
     this.data.GPUTime = gpuTime;
+    this.data.displayedTexture = texture;
   }
   public static displayEveryFrame(frame: number) {
     this.tick++;
     if (this.tick % frame !== 0) return;
     console.group("Debug Data");
     console.log("FPS:", this.data.fps);
-    console.log("CPU Time:", `${this.data.CPUTime} ms`);
-    console.log("GPU Time:", `${this.data.GPUTime} ms`);
-    for (const [name, val] of Object.entries(this.data)) {
-      if (name === "fps" || name === "GPUTime" || name === "CPUTime") continue;
-      console.log(name, val);
+    if (this.isGathering) {
+      console.log("CPU Time:", `${this.data.CPUTime} ms`);
+      console.log("GPU Time:", `${this.data.GPUTime} ms`);
+      for (const [name, val] of Object.entries(this.data)) {
+        if (name === "fps" || name === "GPUTime" || name === "CPUTime")
+          continue;
+        console.log(name, val);
+      }
     }
     console.groupEnd();
     this.tick = 0;
   }
+
   public static getQuery() {
     return {
       qSet: this.query,

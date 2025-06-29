@@ -23,7 +23,14 @@ struct VertexOutput {
     @location(3) @interpolate(flat) shapeType: u32,
     @location(4) @interpolate(flat) textureIndex: u32,
     @location(5) @interpolate(flat) color: vec4<u32>,
+    @location(6) z: f32,
+
 };
+struct FragmentOutput {
+    @location(0) primary: vec4<f32>,
+    @location(1) depth: vec4<f32>,
+};
+
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
@@ -56,6 +63,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     out.color = props.color;
     out.textureIndex = props.textureIndex;
     out.position = vec4<f32>(translatePosition.xy, zValue, 1.0);
+    out.z = z;
     
     return out;
 }
@@ -63,13 +71,14 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 
 @fragment
-fn fragmentMain(props: VertexOutput) ->  @location(0) vec4<f32> {
+fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     let color = convertColor(props.color);
-    
+    var out:FragmentOutput;
+    out.depth = vec4<f32>(props.z,0,0,0);
     if(props.shapeType == 2){
         let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
          if(texture.w < 0.001){discard;};
-        return vec4f(texture * color);
+         out.primary = texture * color;
     }
     else if(props.shapeType == 1){
         let drawOrigin = batcherOption.x;
@@ -80,11 +89,12 @@ fn fragmentMain(props: VertexOutput) ->  @location(0) vec4<f32> {
         let smoothing: f32 = 0.5;
         let alpha = smoothstep(-smoothing, smoothing, -dist);
          if(alpha == 0){discard;};
-        return vec4f(color.rgb,alpha);
+         out.primary = vec4f(color.rgb,alpha);
     }
     else{
-        return vec4f(color);
+        out.primary = color;
     }
+    return out;
 }
 
 fn convertColor(color: vec4u) -> vec4f {

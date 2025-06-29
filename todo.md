@@ -4,6 +4,9 @@
 - zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
 - zamiast miec buffer z opcjami batchera mozesz miec fragment constants
+- ustawic unsorted na te wszystkie poprawki z sorted
+- w debugerInfo zacznij uzywac aurory buffer
+- debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
 
 ## TODO
 
@@ -17,7 +20,7 @@
 [x] batcher option - renderowanie (centrum,leftTop)
 [x] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
 [x] batcher option - add fonts
-[ ] debug gpu (wyciaganie timestampow itp)
+[x] debug gpu (wyciaganie timestampow itp)
 [ ] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
 [ ] UI pipeline(no camera no Y sort inne text renderowanie)
 [ ] pixelDencity/deviceRatio
