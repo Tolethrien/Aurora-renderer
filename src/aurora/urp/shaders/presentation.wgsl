@@ -1,5 +1,6 @@
 @group(0) @binding(0) var textureSampler: sampler;
 @group(0) @binding(1) var offscreenCanvas: texture_2d<f32>;
+@group(0) @binding(2) var lightMap: texture_2d<f32>;
 
 struct VertexInput {
   @builtin(vertex_index) vi: u32,
@@ -25,5 +26,6 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
    let offscreen = textureSampleLevel(offscreenCanvas,textureSampler,props.coords,0);
-   return offscreen;
+   let lights = textureSampleLevel(lightMap,textureSampler,props.coords,0);
+   return vec4<f32>(offscreen.rgb * lights.rgb,1.0);
 }

@@ -37,17 +37,17 @@ export function generateInternalTextures() {
       label: "zBufferDump",
     })
   );
-  // Batcher.internatTextures.set(
-  //   "depthRevealableTexture",
-  //   Aurora.createTextureEmpty({
-  //     size: {
-  //       width: Aurora.canvas.width,
-  //       height: Aurora.canvas.height,
-  //     },
-  //     format: "r16float",
-  //     label: "depthReveTexture",
-  //   })
-  // );
+  Batcher.internatTextures.set(
+    "lightMap",
+    Aurora.createTextureEmpty({
+      size: {
+        width: Aurora.canvas.width,
+        height: Aurora.canvas.height,
+      },
+      format: "bgra8unorm",
+      label: "lightMap",
+    })
+  );
 }
 /**
  * generates internal samplers for textures

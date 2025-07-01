@@ -29,7 +29,8 @@ type ColorAttachments =
   | "HDR"
   | "standard"
   | "storage-read-write"
-  | "zBufferDump";
+  | "zBufferDump"
+  | "additive";
 interface CreateBindGroup {
   layout: GPUBindGroupLayoutDescriptor;
   data: { entries: Iterable<GPUBindGroupEntry>; label?: string };
@@ -70,7 +71,8 @@ type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];
 
 type Size2D = { width: number; height: number };
 type Position2D = { x: number; y: number };
-type HSLA = [number, number, number, number];
+type RGBA = [number, number, number, number];
+type RGB = [number, number, number];
 type DeepOmit<T, K extends string> = T extends Array<infer U>
   ? Array<DeepOmit<U, K>>
   : K extends `${infer Head}.${infer Tail}`

@@ -91,7 +91,6 @@ export default class AuroraCamera {
     else if (cameraData.keyPressed.has("ArrowUp"))
       this.zoom.current < this.zoom.max &&
         (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
-    if (cameraData.keyPressed.has("p")) AuroraDebugInfo.changeVisibleTexture();
 
     this.projectionViewMatrix = Mat4.create()
       .ortho(

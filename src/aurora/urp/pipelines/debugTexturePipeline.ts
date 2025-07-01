@@ -60,18 +60,23 @@ export default class DebugTexturePipe {
             visibility: GPUShaderStage.FRAGMENT,
             texture: { viewDimension: "2d" },
           },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: { viewDimension: "2d" },
+          },
         ],
         label: "DebugTextureTexturesBindLayout",
       },
       data: {
         label: "DebugTextureTexturesBindData",
         entries: [
-          { binding: 0, resource: Batcher.getTextureView("zBufferDump") },
-
+          { binding: 0, resource: Batcher.getTextureView("offscreenCanvas") },
           {
             binding: 1,
-            resource: Batcher.getTextureView("offscreenCanvas"),
+            resource: Batcher.getTextureView("zBufferDump"),
           },
+          { binding: 2, resource: Batcher.getTextureView("lightMap") },
         ],
       },
     });

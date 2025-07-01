@@ -13,7 +13,7 @@ interface DrawBatch {
  * Main sorted pipeline to draw shapes,sprites etc.
  */
 export default class SortedDrawPipeline {
-  private static BATCH_SIZE = 100000;
+  private static BATCH_SIZE = 1000000; //assumption is - will never hit this amount xD maybe change later
   private static VERTEX_STRIDE = 8;
   private static ADD_STRIDE = 6;
 
@@ -188,12 +188,12 @@ export default class SortedDrawPipeline {
     }
 
     let batch = batchAccumulator.at(-1)!;
+    if (AuroraDebugInfo.isWorking && batch.count >= this.BATCH_SIZE)
+      throw new Error(
+        `batch count in sortedDraw is more then theoretical limit you should never achieve \n count:${batch.count} \n limit:${this.BATCH_SIZE}`
+      );
 
-    const needsNewBatch = isTransparent
-      ? batch.type !== type || batch.count >= this.BATCH_SIZE
-      : batch.count >= this.BATCH_SIZE;
-
-    if (needsNewBatch) {
+    if (batch.type !== type) {
       batchAccumulator.push(this.createEmptyBatch(type));
       batch = batchAccumulator.at(-1)!;
     }
@@ -228,7 +228,6 @@ export default class SortedDrawPipeline {
     this.drawBatch.shape.forEach((batch, index) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
-      AuroraDebugInfo.accumulate("drawCalls", 1);
       Aurora.device.queue.writeBuffer(
         this.vertexBuffer,
         byteOffsetVert,
@@ -256,12 +255,12 @@ export default class SortedDrawPipeline {
       passEncoder.end();
       byteOffsetVert += vert.byteLength;
       byteOffsetAdd += add.byteLength;
+      AuroraDebugInfo.accumulate("drawCalls", 1);
     });
 
     this.drawBatch.text.forEach((batch, index) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
-      AuroraDebugInfo.accumulate("drawCalls", 1);
 
       Aurora.device.queue.writeBuffer(
         this.vertexBuffer,
@@ -293,6 +292,7 @@ export default class SortedDrawPipeline {
       passEncoder.end();
       byteOffsetVert += vert.byteLength;
       byteOffsetAdd += add.byteLength;
+      AuroraDebugInfo.accumulate("drawCalls", 1);
     });
 
     this.drawBatch.transparent.forEach((batch, index) => {
@@ -304,7 +304,6 @@ export default class SortedDrawPipeline {
       const { add, verts } = this.sortData(batch.verticesData, batch.addData);
       const vertArr = new Float32Array(verts);
       const addArr = new Uint32Array(add);
-      AuroraDebugInfo.accumulate("drawCalls", 1);
 
       Aurora.device.queue.writeBuffer(
         this.vertexBuffer,
@@ -336,6 +335,7 @@ export default class SortedDrawPipeline {
       passEncoder.end();
       byteOffsetVert += vertArr.byteLength;
       byteOffsetAdd += addArr.byteLength;
+      AuroraDebugInfo.accumulate("drawCalls", 1);
     });
 
     AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);

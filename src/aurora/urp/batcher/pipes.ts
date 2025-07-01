@@ -3,16 +3,20 @@ import PresentationPipe from "../pipelines/presentationPipe";
 import Batcher from "./batcher";
 import SortedDrawPipeline from "../pipelines/sortedDrawPipe";
 import DebugTexturePipe from "../pipelines/debugTexturePipeline";
+import AuroraDebugInfo from "../debugger/debugInfo";
+import LightsPipe from "../pipelines/lights";
 
 //TODO: przerobic ten plik caly jak bedzie wiecej pipow
 export const DRAW_PIPES = {
   unsortedDraw: UnsortedDrawPipeline,
   sortedDraw: SortedDrawPipeline,
+  lights: LightsPipe,
 };
 export const ALL_PIPES = [
   UnsortedDrawPipeline,
   SortedDrawPipeline,
-  // PresentationPipe,
+  LightsPipe,
+  PresentationPipe,
   DebugTexturePipe,
 ];
 export async function createPipelines() {
@@ -30,8 +34,9 @@ export function startPipelines() {
   Batcher.pipelinesUsedInFrame.forEach((name) =>
     DRAW_PIPES[name].usePipeline()
   );
-  // PresentationPipe.usePipeline();
-  DebugTexturePipe.usePipeline();
+  AuroraDebugInfo.isWorking
+    ? DebugTexturePipe.usePipeline()
+    : PresentationPipe.usePipeline();
 }
 export function getDrawPipeline() {
   return Batcher.getBatcherOptions.sortOrder === "none"

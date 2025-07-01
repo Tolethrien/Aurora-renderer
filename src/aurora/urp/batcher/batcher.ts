@@ -1,7 +1,7 @@
 import Aurora from "../../core";
 import AuroraCamera from "../camera";
 import dummyTexture from "../assets/dummy.png";
-import { GPUAuroraTexture, PipelineBind } from "../../aurora";
+import { GPUAuroraTexture, PipelineBind, RGB } from "../../aurora";
 import generateFont, { FontGenProps } from "./fontGen";
 import FontGen from "./fontGen";
 import { generateInternalSamplers, generateInternalTextures } from "./textures";
@@ -24,6 +24,7 @@ export type BatcherOptions = {
   fonts: FontGenProps[];
   drawOrigin: "center" | "topLeft";
   debugger: boolean;
+  colorCorrection: RGB;
 };
 
 const INIT_OPTIONS: BatcherOptions = {
@@ -32,6 +33,7 @@ const INIT_OPTIONS: BatcherOptions = {
   textures: [],
   fonts: [],
   debugger: true,
+  colorCorrection: [0, 0, 0],
 };
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
@@ -47,7 +49,6 @@ export default class Batcher {
   private static userTextureIndexes: Map<string, number> = new Map();
   private static batchEncoder: GPUCommandEncoder;
   public static userFonts: Map<string, generateFont> = new Map();
-  public static debugVisibleTextureIndex = 0;
 
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
@@ -92,6 +93,7 @@ export default class Batcher {
       this.batchEncoder.copyBufferToBuffer(qWrite, 0, qRead, 0, qRead.size);
     }
   }
+
   private static updateDebugData() {
     const { qRead } = AuroraDebugInfo.getQuery();
 
@@ -279,6 +281,11 @@ export default class Batcher {
       },
     });
   }
+  public static setColorCorrection(color: RGB) {
+    this.batcherOptions.colorCorrection = color;
+    if (AuroraDebugInfo.isWorking)
+      AuroraDebugInfo.update("colorCorrection", color);
+  }
 
   public static getTexture(name: string) {
     const texture = this.internatTextures.get(name);
@@ -310,6 +317,13 @@ export default class Batcher {
         `WARNING: No texture with name ${name} present in Batcher! fallback to color`
       );
     return texture ?? 0;
+  }
+  public static get getColorCorrection() {
+    return this.batcherOptions.colorCorrection;
+  }
+  public static get getNormalizedColorCorrection() {
+    const color = this.batcherOptions.colorCorrection;
+    return [color[0] / 255, color[1] / 255, color[2] / 255];
   }
   public static get getIndexBuffer() {
     return this.indexBuffer;

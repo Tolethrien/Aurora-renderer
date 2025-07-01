@@ -1,12 +1,11 @@
 # Think
 
-- ujednolicic vertexData z AddData w jedno float32 z offsetem
-- zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
 - zamiast miec buffer z opcjami batchera mozesz miec fragment constants
-- ustawic unsorted na te wszystkie poprawki z sorted
 - w debugerInfo zacznij uzywac aurory buffer
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
+- jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
+- jakis system ustawiania kolejnosci pipelinow bo teraz sie ustawia wedle kolejnosci Draw
 
 ## TODO
 
@@ -21,11 +20,11 @@
 [x] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
 [x] batcher option - add fonts
 [x] debug gpu (wyciaganie timestampow itp)
-[ ] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
+[z] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
 [ ] UI pipeline(no camera no Y sort inne text renderowanie)
 [ ] pixelDencity/deviceRatio
 [ ] post-processing
-[ ] budowane w shaderach swiatlo
+[x] budowane w shaderach swiatlo
 [ ] bloom
 [ ] Draw.video
 [ ] Draw.gif
@@ -38,6 +37,7 @@
 
 # Done
 
+- zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
 - czy text moze potencjalnie przekroczyc wielkosc vertexa bo przeciez dajesz kilkanascie znakow a nie jeden jak w shape
 - jednak musi miec osobny caly pipeline dla unsorted
 - przezroczysty text ma lekki problem ze smoothstepem kiedy jest nakladany na stały obiekt, generalnie to problem WBOIT ze smoothstep nie do konca dobrze z nim dziala - prawie nie widoczne, ale jednak jest

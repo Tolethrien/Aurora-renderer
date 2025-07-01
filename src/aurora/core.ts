@@ -211,6 +211,23 @@ export default class Aurora {
             },
           },
         };
+      case "additive":
+        return {
+          format: "bgra8unorm",
+          writeMask: GPUColorWrite.ALL,
+          blend: {
+            color: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+          },
+        };
       default:
         return {
           format: navigator.gpu.getPreferredCanvasFormat(),

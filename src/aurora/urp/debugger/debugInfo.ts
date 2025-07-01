@@ -1,4 +1,6 @@
+import { RGB } from "../../aurora";
 import Aurora from "../../core";
+import Batcher, { BatcherOptions } from "../batcher/batcher";
 
 type textures = "canvas" | "offscreen" | "zBuffer";
 interface DebugData {
@@ -15,8 +17,10 @@ interface DebugData {
   drawnLights: number;
   drawnTriangles: number;
   drawnVertices: number;
-  colorCorrection: [number, number, number];
+  colorCorrection: RGB;
   usedPostProcessing: string[];
+  sortOrder: BatcherOptions["sortOrder"];
+  drawOrigin: BatcherOptions["drawOrigin"];
 }
 const DATA_INIT: DebugData = {
   fps: 0,
@@ -34,6 +38,8 @@ const DATA_INIT: DebugData = {
   drawnVertices: 0,
   colorCorrection: [0, 0, 0],
   usedPostProcessing: [],
+  sortOrder: "none",
+  drawOrigin: "center",
 };
 export default class AuroraDebugInfo {
   private static isGathering = false;
@@ -65,6 +71,8 @@ export default class AuroraDebugInfo {
       size: 16,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
     });
+    //@ts-ignore
+    window.debugTextureNext = () => this.nextTexture();
   }
 
   public static update<T extends keyof DebugData>(
@@ -92,16 +100,23 @@ export default class AuroraDebugInfo {
   public static get getAllData() {
     return this.data;
   }
-  public static changeVisibleTexture() {
-    if (!this.isGathering) return;
-    if (this.debugVisibleTextureIndex[0] === 0)
-      this.debugVisibleTextureIndex[0] = 1;
-    else this.debugVisibleTextureIndex[0] = 0;
+  public static nextTexture() {
+    const texureToShow = [
+      "canvas",
+      "offscreenCanvas",
+      "lightMap",
+      "zBufferDump",
+    ];
+    console.log("ss");
+    if (this.debugVisibleTextureIndex[0] >= texureToShow.length - 1)
+      this.debugVisibleTextureIndex[0] = 0;
+    else this.debugVisibleTextureIndex[0]++;
     this.update(
       "displayedTexture",
-      this.debugVisibleTextureIndex[0] === 0 ? "canvas" : "zBuffer"
+      texureToShow[this.debugVisibleTextureIndex[0]]
     );
   }
+
   public static get getVisibleTexture() {
     return this.debugVisibleTextureIndex;
   }
@@ -114,10 +129,13 @@ export default class AuroraDebugInfo {
     this.data = structuredClone(DATA_INIT);
     this.data.GPUTime = gpuTime;
     this.data.displayedTexture = texture;
+    this.data.sortOrder = Batcher.getBatcherOptions.sortOrder;
+    this.data.drawOrigin = Batcher.getBatcherOptions.drawOrigin;
   }
-  public static displayEveryFrame(frame: number) {
+  public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;
     if (this.tick % frame !== 0) return;
+    if (clear) console.clear();
     console.group("Debug Data");
     console.log("FPS:", this.data.fps);
     if (this.isGathering) {
@@ -126,7 +144,7 @@ export default class AuroraDebugInfo {
       for (const [name, val] of Object.entries(this.data)) {
         if (name === "fps" || name === "GPUTime" || name === "CPUTime")
           continue;
-        console.log(name, val);
+        console.log(`${name}:`, val);
       }
     }
     console.groupEnd();

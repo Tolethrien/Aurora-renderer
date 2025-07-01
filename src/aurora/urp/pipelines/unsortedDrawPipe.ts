@@ -1,14 +1,14 @@
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
 import AuroraCamera from "../camera";
-import AuroraDebugger from "../debugger/core";
+import AuroraDebugInfo from "../debugger/debugInfo";
 import { BatchAccumulator, GetBatch } from "../draw";
 
 /**
  * Main unsorted pipeline to draw shapes,sprites etc.
  */
 export default class UnsortedDrawPipeline {
-  private static BATCH_SIZE = 1000;
+  private static BATCH_SIZE = 1000000;
   private static VERTEX_STRIDE = 8;
   private static ADD_STRIDE = 6;
   public static drawBatch: BatchAccumulator[] = [];
@@ -126,8 +126,7 @@ export default class UnsortedDrawPipeline {
     if (this.drawBatch.length === 0)
       this.drawBatch.push(this.createEmptyBatch(type));
     let batch = this.drawBatch.at(-1)!;
-    if (batch.type !== type || batch.count >= this.BATCH_SIZE)
-      this.drawBatch.push(this.createEmptyBatch(type));
+    if (batch.type !== type) this.drawBatch.push(this.createEmptyBatch(type));
     batch = this.drawBatch.at(-1)!;
     Batcher.pipelinesUsedInFrame.add("unsortedDraw");
     return batch;
@@ -140,16 +139,22 @@ export default class UnsortedDrawPipeline {
     const indexBuffer = Batcher.getIndexBuffer;
     const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
     const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
-
+    const commandEncoder = Batcher.getEncoder;
+    let byteOffsetVert = 0;
+    let byteOffsetAdd = 0;
     this.drawBatch.forEach((batch) => {
       const vert = new Float32Array(batch.verticesData);
       const add = new Uint32Array(batch.addData);
-      Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, vert, 0);
-      Aurora.device.queue.writeBuffer(this.addBuffer, 0, add, 0);
+      Aurora.device.queue.writeBuffer(
+        this.vertexBuffer,
+        byteOffsetVert,
+        vert,
+        0
+      );
+      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
       const pipeline =
         batch.type === "shape" ? this.shapePipeline : this.textPipeline;
       const textureBind = batch.type === "shape" ? userTextureBind : fontBind;
-      const commandEncoder = Aurora.device.createCommandEncoder();
       const passEncoder = commandEncoder.beginRenderPass({
         colorAttachments: [
           {
@@ -160,8 +165,8 @@ export default class UnsortedDrawPipeline {
         ],
       });
       passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer);
-      passEncoder.setVertexBuffer(1, this.addBuffer);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
+      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
       passEncoder.setBindGroup(0, cameraBind);
       passEncoder.setBindGroup(1, textureBind);
       passEncoder.setBindGroup(2, batcherOptionsBind);
@@ -169,8 +174,11 @@ export default class UnsortedDrawPipeline {
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.count);
       passEncoder.end();
-      Aurora.device.queue.submit([commandEncoder.finish()]);
+      byteOffsetVert += vert.byteLength;
+      byteOffsetAdd += add.byteLength;
+      AuroraDebugInfo.accumulate("drawCalls", 1);
     });
+    AuroraDebugInfo.accumulate("pipelineInUse", ["unsortedDraw"]);
   }
 
   public static clearBatch() {

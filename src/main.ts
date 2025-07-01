@@ -18,7 +18,7 @@ async function create() {
   await Batcher.Initialize({
     drawOrigin: "center",
     sortOrder: "y",
-    debugger: false,
+    debugger: true,
     textures: [
       { name: "main", url: spritesheet },
       { name: "char", url: char },
@@ -41,17 +41,7 @@ let h = 114;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Batcher.beginBatch();
-
-  arr.forEach((el) => {
-    Draw.sprite({
-      position: { x: el[0], y: el[1] },
-      size: { height: 50, width: 50 },
-      tint: [255, 255, 255, 255],
-      crop: { x: 0, y: 0, width: 32, height: 32 },
-      textureToUse: "char",
-    });
-  });
-
+  Batcher.setColorCorrection([80, 40, 20]);
   Draw.rect({
     position: { x: 375, y: 275 },
     size: { height: h, width: w },
@@ -62,7 +52,16 @@ function start(timestamp: number) {
     size: { height: h, width: w },
     tint: [255, 0, 255, 255 / 2],
   });
-
+  arr.forEach((el) => {
+    Draw.sprite({
+      position: { x: el[0], y: el[1] },
+      size: { height: 50, width: 50 },
+      tint: [255, 255, 255, 255],
+      crop: { x: 0, y: 0, width: 32, height: 32 },
+      textureToUse: "char",
+    });
+  });
+  const lightColor = 255;
   Draw.rect({
     position: { x: 350, y: 250 },
     size: { height: h, width: w },
@@ -71,7 +70,25 @@ function start(timestamp: number) {
   Draw.circle({
     position: { x: 425, y: 225 },
     size: { height: 50, width: 50 },
-    tint: [255, 0, 255, 255],
+    tint: [255, 0, 0, 255],
+  });
+  Draw.pointLight({
+    position: { x: 500, y: 100 },
+    size: { height: 350, width: 350 },
+    tint: [lightColor, lightColor, lightColor, 255],
+    intensity: 255,
+  });
+  Draw.pointLight({
+    position: { x: 300, y: 300 },
+    size: { height: 350, width: 350 },
+    tint: [lightColor, lightColor, lightColor, 255],
+    intensity: 255,
+  });
+  Draw.pointLight({
+    position: { x: 100, y: 500 },
+    size: { height: 350, width: 350 },
+    tint: [lightColor, lightColor, lightColor, 255],
+    intensity: 255,
   });
   Draw.rect({
     position: { x: 400, y: 300 },
@@ -79,7 +96,7 @@ function start(timestamp: number) {
     tint: [0, 0, 255, 255 / 2],
   });
   Draw.text({
-    position: { x: 400, y: 330 },
+    position: { x: 200, y: 330 },
     font: "ya",
     fontSize: 14,
     text: "Player One",
@@ -103,7 +120,7 @@ function start(timestamp: number) {
 
   Batcher.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(600);
+  AuroraDebugInfo.displayEveryFrame(60, true);
   requestAnimationFrame(start);
 }
 await preload();

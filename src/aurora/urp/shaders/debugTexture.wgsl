@@ -1,7 +1,8 @@
 @group(0) @binding(0) var textureSampler: sampler;
 @group(0) @binding(1) var<uniform> index: u32;
-@group(1) @binding(0) var depth: texture_2d<f32>;
-@group(1) @binding(1) var offscreen: texture_2d<f32>;
+@group(1) @binding(0) var offscreen: texture_2d<f32>;
+@group(1) @binding(1) var depth: texture_2d<f32>;
+@group(1) @binding(2) var lightMap: texture_2d<f32>;
 
 struct VertexInput {
   @builtin(vertex_index) vi: u32,
@@ -26,10 +27,16 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
-  // let depthValue = textureSampleCompare(depth,depthSampler,props.coords,0);
-  let depthValue = textureSampleLevel(depth,textureSampler,props.coords,0).r;
-  let objectDepth = select(depthValue*10,0,depthValue == 0);
-  let depthColor = vec4<f32>(objectDepth,objectDepth,objectDepth,1);
+  var out: vec4<f32>;
   let offscreen = textureSampleLevel(offscreen,textureSampler,props.coords,0);
-   return select(depthColor,offscreen,index == 0);
+  let lightMap = textureSampleLevel(lightMap,textureSampler,props.coords,0);
+  if(index == 3) {
+    let depthValue = textureSampleLevel(depth,textureSampler,props.coords,0).r;
+    let objectDepth = select(depthValue*10,0,depthValue == 0);
+    out = vec4<f32>(objectDepth,objectDepth,objectDepth,1);
+  }
+  else if(index == 1) {out = offscreen;}
+  else if(index == 2) {out = lightMap;}
+  else if(index == 0) {out = vec4<f32>(offscreen.rgb * lightMap.rgb,offscreen.a);}
+   return out;
 }

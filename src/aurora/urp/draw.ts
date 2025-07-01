@@ -1,14 +1,15 @@
-import { HSLA, Position2D, Size2D } from "../aurora";
+import { RGBA, Position2D, Size2D } from "../aurora";
 import Batcher from "./batcher/batcher";
 import FontGen, { MsdfChar } from "./batcher/fontGen";
 import AuroraCamera from "./camera";
 import { getDrawPipeline } from "./batcher/pipes";
 import AuroraDebugInfo from "./debugger/debugInfo";
+import LightsPipe from "./pipelines/lights";
 
 interface BaseDraw {
   position: Position2D;
   size: Size2D;
-  tint?: HSLA;
+  tint?: RGBA;
 }
 interface DrawRect extends BaseDraw {}
 interface DrawCircle extends BaseDraw {}
@@ -21,7 +22,10 @@ interface DrawText {
   text: string;
   font: string;
   fontSize: number;
-  fontColor?: HSLA;
+  fontColor?: RGBA;
+}
+interface DrawPointLight extends BaseDraw {
+  intensity: number;
 }
 export type BatchType = "text" | "shape";
 export interface GetBatch {
@@ -37,7 +41,7 @@ export interface BatchAccumulator {
 export default class Draw {
   public static rect({ position, size, tint }: DrawRect) {
     const pipeline = getDrawPipeline();
-    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const color: RGBA = tint ? tint : [255, 255, 255, 255];
     const batch = pipeline.getBatch("shape", color[3]);
     const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
@@ -62,7 +66,7 @@ export default class Draw {
   public static circle({ position, size, tint }: DrawCircle) {
     const pipeline = getDrawPipeline();
 
-    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const color: RGBA = tint ? tint : [255, 255, 255, 255];
     const batch = pipeline.getBatch("shape", color[3]);
     const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
@@ -93,7 +97,7 @@ export default class Draw {
   }: DrawSprite) {
     const pipeline = getDrawPipeline();
 
-    const color: HSLA = tint ? tint : [255, 255, 255, 255];
+    const color: RGBA = tint ? tint : [255, 255, 255, 255];
     const batch = pipeline.getBatch("shape", color[3]);
     const { addStride, vertexStride } = pipeline.getStride;
     AuroraCamera.setCameraBounds(position.y + size.height);
@@ -123,7 +127,7 @@ export default class Draw {
     const fontIndex = Batcher.getUserFontData(font).getIndex;
     const { chars, kernings, lineHeight } = fontData;
     const scale = (fontSize * 1.5) / lineHeight;
-    const color: HSLA = fontColor ? fontColor : [255, 255, 255, 255];
+    const color: RGBA = fontColor ? fontColor : [255, 255, 255, 255];
     const { addStride, vertexStride } = pipeline.getStride;
 
     AuroraCamera.setCameraBounds(position.y + fontSize * (lineHeight * 2));
@@ -189,5 +193,28 @@ export default class Draw {
       xCursor += charData.xadvance * scale;
       prevCharCode = code;
     }
+  }
+  public static pointLight({
+    intensity,
+    position,
+    size,
+    tint,
+  }: DrawPointLight) {
+    const color: RGBA = tint ? tint : [255, 255, 255, 255];
+    const { addStride, vertexStride } = LightsPipe.getStride;
+    const { addArray, vertexArray } = LightsPipe.getDataArrays;
+    const count = LightsPipe.getCount;
+    vertexArray[count * vertexStride] = position.x;
+    vertexArray[count * vertexStride + 1] = position.y;
+    vertexArray[count * vertexStride + 2] = size.width;
+    vertexArray[count * vertexStride + 3] = size.height;
+
+    addArray[count * addStride] = intensity; // intens
+    addArray[count * addStride + 1] = color[0];
+    addArray[count * addStride + 2] = color[1];
+    addArray[count * addStride + 3] = color[2];
+    addArray[count * addStride + 4] = color[3];
+    LightsPipe.addCount();
+    AuroraDebugInfo.accumulate("drawnLights", 1);
   }
 }
