@@ -13,6 +13,7 @@ struct VertexInput {
     @location(3) shapeType: u32,    // 0 = rect, 1 = circle, 2 = sprite
     @location(4) textureIndex: u32,    //texture index
     @location(5) color: vec4<u32>,    // rgba
+    @location(6) emissive: u32,    // bool
 };
 
 struct VertexOutput {
@@ -24,11 +25,13 @@ struct VertexOutput {
     @location(4) @interpolate(flat) textureIndex: u32,
     @location(5) @interpolate(flat) color: vec4<u32>,
     @location(6) z: f32,
+    @location(7) @interpolate(flat) emissive: u32,
 
 };
 struct FragmentOutput {
     @location(0) primary: vec4<f32>,
-    @location(1) depth: vec4<f32>,
+    @location(1) hdr: vec4<f32>,
+    @location(2) depth: vec4<f32>,
 };
 
 
@@ -64,6 +67,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     out.textureIndex = props.textureIndex;
     out.position = vec4<f32>(translatePosition.xy, zValue, 1.0);
     out.z = z;
+    out.emissive = props.emissive;
     
     return out;
 }
@@ -75,10 +79,13 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     let color = convertColor(props.color);
     var out:FragmentOutput;
     out.depth = vec4<f32>(props.z,0,0,0);
+    out.hdr = vec4<f32>(0,0,0,0);
     if(props.shapeType == 2){
         let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
          if(texture.w < 0.001){discard;};
-         out.primary = texture * color;
+         let finalColor = texture * color;
+         out.primary = finalColor;
+        if(props.emissive == 1){out.hdr = finalColor;}
     }
     else if(props.shapeType == 1){
         let drawOrigin = batcherOption.x;
@@ -89,10 +96,14 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
         let smoothing: f32 = 0.5;
         let alpha = smoothstep(-smoothing, smoothing, -dist);
          if(alpha == 0){discard;};
-         out.primary = vec4f(color.rgb,alpha);
+        let finalColor = vec4f(color.rgb,alpha);
+         out.primary = finalColor;
+        if(props.emissive == 1){out.hdr = finalColor;}
     }
     else{
         out.primary = color;
+        if(props.emissive == 1){out.hdr = color;}
+
     }
     return out;
 }

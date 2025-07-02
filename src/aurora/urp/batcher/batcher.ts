@@ -33,7 +33,7 @@ const INIT_OPTIONS: BatcherOptions = {
   textures: [],
   fonts: [],
   debugger: true,
-  colorCorrection: [0, 0, 0],
+  colorCorrection: [255, 255, 255],
 };
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);

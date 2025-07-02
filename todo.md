@@ -6,6 +6,9 @@
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - jakis system ustawiania kolejnosci pipelinow bo teraz sie ustawia wedle kolejnosci Draw
+- zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
+- posprzatac drawPipeliny bo za duzo tam pracy przy jakichkolwiek zmianach
+- zrobic zwyczajnie need Clean w pipelinie i na 1 batchu czyscic teksture a potem loadowac(1 render pass mniej)
 
 ## TODO
 

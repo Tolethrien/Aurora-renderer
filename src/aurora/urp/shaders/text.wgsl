@@ -12,6 +12,9 @@ struct VertexInput {
     @location(3) textureIndex: u32,    // index of texture in array
     @location(4) paading: u32,   
     @location(5) color: vec4<u32>,    // rgba
+    @location(6) emissive: u32,    // bool
+
+
     
 }
 
@@ -21,11 +24,14 @@ struct VertexOutput {
     @location(1) @interpolate(flat) textureIndex: u32,
     @location(2) @interpolate(flat) color: vec4<u32>,
     @location(3) z: f32,
+    @location(4) @interpolate(flat) emissive: u32,
+
 
 };
 struct FragmentOutput {
     @location(0) primary: vec4<f32>,
-    @location(1) depth: vec4<f32>,
+    @location(1) hdr: vec4<f32>,
+    @location(2) depth: vec4<f32>,
 };
 
 
@@ -54,6 +60,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
     out.textureIndex = props.textureIndex;
     out.Position = vec4<f32>(translatePosition.xy, zValue, 1.0);
     out.z = z;
+    out.emissive = props.emissive;
 
     
     return out;
@@ -62,11 +69,28 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props : VertexOutput) -> FragmentOutput {
+  
+//   let color = convertColor(props.color);
+//   var out:FragmentOutput;
+//   out.depth = vec4<f32>(props.z,0,0,0);
+//   let sigDist = sampleMsdf(props.crop,props.textureIndex) - 0.5;
+
+//   // FWidth-based AA — dynamic edge width
+//   let screenPxDist = sigDist / fwidth(sigDist);
+//   let alpha = clamp(screenPxDist + 0.5, 0.0, 1.0);
+//   if (alpha < 0.001) {
+//     discard;
+//   }
+
+//  out.primary = vec4f(color.rgb, color.a * alpha);
+  
+  
   // pxRange (AKA distanceRange) comes from the msdfgen tool. Don McCurdy's tool
   // uses the default which is 4.
   let color = convertColor(props.color);
   var out:FragmentOutput;
   out.depth = vec4<f32>(props.z,0,0,0);
+  out.hdr = vec4<f32>(0,0,0,0);
   
   let pxRange = 4.0;
   let sz = vec2f(textureDimensions(fontsTexture, 0));
@@ -85,8 +109,9 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   }
 
   alpha = pow(alpha, 0.4); // korekta gamma
-  out.primary = vec4f(color.rgb, color.a * alpha);
-  
+  let finalColor = vec4f(color.rgb, color.a * alpha);
+  out.primary = finalColor;
+  if(props.emissive == 1){out.hdr = finalColor;}
   return out;
 
 }

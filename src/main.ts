@@ -15,6 +15,7 @@ async function preload() {
 }
 
 async function create() {
+  const yaFont = { fontName: "ya", img: ftex, json: fjson };
   await Batcher.Initialize({
     drawOrigin: "center",
     sortOrder: "y",
@@ -23,14 +24,9 @@ async function create() {
       { name: "main", url: spritesheet },
       { name: "char", url: char },
     ],
-    fonts: [
-      {
-        fontName: "ya",
-        img: ftex,
-        json: fjson,
-      },
-    ],
+    fonts: [yaFont],
   });
+  Batcher.setColorCorrection([100, 100, 100]);
 }
 const arr = Array(100)
   .fill(0)
@@ -41,17 +37,16 @@ let h = 114;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Batcher.beginBatch();
-  Batcher.setColorCorrection([80, 40, 20]);
   Draw.rect({
     position: { x: 375, y: 275 },
     size: { height: h, width: w },
     tint: [0, 255, 0, 255 / 2],
   });
-  Draw.rect({
-    position: { x: 425, y: 325 },
-    size: { height: h, width: w },
-    tint: [255, 0, 255, 255 / 2],
-  });
+  // Draw.rect({
+  //   position: { x: 425, y: 325 },
+  //   size: { height: h, width: w },
+  //   tint: [255, 0, 255, 255 / 2],
+  // });
   arr.forEach((el) => {
     Draw.sprite({
       position: { x: el[0], y: el[1] },
@@ -66,6 +61,7 @@ function start(timestamp: number) {
     position: { x: 350, y: 250 },
     size: { height: h, width: w },
     tint: [255, 0, 0, 255],
+    emissive: true,
   });
   Draw.circle({
     position: { x: 425, y: 225 },
@@ -75,19 +71,19 @@ function start(timestamp: number) {
   Draw.pointLight({
     position: { x: 500, y: 100 },
     size: { height: 350, width: 350 },
-    tint: [lightColor, lightColor, lightColor, 255],
+    tint: [lightColor, 100, 100, 255],
     intensity: 255,
   });
   Draw.pointLight({
     position: { x: 300, y: 300 },
     size: { height: 350, width: 350 },
-    tint: [lightColor, lightColor, lightColor, 255],
+    tint: [100, lightColor, 100, 255],
     intensity: 255,
   });
   Draw.pointLight({
     position: { x: 100, y: 500 },
     size: { height: 350, width: 350 },
-    tint: [lightColor, lightColor, lightColor, 255],
+    tint: [100, 100, lightColor, 255],
     intensity: 255,
   });
   Draw.rect({
@@ -106,15 +102,15 @@ function start(timestamp: number) {
   Draw.text({
     position: { x: 300, y: 550 },
     font: "lato",
-    fontSize: 50,
+    fontSize: 62,
     text: "Scalable big text!",
     fontColor: [255, 255, 0, 255],
   });
   Draw.text({
     position: { x: 150, y: 480 },
-    font: "jersey",
-    fontSize: 16,
-    text: "Mini-My! small scalable text!",
+    font: "ya",
+    fontSize: 8,
+    text: "this will be a little bit of a problem couse i sure will use even a 8 size",
     fontColor: [255, 255, 255, 255],
   });
 

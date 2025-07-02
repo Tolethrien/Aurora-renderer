@@ -2,7 +2,6 @@ import Mat4 from "../../utils/mat4";
 import { assert } from "../../utils/utils";
 import { PipelineBind } from "../aurora";
 import Aurora from "../core";
-import AuroraDebugInfo from "./debugger/debugInfo";
 type CameraZoom = { current: number; max: number; min: number };
 type CameraPosition = { x: number; y: number };
 const cameraData = {
@@ -20,13 +19,13 @@ export default class AuroraCamera {
     min: 0,
   };
   private static buildInCameraBind: PipelineBind | undefined;
-  private static cameraBounds = new Float32Array([0, 0]);
+  private static cameraBounds = new Float32Array([Infinity, -Infinity]);
   private static buildInCameraBuffer: GPUBuffer;
   private static buildInCameraBoundBuffer: GPUBuffer;
 
   public static initialize() {
     this.projectionViewMatrix = Mat4.create();
-    this.view = Mat4.create().lookAt([0, 0, 1], [0, 0, 0], [0, 1, 0]);
+    this.view = Mat4.create().lookAt([0, 0, 0], [0, 0, 0], [0, 1, 0]);
     this.position.x = Aurora.canvas.width / 2;
     this.position.y = Aurora.canvas.height / 2;
     this.speed = 15;
@@ -85,24 +84,23 @@ export default class AuroraCamera {
     else if (cameraData.keyPressed.has("a")) this.position.x -= this.speed;
     if (cameraData.keyPressed.has("w")) this.position.y -= this.speed;
     else if (cameraData.keyPressed.has("s")) this.position.y += this.speed;
-    if (cameraData.keyPressed.has("ArrowDown"))
+    if (cameraData.keyPressed.has("ArrowUp"))
       this.zoom.current > this.zoom.min &&
         (this.zoom.current -= 0.01 * Math.log(this.zoom.current + 1));
-    else if (cameraData.keyPressed.has("ArrowUp"))
+    else if (cameraData.keyPressed.has("ArrowDown"))
       this.zoom.current < this.zoom.max &&
         (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
 
     this.projectionViewMatrix = Mat4.create()
       .ortho(
-        this.position.x * this.zoom.current - Aurora.canvas.width / 2,
-        this.position.x * this.zoom.current + Aurora.canvas.width / 2,
-        this.position.y * this.zoom.current + Aurora.canvas.height / 2,
-        this.position.y * this.zoom.current - Aurora.canvas.height / 2,
+        this.position.x - (Aurora.canvas.width / 2) * this.zoom.current,
+        this.position.x + (Aurora.canvas.width / 2) * this.zoom.current,
+        this.position.y + (Aurora.canvas.height / 2) * this.zoom.current,
+        this.position.y - (Aurora.canvas.height / 2) * this.zoom.current,
         -1,
         1
       )
-      .multiply(this.view)
-      .scale(this.zoom.current);
+      .multiply(this.view);
     Aurora.device.queue.writeBuffer(
       this.buildInCameraBuffer,
       0,

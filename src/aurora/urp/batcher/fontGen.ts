@@ -101,7 +101,7 @@ export default class FontGen {
   public static measureText({ fontName, fontSize, text }: Messure) {
     const fontMeta = Batcher.getUserFontData(fontName).getMeta;
     const { chars, kernings, lineHeight } = fontMeta;
-    const scale = (fontSize * 1.5) / lineHeight;
+    const scale = fontSize / lineHeight;
     let width = 0;
     const height = lineHeight * scale;
     let lastCode: number | null = null;

@@ -3,12 +3,15 @@
 nauczony wiedzą z pierwszej próby przystępuję do ulepszenia renderera!
 
 canvas view:
+
 ![Current State](/public/current.png)
 
 debug info:
+
 ![debug State](/public/debug.png)
 
 Z-buffer(set to sort by "Y") dumped to texture
+
 ![debug State](/public/zBuffer.png)
 
 ## zmiany wzgledem starej wersji!

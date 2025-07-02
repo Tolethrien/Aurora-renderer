@@ -10,7 +10,7 @@ import { BatchAccumulator, GetBatch } from "../draw";
 export default class UnsortedDrawPipeline {
   private static BATCH_SIZE = 1000000;
   private static VERTEX_STRIDE = 8;
-  private static ADD_STRIDE = 6;
+  private static ADD_STRIDE = 7;
   public static drawBatch: BatchAccumulator[] = [];
   private static shapePipeline: GPURenderPipeline;
   private static textPipeline: GPURenderPipeline;
@@ -94,6 +94,11 @@ export default class UnsortedDrawPipeline {
           format: "uint32x4",
           offset: 2 * Uint32Array.BYTES_PER_ELEMENT,
           shaderLocation: 5, //tint
+        },
+        {
+          format: "uint32",
+          offset: 6 * Uint32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 6, //emissive
         },
       ],
     });

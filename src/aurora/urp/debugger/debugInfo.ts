@@ -1,8 +1,13 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
 import Batcher, { BatcherOptions } from "../batcher/batcher";
-
-type textures = "canvas" | "offscreen" | "zBuffer";
+const TEXTURES_TO_SHOW = [
+  "canvas",
+  "offscreenCanvas",
+  "lightMap",
+  "zBufferDump",
+] as const;
+type textures = (typeof TEXTURES_TO_SHOW)[number];
 interface DebugData {
   fps: number;
   GPUTime: number;
@@ -101,19 +106,11 @@ export default class AuroraDebugInfo {
     return this.data;
   }
   public static nextTexture() {
-    const texureToShow = [
-      "canvas",
-      "offscreenCanvas",
-      "lightMap",
-      "zBufferDump",
-    ];
-    console.log("ss");
-    if (this.debugVisibleTextureIndex[0] >= texureToShow.length - 1)
-      this.debugVisibleTextureIndex[0] = 0;
-    else this.debugVisibleTextureIndex[0]++;
+    this.debugVisibleTextureIndex[0] =
+      (this.debugVisibleTextureIndex[0] + 1) % TEXTURES_TO_SHOW.length;
     this.update(
       "displayedTexture",
-      texureToShow[this.debugVisibleTextureIndex[0]]
+      TEXTURES_TO_SHOW[this.debugVisibleTextureIndex[0]]
     );
   }
 

@@ -15,7 +15,7 @@ interface DrawBatch {
 export default class SortedDrawPipeline {
   private static BATCH_SIZE = 1000000; //assumption is - will never hit this amount xD maybe change later
   private static VERTEX_STRIDE = 8;
-  private static ADD_STRIDE = 6;
+  private static ADD_STRIDE = 7;
 
   public static drawBatch: DrawBatch = {
     shape: [],
@@ -108,11 +108,17 @@ export default class SortedDrawPipeline {
           offset: 2 * Uint32Array.BYTES_PER_ELEMENT,
           shaderLocation: 5, //tint
         },
+        {
+          format: "uint32",
+          offset: 6 * Uint32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 6, //emissive
+        },
       ],
     });
     const targets = AuroraDebugInfo.isWorking
       ? [
           Aurora.getColorTargetTemplate("standard"),
+          Aurora.getColorTargetTemplate("HDR"),
           Aurora.getColorTargetTemplate("zBufferDump"),
         ]
       : [Aurora.getColorTargetTemplate("standard")];
@@ -204,6 +210,7 @@ export default class SortedDrawPipeline {
   public static usePipeline() {
     const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
     const zBufferTexture = Batcher.getTextureView("zBufferDump");
+    const hdr = Batcher.getTextureView("HDR");
     const userTextureBind = Batcher.getUserTextureBindGroup;
     const fontBind = Batcher.getUserFontBindGroup;
     const indexBuffer = Batcher.getIndexBuffer;
@@ -214,6 +221,11 @@ export default class SortedDrawPipeline {
     const colorAttachments: GPURenderPassColorAttachment[] = [
       {
         view: offscreenTexture,
+        loadOp: "load",
+        storeOp: "store",
+      },
+      {
+        view: hdr,
         loadOp: "load",
         storeOp: "store",
       },
@@ -342,16 +354,21 @@ export default class SortedDrawPipeline {
   }
 
   private static sortData(dataVert: number[], dataAdd: number[]) {
-    if (dataVert.length % 8 !== 0 || dataAdd.length % 6 !== 0) {
-      throw new Error("Transparent data is not multiple of 8 and 6");
+    if (
+      dataVert.length % this.VERTEX_STRIDE !== 0 ||
+      dataAdd.length % this.ADD_STRIDE !== 0
+    ) {
+      throw new Error(
+        `Transparent data is not multiple of ${this.VERTEX_STRIDE} and ${this.ADD_STRIDE}`
+      );
     }
     const vertChunks: number[][] = [];
     const addChunks: number[][] = [];
-    for (let i = 0; i < dataVert.length; i += 8) {
-      vertChunks.push(dataVert.slice(i, i + 8));
+    for (let i = 0; i < dataVert.length; i += this.VERTEX_STRIDE) {
+      vertChunks.push(dataVert.slice(i, i + this.VERTEX_STRIDE));
     }
-    for (let i = 0; i < dataAdd.length; i += 6) {
-      addChunks.push(dataAdd.slice(i, i + 6));
+    for (let i = 0; i < dataAdd.length; i += this.ADD_STRIDE) {
+      addChunks.push(dataAdd.slice(i, i + this.ADD_STRIDE));
     }
     const combined = vertChunks.map((vert, index) => ({
       vert,

@@ -11,11 +11,16 @@ interface BaseDraw {
   size: Size2D;
   tint?: RGBA;
 }
-interface DrawRect extends BaseDraw {}
-interface DrawCircle extends BaseDraw {}
+interface DrawRect extends BaseDraw {
+  emissive?: boolean;
+}
+interface DrawCircle extends BaseDraw {
+  emissive?: boolean;
+}
 interface DrawSprite extends BaseDraw {
   crop: Position2D & Size2D;
   textureToUse: string;
+  emissive?: boolean;
 }
 interface DrawText {
   position: Position2D;
@@ -39,11 +44,12 @@ export interface BatchAccumulator {
   type: GetBatch["type"];
 }
 export default class Draw {
-  public static rect({ position, size, tint }: DrawRect) {
+  public static rect({ position, size, tint, emissive = false }: DrawRect) {
     const pipeline = getDrawPipeline();
     const color: RGBA = tint ? tint : [255, 255, 255, 255];
     const batch = pipeline.getBatch("shape", color[3]);
     const { addStride, vertexStride } = pipeline.getStride;
+
     AuroraCamera.setCameraBounds(position.y + size.height);
     batch.verticesData[batch.count * vertexStride] = position.x;
     batch.verticesData[batch.count * vertexStride + 1] = position.y;
@@ -59,11 +65,14 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
+    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+
     batch.count++;
+
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
 
-  public static circle({ position, size, tint }: DrawCircle) {
+  public static circle({ position, size, tint, emissive }: DrawCircle) {
     const pipeline = getDrawPipeline();
 
     const color: RGBA = tint ? tint : [255, 255, 255, 255];
@@ -85,6 +94,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
+    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
     batch.count++;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
@@ -94,6 +104,7 @@ export default class Draw {
     tint,
     crop,
     textureToUse,
+    emissive,
   }: DrawSprite) {
     const pipeline = getDrawPipeline();
 
@@ -117,6 +128,8 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
+    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+
     batch.count++;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
@@ -126,7 +139,7 @@ export default class Draw {
     const fontData = Batcher.getUserFontData(font).getMeta;
     const fontIndex = Batcher.getUserFontData(font).getIndex;
     const { chars, kernings, lineHeight } = fontData;
-    const scale = (fontSize * 1.5) / lineHeight;
+    const scale = fontSize / lineHeight;
     const color: RGBA = fontColor ? fontColor : [255, 255, 255, 255];
     const { addStride, vertexStride } = pipeline.getStride;
 
@@ -186,6 +199,7 @@ export default class Draw {
       batch.addData[batch.count * addStride + 3] = color[1];
       batch.addData[batch.count * addStride + 4] = color[2];
       batch.addData[batch.count * addStride + 5] = color[3];
+      batch.addData[batch.count * addStride + 6] = 0;
 
       batch.count++;
       AuroraDebugInfo.accumulate("drawnQuads", 1);

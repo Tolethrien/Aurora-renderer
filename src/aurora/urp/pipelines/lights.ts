@@ -147,7 +147,7 @@ export default class LightsPipe {
       colorAttachments: [
         {
           view: Batcher.getTextureView("lightMap"),
-          clearValue: [...correction, 0],
+          clearValue: [...correction, 1],
           loadOp: "clear",
           storeOp: "store",
         },
