@@ -349,7 +349,6 @@ export default class SortedDrawPipeline {
       byteOffsetAdd += addArr.byteLength;
       AuroraDebugInfo.accumulate("drawCalls", 1);
     });
-
     AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
   }
 

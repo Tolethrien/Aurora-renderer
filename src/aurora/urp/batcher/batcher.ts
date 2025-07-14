@@ -4,7 +4,11 @@ import dummyTexture from "../assets/dummy.png";
 import { GPUAuroraTexture, PipelineBind, RGB } from "../../aurora";
 import generateFont, { FontGenProps } from "./fontGen";
 import FontGen from "./fontGen";
-import { generateInternalSamplers, generateInternalTextures } from "./textures";
+import {
+  clearTextureBuffer,
+  generateInternalSamplers,
+  generateInternalTextures,
+} from "./textures";
 import {
   clearPipelines,
   createPipelines,
@@ -49,7 +53,7 @@ export default class Batcher {
   private static userTextureIndexes: Map<string, number> = new Map();
   private static batchEncoder: GPUCommandEncoder;
   public static userFonts: Map<string, generateFont> = new Map();
-
+  private static clearBuffer: GPUBuffer;
   public static async Initialize(options?: Partial<BatcherOptions>) {
     this.batcherOptions = { ...this.batcherOptions, ...options };
 
@@ -61,7 +65,7 @@ export default class Batcher {
       dataType: "Uint32Array",
       label: "indexBuffer",
     });
-
+    this.clearBuffer = clearTextureBuffer();
     generateInternalTextures();
     generateInternalSamplers();
     compileShaders();
@@ -171,19 +175,32 @@ export default class Batcher {
       },
     });
   }
+  private static clearTexture(textureName: string) {
+    const commandEncoder = this.batchEncoder;
+    const { texture, meta } = this.getTexture(textureName);
+
+    const bytesPerRow =
+      Math.ceil(((meta.format === "bgra8unorm" ? 4 : 8) * meta.width) / 256) *
+      256;
+
+    commandEncoder.copyBufferToTexture(
+      { buffer: this.clearBuffer, bytesPerRow: bytesPerRow },
+      { texture: texture },
+      {
+        width: meta.width,
+        height: meta.height,
+        depthOrArrayLayers: meta.arrayTextureLength,
+      }
+    );
+  }
   private static clearTextures() {
     const commandEncoder = this.batchEncoder;
+
     const passEncoder = commandEncoder.beginRenderPass({
       colorAttachments: [
         {
           view: this.getTextureView("offscreenCanvas"),
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
-          loadOp: "clear",
-          storeOp: "store",
-        },
-        {
-          view: this.getTextureView("zBufferDump"),
-          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          clearValue: [0.5, 0.5, 0.5, 1],
           loadOp: "clear",
           storeOp: "store",
         },
@@ -202,6 +219,9 @@ export default class Batcher {
         : undefined,
     });
     passEncoder.end();
+    // this.clearTexture("offscreenCanvas");
+    this.clearTexture("zBufferDump");
+    this.clearTexture("HDR");
   }
 
   private static async createUserTextureArray() {

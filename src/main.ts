@@ -13,7 +13,6 @@ async function preload() {
   await create();
   start(0);
 }
-
 async function create() {
   const yaFont = { fontName: "ya", img: ftex, json: fjson };
   await Batcher.Initialize({
@@ -26,7 +25,7 @@ async function create() {
     ],
     fonts: [yaFont],
   });
-  Batcher.setColorCorrection([100, 100, 100]);
+  Batcher.setColorCorrection([20, 20, 20]);
 }
 const arr = Array(100)
   .fill(0)
@@ -34,6 +33,7 @@ const arr = Array(100)
 
 let w = 135;
 let h = 114;
+let x = -200;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Batcher.beginBatch();
@@ -58,34 +58,35 @@ function start(timestamp: number) {
   });
   const lightColor = 255;
   Draw.rect({
-    position: { x: 350, y: 250 },
-    size: { height: h, width: w },
-    tint: [255, 0, 0, 255],
+    position: { x: x, y: 250 },
+    size: { height: 100, width: 100 },
+    tint: [255, 255, 255, 255],
     emissive: true,
   });
   Draw.circle({
     position: { x: 425, y: 225 },
     size: { height: 50, width: 50 },
     tint: [255, 0, 0, 255],
+    // emissive: true,
   });
   Draw.pointLight({
-    position: { x: 500, y: 100 },
-    size: { height: 350, width: 350 },
-    tint: [lightColor, 100, 100, 255],
+    position: { x: x, y: 250 },
+    size: { height: 550, width: 550 },
+    tint: [255, 100, 100, 255],
     intensity: 255,
   });
-  Draw.pointLight({
-    position: { x: 300, y: 300 },
-    size: { height: 350, width: 350 },
-    tint: [100, lightColor, 100, 255],
-    intensity: 255,
-  });
-  Draw.pointLight({
-    position: { x: 100, y: 500 },
-    size: { height: 350, width: 350 },
-    tint: [100, 100, lightColor, 255],
-    intensity: 255,
-  });
+  // Draw.pointLight({
+  //   position: { x: 300, y: 300 },
+  //   size: { height: 350, width: 350 },
+  //   tint: [100, lightColor, 100, 255],
+  //   intensity: 255,
+  // });
+  // Draw.pointLight({
+  //   position: { x: 100, y: 500 },
+  //   size: { height: 350, width: 350 },
+  //   tint: [100, 100, lightColor, 255],
+  //   intensity: 255,
+  // });
   Draw.rect({
     position: { x: 400, y: 300 },
     size: { height: h, width: w },
@@ -116,7 +117,8 @@ function start(timestamp: number) {
 
   Batcher.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(60, true);
+  AuroraDebugInfo.displayEveryFrame(60 * 5);
+  x++;
   requestAnimationFrame(start);
 }
 await preload();

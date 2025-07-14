@@ -6,6 +6,7 @@ const TEXTURES_TO_SHOW = [
   "offscreenCanvas",
   "lightMap",
   "zBufferDump",
+  "HDR",
 ] as const;
 type textures = (typeof TEXTURES_TO_SHOW)[number];
 interface DebugData {

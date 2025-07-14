@@ -5,6 +5,7 @@ import type {
   BufferOptions,
   ColorAttachments,
   CreateBindGroup,
+  GenerateGPUMipTextureProps,
   GenerateGPUTextureProps,
   GPUAuroraTexture,
   MappedBufferOptions,
@@ -101,7 +102,7 @@ export default class Aurora {
     return this.device.createPipelineLayout({ bindGroupLayouts: bindGLayout });
   }
   public static createComputePipeline(props: AuroraComputePipeline) {
-    return this.device.createComputePipeline({
+    return this.device.createComputePipelineAsync({
       layout: props.pipelineLayout,
       label: props.pipelineName,
       compute: {
@@ -156,6 +157,7 @@ export default class Aurora {
     });
     return bindGroup;
   }
+
   public static getColorTargetTemplate(
     type: ColorAttachments
   ): GPUColorTargetState {
@@ -267,6 +269,7 @@ export default class Aurora {
         height: gpuTexture.height,
         width: gpuTexture.width,
         arrayTextureLength: 1,
+        format: format ?? "bgra8unorm",
         src: new Map([
           [
             label,
@@ -310,6 +313,7 @@ export default class Aurora {
         height: gpuTexture.height,
         width: gpuTexture.width,
         arrayTextureLength: 1,
+        format: format ?? "bgra8unorm",
         src: new Map([
           [
             label,
@@ -354,7 +358,7 @@ export default class Aurora {
       meta: {
         height: gpuTexture.height,
         width: gpuTexture.width,
-
+        format: format ?? "bgra8unorm",
         src: new Map(),
         arrayTextureLength: bitmaps.length,
       },
@@ -379,6 +383,29 @@ export default class Aurora {
 
     return textureData;
   }
+
+  // public static async createEmptyTextureMipMap({
+  //   mipCount,
+  //   size,
+  //   format,
+  // }: GenerateGPUMipTextureProps) {
+  //   const mipTexture = Aurora.device.createTexture({
+  //     size: {
+  //       width: size.w,
+  //       height: size.h,
+  //       depthOrArrayLayers: 1,
+  //     },
+  //     mipLevelCount: mipCount,
+  //     sampleCount: 1,
+  //     dimension: "2d",
+  //     format,
+  //     usage:
+  //       GPUTextureUsage.TEXTURE_BINDING |
+  //       GPUTextureUsage.RENDER_ATTACHMENT |
+  //       GPUTextureUsage.COPY_DST |
+  //       GPUTextureUsage.COPY_SRC,
+  //   });
+  // }
   private static calculateDimension(textures: ImageBitmap[]) {
     let textureWidth = 0;
     let textureHeight = 0;

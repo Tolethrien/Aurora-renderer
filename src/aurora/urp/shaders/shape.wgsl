@@ -37,7 +37,7 @@ struct FragmentOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
-
+const hdr_srt = 5.0;
 
 @vertex
 fn vertexMain(props: VertexInput) -> VertexOutput {
@@ -85,7 +85,7 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(texture.w < 0.001){discard;};
          let finalColor = texture * color;
          out.primary = finalColor;
-        if(props.emissive == 1){out.hdr = finalColor;}
+        if(props.emissive == 1){out.hdr = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
     }
     else if(props.shapeType == 1){
         let drawOrigin = batcherOption.x;
@@ -98,11 +98,11 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(alpha == 0){discard;};
         let finalColor = vec4f(color.rgb,alpha);
          out.primary = finalColor;
-        if(props.emissive == 1){out.hdr = finalColor;}
+        if(props.emissive == 1){out.hdr = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
     }
     else{
         out.primary = color;
-        if(props.emissive == 1){out.hdr = color;}
+        if(props.emissive == 1){out.hdr = vec4<f32>(vec3<f32>(1,0,0) * hdr_srt,1.0);}
 
     }
     return out;

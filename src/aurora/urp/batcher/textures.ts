@@ -60,6 +60,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomXOne",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomXOne", bloomXOne);
 
@@ -70,6 +71,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomYOne",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomYOne", bloomYOne);
 
@@ -80,6 +82,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomXTwo",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomXTwo", bloomXTwo);
 
@@ -90,6 +93,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomYTwo",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomYTwo", bloomYTwo);
 
@@ -100,6 +104,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomXThree",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomXThree", bloomXThree);
 
@@ -110,6 +115,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomYThree",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomYThree", bloomYThree);
 
@@ -120,6 +126,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomXFour",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomXFour", bloomXFour);
 
@@ -130,6 +137,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "bloomYFour",
+    isStorage: true,
   });
   Batcher.internatTextures.set("bloomYFour", bloomYFour);
 }
@@ -152,4 +160,27 @@ export function generateInternalSamplers() {
     "sortedDrawZBuffer",
     Aurora.createSampler({ compare: "greater-equal" })
   );
+  Batcher.internatSamplers.set(
+    "linear",
+    Aurora.createSampler({
+      label: "linear",
+      minFilter: "linear",
+      magFilter: "linear",
+      mipmapFilter: "linear",
+      maxAnisotropy: 1,
+    })
+  );
+}
+
+export function clearTextureBuffer() {
+  const bytesPerRow = Math.ceil((8 * Aurora.canvas.width) / 256) * 256;
+  const bufferSize = bytesPerRow * Aurora.canvas.height;
+  const zeroBuf = Aurora.device.createBuffer({
+    size: bufferSize,
+    usage: GPUBufferUsage.COPY_SRC,
+    mappedAtCreation: true,
+  });
+  new Uint8Array(zeroBuf.getMappedRange()).fill(0);
+  zeroBuf.unmap();
+  return zeroBuf;
 }

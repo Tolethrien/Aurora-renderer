@@ -162,6 +162,7 @@ export default class LightsPipe {
     passEncoder.drawIndexed(6, this.frameCount);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
+
     AuroraDebugInfo.accumulate("pipelineInUse", ["lights"]);
   }
 }

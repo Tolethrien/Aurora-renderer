@@ -65,6 +65,11 @@ export default class DebugTexturePipe {
             visibility: GPUShaderStage.FRAGMENT,
             texture: { viewDimension: "2d" },
           },
+          {
+            binding: 3,
+            visibility: GPUShaderStage.FRAGMENT,
+            texture: { viewDimension: "2d" },
+          },
         ],
         label: "DebugTextureTexturesBindLayout",
       },
@@ -77,6 +82,7 @@ export default class DebugTexturePipe {
             resource: Batcher.getTextureView("zBufferDump"),
           },
           { binding: 2, resource: Batcher.getTextureView("lightMap") },
+          { binding: 3, resource: Batcher.getTextureView("bloomYOne") },
         ],
       },
     });
@@ -90,6 +96,13 @@ export default class DebugTexturePipe {
       pipelineName: "DebugTexturePipeline",
       buffers: [],
       pipelineLayout: pipelineLayout,
+      colorTargets: [
+        {
+          format: "bgra8unorm",
+          blend: undefined,
+          writeMask: GPUColorWrite.ALL,
+        },
+      ],
     });
   }
 

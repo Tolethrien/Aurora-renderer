@@ -9,6 +9,9 @@
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
 - posprzatac drawPipeliny bo za duzo tam pracy przy jakichkolwiek zmianach
 - zrobic zwyczajnie need Clean w pipelinie i na 1 batchu czyscic teksture a potem loadowac(1 render pass mniej)
+- czyszczenie tekstur powinno byc w pipelinach a nie jak teraz jako wielki pass pierwszy batcheru
+- moze by zrobic tylko sprite/circle i oba one moga byc texturowane po prostu
+- jak nie maszzadnego point lightu to nie masz swiatla w ogole
 
 ## TODO
 
