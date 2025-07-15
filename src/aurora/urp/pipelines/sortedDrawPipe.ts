@@ -117,7 +117,6 @@ export default class SortedDrawPipeline {
     });
     const targets = AuroraDebugInfo.isWorking
       ? [
-          Aurora.getColorTargetTemplate("standard"),
           Aurora.getColorTargetTemplate("HDR"),
           Aurora.getColorTargetTemplate("zBufferDump"),
         ]
@@ -210,7 +209,6 @@ export default class SortedDrawPipeline {
   public static usePipeline() {
     const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
     const zBufferTexture = Batcher.getTextureView("zBufferDump");
-    const hdr = Batcher.getTextureView("HDR");
     const userTextureBind = Batcher.getUserTextureBindGroup;
     const fontBind = Batcher.getUserFontBindGroup;
     const indexBuffer = Batcher.getIndexBuffer;
@@ -221,11 +219,6 @@ export default class SortedDrawPipeline {
     const colorAttachments: GPURenderPassColorAttachment[] = [
       {
         view: offscreenTexture,
-        loadOp: "load",
-        storeOp: "store",
-      },
-      {
-        view: hdr,
         loadOp: "load",
         storeOp: "store",
       },

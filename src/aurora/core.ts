@@ -5,7 +5,6 @@ import type {
   BufferOptions,
   ColorAttachments,
   CreateBindGroup,
-  GenerateGPUMipTextureProps,
   GenerateGPUTextureProps,
   GPUAuroraTexture,
   MappedBufferOptions,
@@ -269,6 +268,7 @@ export default class Aurora {
         height: gpuTexture.height,
         width: gpuTexture.width,
         arrayTextureLength: 1,
+        mipCount: 1,
         format: format ?? "bgra8unorm",
         src: new Map([
           [
@@ -314,6 +314,7 @@ export default class Aurora {
         width: gpuTexture.width,
         arrayTextureLength: 1,
         format: format ?? "bgra8unorm",
+        mipCount: 1,
         src: new Map([
           [
             label,
@@ -359,6 +360,7 @@ export default class Aurora {
         height: gpuTexture.height,
         width: gpuTexture.width,
         format: format ?? "bgra8unorm",
+        mipCount: 1,
         src: new Map(),
         arrayTextureLength: bitmaps.length,
       },
@@ -384,28 +386,44 @@ export default class Aurora {
     return textureData;
   }
 
-  // public static async createEmptyTextureMipMap({
-  //   mipCount,
-  //   size,
-  //   format,
-  // }: GenerateGPUMipTextureProps) {
-  //   const mipTexture = Aurora.device.createTexture({
-  //     size: {
-  //       width: size.w,
-  //       height: size.h,
-  //       depthOrArrayLayers: 1,
-  //     },
-  //     mipLevelCount: mipCount,
-  //     sampleCount: 1,
-  //     dimension: "2d",
-  //     format,
-  //     usage:
-  //       GPUTextureUsage.TEXTURE_BINDING |
-  //       GPUTextureUsage.RENDER_ATTACHMENT |
-  //       GPUTextureUsage.COPY_DST |
-  //       GPUTextureUsage.COPY_SRC,
-  //   });
-  // }
+  public static createEmptyMipTexture({
+    mipCount,
+    size,
+    format,
+    label,
+    isStorage,
+  }: GenerateGPUTextureProps) {
+    const gpuTexture = this.generateGPUTexture({
+      label,
+      size: { w: size.w, h: size.h },
+      format,
+      isStorage: isStorage,
+      mipCount: mipCount,
+    });
+
+    const textureData: GPUAuroraTexture = {
+      texture: gpuTexture,
+      label,
+      meta: {
+        height: gpuTexture.height,
+        width: gpuTexture.width,
+        arrayTextureLength: 1,
+        mipCount: mipCount ?? 1,
+        format: format ?? "bgra8unorm",
+        src: new Map([
+          [
+            label,
+            {
+              height: gpuTexture.height,
+              width: gpuTexture.width,
+              src: "empty",
+            },
+          ],
+        ]),
+      },
+    };
+    return textureData;
+  }
   private static calculateDimension(textures: ImageBitmap[]) {
     let textureWidth = 0;
     let textureHeight = 0;
@@ -421,6 +439,7 @@ export default class Aurora {
     size,
     label,
     isStorage,
+    mipCount = 1,
   }: GenerateGPUTextureProps) {
     let usage =
       GPUTextureUsage.COPY_DST |
@@ -436,6 +455,7 @@ export default class Aurora {
       },
       label,
       usage,
+      mipLevelCount: mipCount,
     });
   }
 }

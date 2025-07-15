@@ -73,7 +73,6 @@ export default class Batcher {
     this.createBatcherOptionsBind();
     await this.createUserTextureArray();
     await this.generateFonts();
-
     await createPipelines();
   }
   public static beginBatch() {
@@ -219,9 +218,8 @@ export default class Batcher {
         : undefined,
     });
     passEncoder.end();
-    // this.clearTexture("offscreenCanvas");
     this.clearTexture("zBufferDump");
-    this.clearTexture("HDR");
+    this.clearTexture("bloomThreshold");
   }
 
   private static async createUserTextureArray() {
@@ -309,7 +307,7 @@ export default class Batcher {
 
   public static getTexture(name: string) {
     const texture = this.internatTextures.get(name);
-    if (!texture) throw new Error(`no internal texture with name ${texture}`);
+    if (!texture) throw new Error(`no internal texture with name ${name}`);
     return texture;
   }
   public static getUserFontData(fontName: string) {
@@ -317,13 +315,16 @@ export default class Batcher {
     if (!font) throw new Error(`there is no userFont with name ${fontName}`);
     return font;
   }
-  public static getTextureView(name: string) {
+  public static getTextureView(name: string, mipLevel = 0) {
     const texture = this.internatTextures.get(name);
     if (!texture)
       throw new Error(
         `no internal texture with name ${texture} to create view from`
       );
-    return texture.texture.createView();
+    return texture.texture.createView({
+      mipLevelCount: 1,
+      baseMipLevel: mipLevel,
+    });
   }
   public static getSampler(name: string) {
     const sampler = this.internatSamplers.get(name);

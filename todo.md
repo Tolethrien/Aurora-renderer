@@ -12,6 +12,7 @@
 - czyszczenie tekstur powinno byc w pipelinach a nie jak teraz jako wielki pass pierwszy batcheru
 - moze by zrobic tylko sprite/circle i oba one moga byc texturowane po prostu
 - jak nie maszzadnego point lightu to nie masz swiatla w ogole
+- zrobic debuuger na process.env by dzialal tree-shaking
 
 ## TODO
 

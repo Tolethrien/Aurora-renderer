@@ -30,8 +30,7 @@ struct VertexOutput {
 };
 struct FragmentOutput {
     @location(0) primary: vec4<f32>,
-    @location(1) hdr: vec4<f32>,
-    @location(2) depth: vec4<f32>,
+    @location(1) depth: vec4<f32>,
 };
 
 
@@ -79,13 +78,11 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     let color = convertColor(props.color);
     var out:FragmentOutput;
     out.depth = vec4<f32>(props.z,0,0,0);
-    out.hdr = vec4<f32>(0,0,0,0);
     if(props.shapeType == 2){
         let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
          if(texture.w < 0.001){discard;};
          let finalColor = texture * color;
          out.primary = finalColor;
-        if(props.emissive == 1){out.hdr = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
     }
     else if(props.shapeType == 1){
         let drawOrigin = batcherOption.x;
@@ -98,11 +95,11 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(alpha == 0){discard;};
         let finalColor = vec4f(color.rgb,alpha);
          out.primary = finalColor;
-        if(props.emissive == 1){out.hdr = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
     }
     else{
-        out.primary = color;
-        if(props.emissive == 1){out.hdr = vec4<f32>(vec3<f32>(1,0,0) * hdr_srt,1.0);}
+        var c = color;
+        if(props.emissive == 1) {c = vec4<f32>(color.rgb * hdr_srt,1.0);}
+        out.primary = c;
 
     }
     return out;

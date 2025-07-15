@@ -2,7 +2,6 @@
 
 @group(0) @binding(0) var inputTexture: texture_2d<f32>;
 @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;
-
 // Wagi dla 5-próbkowego jądra Gaussa
 const weights = array<f32, 5>(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 // Przesunięcia (offsets) dla próbek
@@ -21,9 +20,9 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let weight = weights[i];
 
         // Próbkowanie w lewo
-        result += textureLoad(inputTexture, global_id.xy - vec2<u32>(u32(offset), 0u), 0) * weight;
+        result += textureLoad(inputTexture, global_id.xy - vec2<u32>(u32(offset), 0u),0) * weight;
         // Próbkowanie w prawo
-        result += textureLoad(inputTexture, global_id.xy + vec2<u32>(u32(offset), 0u), 0) * weight;
+        result += textureLoad(inputTexture, global_id.xy + vec2<u32>(u32(offset), 0u),0) * weight;
     }
 
     textureStore(outputTexture, global_id.xy, result);

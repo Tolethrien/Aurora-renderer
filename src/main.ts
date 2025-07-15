@@ -7,6 +7,7 @@ import spritesheet from "./assets/radial.png";
 import ftex from "./assets/ya-hei-ascii.png";
 import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
+import { hsla, hslaToRgba } from "./utils/utils";
 
 async function preload() {
   await Aurora.init();
@@ -14,6 +15,7 @@ async function preload() {
   start(0);
 }
 async function create() {
+  console.log(hslaToRgba(205, 1, 0.5, 1));
   const yaFont = { fontName: "ya", img: ftex, json: fjson };
   await Batcher.Initialize({
     drawOrigin: "center",
@@ -33,7 +35,7 @@ const arr = Array(100)
 
 let w = 135;
 let h = 114;
-let x = -200;
+let x = 200;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Batcher.beginBatch();
@@ -118,7 +120,7 @@ function start(timestamp: number) {
   Batcher.endBatch();
   AuroraDebugInfo.endCount();
   AuroraDebugInfo.displayEveryFrame(60 * 5);
-  x++;
+  // x++;
   requestAnimationFrame(start);
 }
 await preload();

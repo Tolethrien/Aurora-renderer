@@ -56,12 +56,9 @@ interface GenerateGPUTextureProps {
   size: { w: number; h: number; z?: number };
   label: string;
   isStorage?: boolean;
+  mipCount?: number;
 }
-interface GenerateGPUMipTextureProps
-  extends Omit<GenerateGPUTextureProps, "isStorage"> {
-  mipCount: number;
-  mipScale: number;
-}
+
 interface GPUAuroraTexture {
   texture: GPUTexture;
   label: string;
@@ -71,6 +68,7 @@ interface GPUAuroraTexture {
     height: number;
     arrayTextureLength: number;
     format: string;
+    mipCount: number;
   };
 }
 type PipelineBind = [GPUBindGroup, GPUBindGroupLayout];

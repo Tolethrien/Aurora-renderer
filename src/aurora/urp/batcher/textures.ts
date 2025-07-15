@@ -9,7 +9,7 @@ export function generateInternalTextures() {
       width: Aurora.canvas.width,
       height: Aurora.canvas.height,
     },
-    format: "bgra8unorm",
+    format: "rgba16float",
     label: "offscreenCanvas",
   });
   Batcher.internatTextures.set("offscreenCanvas", offscreen);
@@ -43,103 +43,39 @@ export function generateInternalTextures() {
   });
   Batcher.internatTextures.set("lightMap", light);
 
-  const hdr = Aurora.createTextureEmpty({
+  const bloomThreshold = Aurora.createTextureEmpty({
     size: {
       width: Aurora.canvas.width,
       height: Aurora.canvas.height,
     },
     format: "rgba16float",
-    label: "HDR",
-  });
-  Batcher.internatTextures.set("HDR", hdr);
-
-  const bloomXOne = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
-    },
-    format: "rgba16float",
-    label: "bloomXOne",
+    label: "bloomThreshold",
     isStorage: true,
   });
-  Batcher.internatTextures.set("bloomXOne", bloomXOne);
+  Batcher.internatTextures.set("bloomThreshold", bloomThreshold);
 
-  const bloomYOne = Aurora.createTextureEmpty({
+  const bloomXPass = Aurora.createEmptyMipTexture({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      w: Aurora.canvas.width,
+      h: Aurora.canvas.height,
     },
     format: "rgba16float",
-    label: "bloomYOne",
+    label: "bloomXPass",
     isStorage: true,
+    mipCount: 4,
   });
-  Batcher.internatTextures.set("bloomYOne", bloomYOne);
-
-  const bloomXTwo = Aurora.createTextureEmpty({
+  Batcher.internatTextures.set("bloomXPass", bloomXPass);
+  const bloomYPass = Aurora.createEmptyMipTexture({
     size: {
-      width: Aurora.canvas.width * 0.75,
-      height: Aurora.canvas.height * 0.75,
+      w: Aurora.canvas.width,
+      h: Aurora.canvas.height,
     },
     format: "rgba16float",
-    label: "bloomXTwo",
+    label: "bloomYPass",
     isStorage: true,
+    mipCount: 4,
   });
-  Batcher.internatTextures.set("bloomXTwo", bloomXTwo);
-
-  const bloomYTwo = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width * 0.75,
-      height: Aurora.canvas.height * 0.75,
-    },
-    format: "rgba16float",
-    label: "bloomYTwo",
-    isStorage: true,
-  });
-  Batcher.internatTextures.set("bloomYTwo", bloomYTwo);
-
-  const bloomXThree = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width * 0.5,
-      height: Aurora.canvas.height * 0.5,
-    },
-    format: "rgba16float",
-    label: "bloomXThree",
-    isStorage: true,
-  });
-  Batcher.internatTextures.set("bloomXThree", bloomXThree);
-
-  const bloomYThree = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width * 0.5,
-      height: Aurora.canvas.height * 0.5,
-    },
-    format: "rgba16float",
-    label: "bloomYThree",
-    isStorage: true,
-  });
-  Batcher.internatTextures.set("bloomYThree", bloomYThree);
-
-  const bloomXFour = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width * 0.25,
-      height: Aurora.canvas.height * 0.25,
-    },
-    format: "rgba16float",
-    label: "bloomXFour",
-    isStorage: true,
-  });
-  Batcher.internatTextures.set("bloomXFour", bloomXFour);
-
-  const bloomYFour = Aurora.createTextureEmpty({
-    size: {
-      width: Aurora.canvas.width * 0.25,
-      height: Aurora.canvas.height * 0.25,
-    },
-    format: "rgba16float",
-    label: "bloomYFour",
-    isStorage: true,
-  });
-  Batcher.internatTextures.set("bloomYFour", bloomYFour);
+  Batcher.internatTextures.set("bloomYPass", bloomYPass);
 }
 /**
  * generates internal samplers for textures
