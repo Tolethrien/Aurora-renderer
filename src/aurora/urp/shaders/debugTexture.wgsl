@@ -32,16 +32,18 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   let offscreen = textureSampleLevel(offscreen,textureSampler,props.coords,0);
   let lightMap = textureSampleLevel(lightMap,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
-  let bloomTM = bloom.rgb / (bloom.rgb + vec3<f32>(1.0));
+  let f = (offscreen.rgb + bloom.rgb) * lightMap.rgb;
+  let toneMapped = f / (f + vec3<f32>(1.0));
+  let bloomToned = bloom.rgb / (bloom.rgb + vec3<f32>(1.0));
   if(index == 3) {
     let depthValue = textureSampleLevel(depth,textureSampler,props.coords,0).r;
     let objectDepth = select(depthValue*10,0,depthValue == 0);
     out = vec4<f32>(objectDepth,objectDepth,objectDepth,1);
   }
-  else if(index == 0) {out = vec4<f32>((offscreen.rgb + bloomTM) * lightMap.rgb,offscreen.a);}
+  else if(index == 0) {out = vec4<f32>(toneMapped,offscreen.a);}
   else if(index == 1) {out = offscreen;}
   else if(index == 2) {out = lightMap;}
-  else if(index == 4) {out = bloom;}
+  else if(index == 4) {out = vec4<f32>(bloomToned,1.0);}
    return out;
 }
 // //========================

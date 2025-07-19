@@ -62,7 +62,7 @@ export function generateInternalTextures() {
     format: "rgba16float",
     label: "bloomXPass",
     isStorage: true,
-    mipCount: 4,
+    mipCount: 5,
   });
   Batcher.internatTextures.set("bloomXPass", bloomXPass);
   const bloomYPass = Aurora.createEmptyMipTexture({
@@ -73,7 +73,7 @@ export function generateInternalTextures() {
     format: "rgba16float",
     label: "bloomYPass",
     isStorage: true,
-    mipCount: 4,
+    mipCount: 5,
   });
   Batcher.internatTextures.set("bloomYPass", bloomYPass);
 }

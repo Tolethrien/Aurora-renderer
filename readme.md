@@ -14,10 +14,14 @@ Z-buffer(set to sort by "Y") dumped to texture
 
 ![debug State](/public/zBuffer.png)
 
+bloom HDR + toneMapping
+
+![bloom State](/public/bloom.png)
+
 ## zmiany wzgledem starej wersji!
 
 - zamiast jednego shadera multishadering
-- zamiast sortowac obiekty na CPU używany jest WBOIT wraz z Z-bufferem (ustawionym na Y)
+- zamiast sortowac obiekty na CPU używany Z-buffer (ustawionym na Y)
 - ulepszone renderowanie tekstu używając MSDF zamiast po prostu próbkowania tekstury
 - Draw ma inne kształty niż tylko rect
 - Path2d do renderowania poligonów
@@ -27,7 +31,7 @@ Z-buffer(set to sort by "Y") dumped to texture
 - generowane na GPU pełne oświetlenie a nie ze spritów
 - normal mapy i shadow mapy
 - pixel density
-- poprawny bloom za pomoca HDR i piramidowania
+- poprawny bloom za pomoca HDR i piramidowania + toneMapping
 - izometria
 - możliwość dodawania własnych pipelinów
 - rotacja na GPU

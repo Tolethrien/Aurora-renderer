@@ -8,13 +8,10 @@ importers:
 
   .:
     dependencies:
-      wgpu-matrix:
-        specifier: 2.9.0
-        version: 2.9.0
-    devDependencies:
       '@webgpu/types':
         specifier: ^0.1.60
         version: 0.1.60
+    devDependencies:
       typescript:
         specifier: ~5.7.2
         version: 5.7.3
@@ -372,9 +369,6 @@ packages:
       yaml:
         optional: true
 
-  wgpu-matrix@2.9.0:
-    resolution: {integrity: sha512-RFhLcfghrbYaOt7OSiNIw2bqfrl2iHA30jM0Q+fm9v5MX5gQhcRs1Eqwar3MXrv2i5N0quv8UcXTzTD1KroulQ==}
-
 snapshots:
 
   '@esbuild/aix-ppc64@0.25.2':
@@ -608,5 +602,3 @@ snapshots:
       tinyglobby: 0.2.12
     optionalDependencies:
       fsevents: 2.3.3
-
-  wgpu-matrix@2.9.0: {}

@@ -82,7 +82,7 @@ export default class DebugTexturePipe {
             resource: Batcher.getTextureView("zBufferDump"),
           },
           { binding: 2, resource: Batcher.getTextureView("lightMap") },
-          { binding: 3, resource: Batcher.getTextureView("bloomYPass", 0) },
+          { binding: 3, resource: Batcher.getTextureView("bloomXPass", 0) },
         ],
       },
     });
