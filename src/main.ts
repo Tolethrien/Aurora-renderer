@@ -45,7 +45,7 @@ async function create() {
     ],
     fonts: [yaFont],
   });
-  Batcher.setColorCorrection([20, 20, 20]);
+  Batcher.setColorCorrection([25, 25, 25]);
 }
 const arr = Array(100)
   .fill(0)
@@ -168,6 +168,7 @@ function start(timestamp: number) {
   //   fontSize: 62,
   //   text: "Scalable big text!",
   //   fontColor: [255, 255, 0, 255],
+  //   emissive: true,
   // });
   // Draw.text({
   //   position: { x: 150, y: 480 },

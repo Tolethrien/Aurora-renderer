@@ -34,7 +34,7 @@ export default class BloomPipeline {
   private static bloomUpscaleBindLayout: PipelineBind["1"];
   private static bloomDownscaleBindLayout: PipelineBind["1"];
   private static currentMipLevel = 0;
-
+  public static bloomInFrame: boolean = false;
   private static bindListOrder: PassOrderList[] = [
     ["x", "bloomThreshold", "bloomXPass", 0],
     ["y", "bloomXPass", "bloomYPass", 0],
@@ -54,15 +54,6 @@ export default class BloomPipeline {
     ["upscale", "bloomXPass", "bloomXPass", 3],
     ["upscale", "bloomXPass", "bloomXPass", 2],
     ["upscale", "bloomXPass", "bloomXPass", 1],
-
-    // ["x", "bloomYPass", "bloomXPass", 2],
-    // ["y", "bloomXPass", "bloomYPass", 2],
-
-    // ["x", "bloomYPass", "bloomXPass", 1],
-    // ["y", "bloomXPass", "bloomYPass", 1],
-
-    // ["x", "bloomYPass", "bloomXPass", 0],
-    // ["y", "bloomXPass", "bloomYPass", 0],
   ];
 
   public static async createPipeline() {
@@ -152,7 +143,7 @@ export default class BloomPipeline {
             binding: 0,
             visibility: GPUShaderStage.COMPUTE,
             texture: {
-              sampleType: "unfilterable-float",
+              sampleType: "float",
               viewDimension: "2d",
             },
           },
@@ -164,6 +155,11 @@ export default class BloomPipeline {
               format: "rgba16float",
               viewDimension: "2d",
             },
+          },
+          {
+            binding: 2,
+            visibility: GPUShaderStage.COMPUTE,
+            sampler: { type: "filtering" },
           },
         ],
       },
@@ -177,6 +173,10 @@ export default class BloomPipeline {
           {
             binding: 1,
             resource: Batcher.getTextureView("bloomThreshold"),
+          },
+          {
+            binding: 2,
+            resource: Batcher.getSampler("linear"),
           },
         ],
       },
@@ -222,6 +222,7 @@ export default class BloomPipeline {
   }
 
   public static usePipeline(): void {
+    if (!this.bloomInFrame) return;
     this.currentMipLevel = 0;
     this.thresholdPass();
     for (const instruction of this.bindListOrder) {
@@ -238,9 +239,11 @@ export default class BloomPipeline {
     }
     AuroraDebugInfo.accumulate("pipelineInUse", ["bloom"]);
   }
-
+  public static clearBatch() {
+    this.bloomInFrame = false;
+  }
   private static thresholdPass() {
-    const { meta } = Batcher.getTexture("offscreenCanvas");
+    const { meta } = Batcher.getTexture("bloomThreshold");
     const size = {
       x: Math.ceil(meta.width / 8),
       y: Math.ceil(meta.height / 8),

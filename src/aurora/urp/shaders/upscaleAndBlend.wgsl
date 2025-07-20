@@ -6,8 +6,8 @@
 @compute @workgroup_size(8, 8)
 fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outputSize = vec2<f32>(textureDimensions(outputTexture));
-
-    if (global_id.x >= u32(outputSize.x) || global_id.y >= u32(outputSize.y)) {
+    let uintSize = vec2<u32>(outputSize); 
+    if (global_id.x >= uintSize.x || global_id.y >= uintSize.y) {
         return;
     }
 

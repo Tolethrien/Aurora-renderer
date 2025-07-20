@@ -83,6 +83,8 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(texture.w < 0.001){discard;};
          let finalColor = texture * color;
          out.primary = finalColor;
+        if(props.emissive == 1) {out.primary = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
+
     }
     else if(props.shapeType == 1){
         let drawOrigin = batcherOption.x;
@@ -95,11 +97,11 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(alpha == 0){discard;};
         let finalColor = vec4f(color.rgb,alpha);
          out.primary = finalColor;
+        if(props.emissive == 1) {out.primary = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
+
     }
     else{
-        var c = color;
-        if(props.emissive == 1) {c = vec4<f32>(color.rgb * hdr_srt,1.0);}
-        out.primary = c;
+        if(props.emissive == 1) {out.primary = vec4<f32>(color.rgb * hdr_srt,1.0);}
 
     }
     return out;

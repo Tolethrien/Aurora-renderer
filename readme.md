@@ -14,9 +14,13 @@ Z-buffer(set to sort by "Y") dumped to texture
 
 ![debug State](/public/zBuffer.png)
 
-bloom HDR + toneMapping
+bloom HDR + toneMapping(rainhard)
 
-![bloom State](/public/bloom.png)
+![bloom State](/public/bloom-rainhard.png)
+
+bloom HDR + toneMapping(ACES)
+
+![bloom State](/public/bloom-aces.png)
 
 ## zmiany wzgledem starej wersji!
 

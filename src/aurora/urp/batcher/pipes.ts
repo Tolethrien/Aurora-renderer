@@ -11,7 +11,7 @@ import BloomPipeline from "../pipelines/bloomPipe";
 export const DRAW_PIPES = {
   unsortedDraw: UnsortedDrawPipeline,
   sortedDraw: SortedDrawPipeline,
-  lights: LightsPipe,
+  // lights: LightsPipe,
 };
 export const ALL_PIPES = [
   UnsortedDrawPipeline,
@@ -31,11 +31,14 @@ export async function createPipelines() {
 export function clearPipelines() {
   Batcher.pipelinesUsedInFrame.forEach((name) => DRAW_PIPES[name].clearBatch());
   Batcher.pipelinesUsedInFrame.clear();
+  LightsPipe.clearBatch();
+  BloomPipeline.clearBatch();
 }
 export function startPipelines() {
   Batcher.pipelinesUsedInFrame.forEach((name) =>
     DRAW_PIPES[name].usePipeline()
   );
+  LightsPipe.usePipeline();
   BloomPipeline.usePipeline();
   AuroraDebugInfo.isWorking
     ? DebugTexturePipe.usePipeline()

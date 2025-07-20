@@ -40,7 +40,7 @@ export default class LightsPipe {
   }
   public static addCount() {
     this.frameCount++;
-    Batcher.pipelinesUsedInFrame.add("lights");
+    // Batcher.pipelinesUsedInFrame.add("lights");
   }
   public static async createPipeline() {
     const shader = Aurora.createShader("lightsShader", lightsShader);

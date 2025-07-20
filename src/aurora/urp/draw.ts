@@ -5,6 +5,7 @@ import AuroraCamera from "./camera";
 import { getDrawPipeline } from "./batcher/pipes";
 import AuroraDebugInfo from "./debugger/debugInfo";
 import LightsPipe from "./pipelines/lights";
+import BloomPipeline from "./pipelines/bloomPipe";
 
 interface BaseDraw {
   position: Position2D;
@@ -28,6 +29,7 @@ interface DrawText {
   font: string;
   fontSize: number;
   fontColor?: RGBA;
+  emissive?: boolean;
 }
 interface DrawPointLight extends BaseDraw {
   intensity: number;
@@ -68,7 +70,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
 
     batch.count++;
-
+    if (emissive) BloomPipeline.bloomInFrame = true;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
 
@@ -133,7 +135,14 @@ export default class Draw {
     batch.count++;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
-  public static text({ position, font, fontColor, fontSize, text }: DrawText) {
+  public static text({
+    position,
+    font,
+    fontColor,
+    fontSize,
+    text,
+    emissive,
+  }: DrawText) {
     const pipeline = getDrawPipeline();
 
     const fontData = Batcher.getUserFontData(font).getMeta;
@@ -199,7 +208,7 @@ export default class Draw {
       batch.addData[batch.count * addStride + 3] = color[1];
       batch.addData[batch.count * addStride + 4] = color[2];
       batch.addData[batch.count * addStride + 5] = color[3];
-      batch.addData[batch.count * addStride + 6] = 0;
+      batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
 
       batch.count++;
       AuroraDebugInfo.accumulate("drawnQuads", 1);

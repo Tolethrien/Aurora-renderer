@@ -45,8 +45,8 @@ export function generateInternalTextures() {
 
   const bloomThreshold = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: Aurora.canvas.width / 2,
+      height: Aurora.canvas.height / 2,
     },
     format: "rgba16float",
     label: "bloomThreshold",
@@ -56,8 +56,8 @@ export function generateInternalTextures() {
 
   const bloomXPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width,
-      h: Aurora.canvas.height,
+      w: Aurora.canvas.width / 2,
+      h: Aurora.canvas.height / 2,
     },
     format: "rgba16float",
     label: "bloomXPass",
@@ -67,8 +67,8 @@ export function generateInternalTextures() {
   Batcher.internatTextures.set("bloomXPass", bloomXPass);
   const bloomYPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width,
-      h: Aurora.canvas.height,
+      w: Aurora.canvas.width / 2,
+      h: Aurora.canvas.height / 2,
     },
     format: "rgba16float",
     label: "bloomYPass",
