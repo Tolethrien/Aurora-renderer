@@ -129,6 +129,7 @@ export default class AuroraDebugInfo {
     this.data.displayedTexture = texture;
     this.data.sortOrder = Batcher.getBatcherOptions.sortOrder;
     this.data.drawOrigin = Batcher.getBatcherOptions.drawOrigin;
+    this.data.colorCorrection = Batcher.getBatcherOptions.colorCorrection;
   }
   public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;

@@ -19,18 +19,21 @@ interface AuroraRenderPipeline {
   colorTargets?: GPUColorTargetState[];
   depthStencil?: GPUDepthStencilState;
   primitive?: GPUPrimitiveState;
+  consts?: Record<string, number>;
 }
 interface AuroraComputePipeline {
   pipelineName: string;
   pipelineLayout: GPUPipelineLayout;
   shader: GPUShaderModule;
+  consts?: Record<string, number>;
 }
 type ColorAttachments =
   | "HDR"
   | "standard"
   | "storage-read-write"
   | "zBufferDump"
-  | "additive";
+  | "additive"
+  | "additiveHDR";
 interface CreateBindGroup {
   layout: GPUBindGroupLayoutDescriptor;
   data: { entries: Iterable<GPUBindGroupEntry>; label?: string };

@@ -42,9 +42,12 @@ const INIT_OPTIONS: BatcherOptions = {
 export default class Batcher {
   private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
   private static indexBuffer: GPUBuffer;
+  private static bloomParamsBuffer: GPUBuffer;
+
   private static userTextureBind: PipelineBind;
   private static userFontBind: PipelineBind;
   private static batcherOptionsBind: PipelineBind;
+  private static bloomParamsUniform: PipelineBind;
   public static pipelinesUsedInFrame: Set<keyof typeof DRAW_PIPES> = new Set();
   public static internatTextures: Map<string, GPUAuroraTexture> = new Map();
   public static loadedShaders: Map<string, GPUShaderModule> = new Map();
@@ -66,6 +69,8 @@ export default class Batcher {
       label: "indexBuffer",
     });
     this.clearBuffer = clearTextureBuffer();
+
+    this.createBloomBuffer();
     generateInternalTextures();
     generateInternalSamplers();
     compileShaders();
@@ -96,7 +101,35 @@ export default class Batcher {
       this.batchEncoder.copyBufferToBuffer(qWrite, 0, qRead, 0, qRead.size);
     }
   }
-
+  private static createBloomBuffer() {
+    this.bloomParamsBuffer = Aurora.createBuffer({
+      bufferType: "uniform",
+      dataLength: 4,
+      dataType: "Float32Array",
+      label: "bloomParamsBuffer",
+    });
+    this.bloomParamsUniform = Aurora.creteBindGroup({
+      layout: {
+        label: "BloomParamsBindLayout",
+        entries: [
+          {
+            binding: 0,
+            buffer: { type: "uniform" },
+            visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
+          },
+        ],
+      },
+      data: {
+        label: "BloomParamsBindData",
+        entries: [
+          {
+            binding: 0,
+            resource: { buffer: this.bloomParamsBuffer },
+          },
+        ],
+      },
+    });
+  }
   private static updateDebugData() {
     const { qRead } = AuroraDebugInfo.getQuery();
 
@@ -365,6 +398,7 @@ export default class Batcher {
   public static get getUserFontBindGroupLayout() {
     return this.userFontBind[1];
   }
+  //TODO: przerobic to na zwykle [data,layout] = getBind()
   public static get getBatcherOptionsBindGroup() {
     return this.batcherOptionsBind[0];
   }
@@ -373,6 +407,15 @@ export default class Batcher {
   }
   public static get getEncoder() {
     return this.batchEncoder;
+  }
+  public static get getBloomParamBuffer() {
+    return this.bloomParamsBuffer;
+  }
+  public static get getBloomParamUniform() {
+    return this.bloomParamsUniform[0];
+  }
+  public static get getBloomParamUniformLayout() {
+    return this.bloomParamsUniform[1];
   }
   public static getShader(name: string) {
     const shader = this.loadedShaders.get(name);

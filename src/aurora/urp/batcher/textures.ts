@@ -38,15 +38,15 @@ export function generateInternalTextures() {
       width: Aurora.canvas.width,
       height: Aurora.canvas.height,
     },
-    format: "bgra8unorm",
+    format: "rgba16float",
     label: "lightMap",
   });
   Batcher.internatTextures.set("lightMap", light);
 
   const bloomThreshold = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width / 2,
-      height: Aurora.canvas.height / 2,
+      width: Aurora.canvas.width,
+      height: Aurora.canvas.height,
     },
     format: "rgba16float",
     label: "bloomThreshold",
@@ -56,24 +56,24 @@ export function generateInternalTextures() {
 
   const bloomXPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width / 2,
-      h: Aurora.canvas.height / 2,
+      w: Aurora.canvas.width,
+      h: Aurora.canvas.height,
     },
     format: "rgba16float",
     label: "bloomXPass",
     isStorage: true,
-    mipCount: 5,
+    mipCount: 4,
   });
   Batcher.internatTextures.set("bloomXPass", bloomXPass);
   const bloomYPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width / 2,
-      h: Aurora.canvas.height / 2,
+      w: Aurora.canvas.width,
+      h: Aurora.canvas.height,
     },
     format: "rgba16float",
     label: "bloomYPass",
     isStorage: true,
-    mipCount: 5,
+    mipCount: 4,
   });
   Batcher.internatTextures.set("bloomYPass", bloomYPass);
 }

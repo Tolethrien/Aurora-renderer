@@ -1,5 +1,3 @@
-// upscale.wgsl
-// Shader do upscalingu tekstury — próbkowanie mniejszej tekstury i zapis do większej.
 
 @group(0) @binding(0) var inputTexture: texture_2d<f32>;
 @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;

@@ -107,6 +107,7 @@ export default class Aurora {
       compute: {
         module: props.shader,
         entryPoint: "computeMain",
+        constants: props.consts ?? undefined,
       },
     });
   }
@@ -118,6 +119,7 @@ export default class Aurora {
         module: props.shader,
         entryPoint: "vertexMain",
         buffers: props.buffers,
+        constants: props.consts ?? undefined,
       },
       primitive: props.primitive,
       fragment: {
@@ -126,6 +128,7 @@ export default class Aurora {
         targets: props.colorTargets ?? [
           this.getColorTargetTemplate("standard"),
         ],
+        constants: props.consts ?? undefined,
       },
       depthStencil: props.depthStencil,
     });
@@ -145,7 +148,12 @@ export default class Aurora {
     });
     return [bindGroup, bindLayout];
   }
-  public static swapBindGroupData(
+  public static creteBindLayout(
+    layout: CreateBindGroup["layout"]
+  ): GPUBindGroupLayout {
+    return this.device.createBindGroupLayout(layout);
+  }
+  public static getNewBindGroupFromLayout(
     data: CreateBindGroup["data"],
     layout: GPUBindGroupLayout
   ) {
@@ -215,6 +223,23 @@ export default class Aurora {
       case "additive":
         return {
           format: "bgra8unorm",
+          writeMask: GPUColorWrite.ALL,
+          blend: {
+            color: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+            alpha: {
+              srcFactor: "one",
+              dstFactor: "one",
+              operation: "add",
+            },
+          },
+        };
+      case "additiveHDR":
+        return {
+          format: "rgba16float",
           writeMask: GPUColorWrite.ALL,
           blend: {
             color: {

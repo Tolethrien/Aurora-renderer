@@ -90,6 +90,7 @@ export default class DebugTexturePipe {
     const pipelineLayout = Aurora.createPipelineLayout([
       this.dataBind[1],
       this.texturesBind[1],
+      Batcher.getBloomParamUniformLayout,
     ]);
     this.pipeline = await Aurora.createRenderPipeline({
       shader: textureArrayShader,
@@ -109,6 +110,7 @@ export default class DebugTexturePipe {
   public static usePipeline(): void {
     const indexBuffer = Batcher.getIndexBuffer;
     const commandEncoder = Batcher.getEncoder;
+    const bloomParams = Batcher.getBloomParamUniform;
     Aurora.device.queue.writeBuffer(
       this.uniformTexturePicker,
       0,
@@ -135,6 +137,7 @@ export default class DebugTexturePipe {
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.dataBind[0]);
     passEncoder.setBindGroup(1, this.texturesBind[0]);
+    passEncoder.setBindGroup(2, bloomParams);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();

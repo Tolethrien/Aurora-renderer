@@ -128,7 +128,7 @@ export default class LightsPipe {
       pipelineName: "lightsPipeline",
       buffers: [vertBuffLay, AddDataBuffLay],
       pipelineLayout: pipelineLayout,
-      colorTargets: [Aurora.getColorTargetTemplate("additive")],
+      colorTargets: [Aurora.getColorTargetTemplate("additiveHDR")],
     });
   }
   public static clearBatch() {

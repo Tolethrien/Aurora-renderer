@@ -4,7 +4,15 @@
 @group(1) @binding(1) var depth: texture_2d<f32>;
 @group(1) @binding(2) var lightMap: texture_2d<f32>;
 @group(1) @binding(3) var bloomTexture: texture_2d<f32>;
+@group(2) @binding(0) var<uniform> bloomParams: BloomParams;
 
+
+struct BloomParams{
+    toneMapping:f32,
+    threshold:f32,
+    thresholdSoftness:f32,
+    bloomIntense:f32
+};
 struct VertexInput {
   @builtin(vertex_index) vi: u32,
 };
@@ -17,7 +25,6 @@ struct VertexOutput {
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,1), vec2f(1,1), vec2f(0,0), vec2f(1,0));
 
-const USE_ACES_TONEMAP: bool = true; 
 
 @vertex
 fn vertexMain(props: VertexInput) -> VertexOutput {
@@ -50,20 +57,19 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   let lightMap = textureSampleLevel(lightMap,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
   
-  // Zastosuj mapę światła i bloom do koloru z offscreen
   let finalColor = (offscreen.rgb + bloom.rgb) * lightMap.rgb;
   
   var toneMapped: vec3f;
   var bloomToned: vec3f;
 
-    if (USE_ACES_TONEMAP) {
+    if (bloomParams.toneMapping == 0.0) {
         // Zastosuj ACES tone mapping
-        toneMapped = aces_tone_map(finalColor);
-        bloomToned = aces_tone_map(bloom.rgb);
-    } else {
-        // Zastosuj Reinhard-podobny tone mapping
         toneMapped = reinhard_tone_map(finalColor);
         bloomToned = reinhard_tone_map(bloom.rgb);
+    } else {
+        // Zastosuj Reinhard-podobny tone mapping
+        toneMapped = aces_tone_map(finalColor);
+        bloomToned = aces_tone_map(bloom.rgb);
     }
 
   if(index == 3) {
@@ -71,9 +77,9 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
     let objectDepth = select(depthValue*10,0,depthValue == 0);
     out = vec4<f32>(objectDepth,objectDepth,objectDepth,1);
   }
-  else if(index == 0) {out = vec4<f32>(toneMapped,offscreen.a);} // Tone mapped output
+  else if(index == 0) {out = vec4<f32>(toneMapped,offscreen.a);}
   else if(index == 1) {out = offscreen;}
   else if(index == 2) {out = lightMap;}
-  else if(index == 4) {out = vec4<f32>(bloomToned,1.0);} // Tone mapped bloom
+  else if(index == 4) {out = vec4<f32>(bloomToned,1.0);}
    return out;
 }

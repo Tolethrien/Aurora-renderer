@@ -77,7 +77,7 @@ function start(timestamp: number) {
     });
   });
   makeLight({
-    intence: 255,
+    intence: 100,
     lightcolor: [255, 50, 50],
     pos: [300, 300],
     size: [100, 100],
@@ -91,17 +91,17 @@ function start(timestamp: number) {
   makeLight({
     intence: 255,
     lightcolor: [255, 255, 250],
-    pos: [550, 550],
+    pos: [500, 550],
     size: [50, 50],
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [255, 125, 50],
     pos: [50, 550],
     size: [50, 50],
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [100, 80, 250],
     pos: [550, 50],
     size: [50, 50],

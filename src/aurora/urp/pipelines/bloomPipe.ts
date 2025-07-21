@@ -7,6 +7,10 @@ import bloomY from "../shaders/bloomY.wgsl?raw";
 import downscale from "../shaders/downscaling.wgsl?raw";
 import upscale from "../shaders/upscaleAndBlend.wgsl?raw";
 import threshold from "../shaders/bloomThreshold.wgsl?raw";
+//TODO: optimize pass amount and then change generate
+//TODO: threshold can blurX
+//TODO: bloomY can downscale
+//TODO: change arr of arr list
 type TexturePassType =
   | "bloomXPass"
   | "bloomYPass"
@@ -20,21 +24,31 @@ type PassOrderList = [
   TexturePassType,
   MipMapLevelToUse
 ];
+enum BloomParamsEnum {
+  toneMapping = 0, // 0 - rainhard, 1-ACES
+  threshold = 1,
+  thresholdSoftness = 2,
+  bloomIntense = 3,
+}
 /**
- * bloom 2 pass gaussian blur pipeline
+ * HDR bloom 2 pass gaussian blur pipeline
  */
 export default class BloomPipeline {
+  private static GROUP_SIZE = 8;
   private static pipelineX: GPUComputePipeline;
   private static pipelineY: GPUComputePipeline;
   private static downscalePipeline: GPUComputePipeline;
   private static upscalePipeline: GPUComputePipeline;
   private static thresholdPipeline: GPUComputePipeline;
+
   private static bloomBlurBindLayout: PipelineBind["1"];
   private static bloomThresholdBind: PipelineBind;
   private static bloomUpscaleBindLayout: PipelineBind["1"];
   private static bloomDownscaleBindLayout: PipelineBind["1"];
+  private static bindList: GPUBindGroup[] = [];
   private static currentMipLevel = 0;
   public static bloomInFrame: boolean = false;
+  public static bloomParams = new Float32Array([1, 1, 0.1, 0.7]); // see enum
   private static bindListOrder: PassOrderList[] = [
     ["x", "bloomThreshold", "bloomXPass", 0],
     ["y", "bloomXPass", "bloomYPass", 0],
@@ -63,7 +77,7 @@ export default class BloomPipeline {
     const upscaleShader = Aurora.createShader("upscale", upscale);
     const thresholdShader = Aurora.createShader("threshold", threshold);
 
-    this.bloomBlurBindLayout = Aurora.device.createBindGroupLayout({
+    this.bloomBlurBindLayout = Aurora.creteBindLayout({
       entries: [
         {
           binding: 0,
@@ -82,7 +96,7 @@ export default class BloomPipeline {
       ],
       label: "bloomPassBindLayout",
     });
-    this.bloomDownscaleBindLayout = Aurora.device.createBindGroupLayout({
+    this.bloomDownscaleBindLayout = Aurora.creteBindLayout({
       entries: [
         {
           binding: 0,
@@ -106,7 +120,7 @@ export default class BloomPipeline {
       ],
       label: "bloomPassBindLayout",
     });
-    this.bloomUpscaleBindLayout = Aurora.device.createBindGroupLayout({
+    this.bloomUpscaleBindLayout = Aurora.creteBindLayout({
       entries: [
         {
           binding: 0,
@@ -181,15 +195,17 @@ export default class BloomPipeline {
         ],
       },
     });
-
+    const bloomLayout = Batcher.getBloomParamUniformLayout;
     const treshLayout = Aurora.createPipelineLayout([
       this.bloomThresholdBind[1],
+      bloomLayout,
     ]);
     const pipelineBlurLayout = Aurora.createPipelineLayout([
       this.bloomBlurBindLayout,
     ]);
     const pipelineUpScaleLayout = Aurora.createPipelineLayout([
       this.bloomUpscaleBindLayout,
+      bloomLayout,
     ]);
     const pipelineDownscaleLayout = Aurora.createPipelineLayout([
       this.bloomDownscaleBindLayout,
@@ -198,69 +214,96 @@ export default class BloomPipeline {
       shader: bloomXShader,
       pipelineName: "bloomXPassPipeline",
       pipelineLayout: pipelineBlurLayout,
+      consts: {
+        workgroupSize: this.GROUP_SIZE,
+      },
     });
     this.pipelineY = await Aurora.createComputePipeline({
       shader: bloomYShader,
       pipelineName: "bloomYPassPipeline",
       pipelineLayout: pipelineBlurLayout,
+      consts: {
+        workgroupSize: this.GROUP_SIZE,
+      },
     });
     this.downscalePipeline = await Aurora.createComputePipeline({
       shader: downscaleShader,
       pipelineName: "bloomScalePassPipeline",
       pipelineLayout: pipelineDownscaleLayout,
+      consts: {
+        workgroupSize: this.GROUP_SIZE,
+      },
     });
     this.upscalePipeline = await Aurora.createComputePipeline({
       shader: upscaleShader,
       pipelineName: "bloomScalePassPipeline",
       pipelineLayout: pipelineUpScaleLayout,
+      consts: {
+        workgroupSize: this.GROUP_SIZE,
+      },
     });
     this.thresholdPipeline = await Aurora.createComputePipeline({
       shader: thresholdShader,
       pipelineName: "bloomThresholdPassPipeline",
       pipelineLayout: treshLayout,
+      consts: {
+        workgroupSize: this.GROUP_SIZE,
+      },
     });
+    this.generateBindGroups();
   }
 
   public static usePipeline(): void {
     if (!this.bloomInFrame) return;
     this.currentMipLevel = 0;
     this.thresholdPass();
-    for (const instruction of this.bindListOrder) {
+    const bloomParamBuffer = Batcher.getBloomParamBuffer;
+    Aurora.device.queue.writeBuffer(bloomParamBuffer, 0, this.bloomParams, 0);
+    this.bindListOrder.forEach((instruction, index) => {
       const groupSize = this.getGroupSize(instruction);
       const passType = instruction[0];
-      if (passType === "downscale") this.downscalePass(instruction, groupSize);
-      else if (passType === "upscale") this.upscalePass(instruction, groupSize);
+      if (passType === "downscale") this.downscalePass(groupSize, index);
+      else if (passType === "upscale") this.upscalePass(groupSize, index);
       else if (passType === "x" || passType === "y")
-        this.blurPass(instruction, groupSize);
+        this.blurPass(instruction[0], groupSize, index);
       else
         throw new Error(
           `BloomPipeline: no instruction with pass type: ${passType}`
         );
-    }
+    });
     AuroraDebugInfo.accumulate("pipelineInUse", ["bloom"]);
   }
   public static clearBatch() {
     this.bloomInFrame = false;
   }
+  public static setBloomParam(
+    param: keyof typeof BloomParamsEnum,
+    value: number
+  ) {
+    const key = BloomParamsEnum[param];
+    this.bloomParams[key] = value;
+  }
   private static thresholdPass() {
     const { meta } = Batcher.getTexture("bloomThreshold");
     const size = {
-      x: Math.ceil(meta.width / 8),
-      y: Math.ceil(meta.height / 8),
+      x: Math.ceil(meta.width / this.GROUP_SIZE),
+      y: Math.ceil(meta.height / this.GROUP_SIZE),
     };
+    const bloomParams = Batcher.getBloomParamUniform;
     const commandEncoder = Batcher.getEncoder;
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomThresholdPass",
     });
     passEncoderOne.setPipeline(this.thresholdPipeline);
     passEncoderOne.setBindGroup(0, this.bloomThresholdBind[0]);
+    passEncoderOne.setBindGroup(1, bloomParams);
     passEncoderOne.dispatchWorkgroups(size.x, size.y);
     passEncoderOne.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);
   }
-  private static downscalePass(passSet: PassOrderList, groupSize: Position2D) {
+  private static downscalePass(groupSize: Position2D, index: number) {
     const commandEncoder = Batcher.getEncoder;
-    const currentBindData = this.getNewBinding(passSet);
+    const currentBindData = this.bindList[index];
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomComputePassDownscale",
     });
@@ -270,17 +313,21 @@ export default class BloomPipeline {
     passEncoderOne.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);
   }
-  private static blurPass(passSet: PassOrderList, groupSize: Position2D) {
-    const passType = passSet[0];
+  private static blurPass(
+    blurPass: PassType,
+    groupSize: Position2D,
+    index: number
+  ) {
     let pipeline: GPUComputePipeline;
-    if (passType === "x") pipeline = this.pipelineX;
-    else if (passType === "y") pipeline = this.pipelineY;
-    else throw new Error(`Bloom pipeline should be X or Y. Got: ${passType}`);
+    if (blurPass === "x") pipeline = this.pipelineX;
+    else if (blurPass === "y") pipeline = this.pipelineY;
+    else throw new Error(`Bloom pipeline should be X or Y. Got: ${blurPass}`);
 
     const commandEncoder = Batcher.getEncoder;
-    const currentBindData = this.getNewBinding(passSet);
+    const currentBindData = this.bindList[index];
+
     const passEncoderOne = commandEncoder.beginComputePass({
-      label: `bloomComputePassBlur${passType}`,
+      label: `bloomComputePassBlur${blurPass}`,
     });
     passEncoderOne.setPipeline(pipeline);
     passEncoderOne.setBindGroup(0, currentBindData);
@@ -288,18 +335,51 @@ export default class BloomPipeline {
     passEncoderOne.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);
   }
-  private static upscalePass(passSet: PassOrderList, groupSize: Position2D) {
+  private static upscalePass(groupSize: Position2D, index: number) {
     const commandEncoder = Batcher.getEncoder;
-    const currentBindData = this.getnewUpscaleBinding(passSet);
+    const currentBindData = this.bindList[index];
+    const bloomParams = Batcher.getBloomParamUniform;
 
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomComputePassUpscale",
     });
     passEncoderOne.setPipeline(this.upscalePipeline);
     passEncoderOne.setBindGroup(0, currentBindData);
+    passEncoderOne.setBindGroup(1, bloomParams);
     passEncoderOne.dispatchWorkgroups(groupSize.x, groupSize.y);
     passEncoderOne.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);
+  }
+
+  private static getBindLayout(passType: PassType) {
+    if (passType === "x" || passType === "y") return this.bloomBlurBindLayout;
+    else if (passType === "downscale") return this.bloomDownscaleBindLayout;
+    else if (passType === "upscale") return this.bloomUpscaleBindLayout;
+    else
+      throw new Error(
+        `Bloom bind layout type should be [x,y,upscale,downscale]. Got: ${passType}`
+      );
+  }
+  private static getGroupSize(passSet: PassOrderList) {
+    const { meta } = Batcher.getTexture("bloomThreshold");
+    const passType = passSet[0];
+    const newMip = passSet[3];
+    if (passType === "downscale") this.currentMipLevel = newMip + 1;
+    else if (passType === "upscale") this.currentMipLevel = newMip - 1;
+    else this.currentMipLevel = newMip;
+
+    const width = Math.max(
+      1,
+      Math.floor(meta.width / (1 << this.currentMipLevel))
+    );
+    const height = Math.max(
+      1,
+      Math.floor(meta.height / (1 << this.currentMipLevel))
+    );
+    return {
+      x: Math.ceil(width / this.GROUP_SIZE),
+      y: Math.ceil(height / this.GROUP_SIZE),
+    };
   }
   private static getNewBinding(passSet: PassOrderList): GPUBindGroup {
     const sampler = Batcher.getSampler("linear");
@@ -329,27 +409,19 @@ export default class BloomPipeline {
       label: label,
     };
     const bindLayout = this.getBindLayout(passType);
-    return Aurora.swapBindGroupData(bindData, bindLayout);
+    return Aurora.getNewBindGroupFromLayout(bindData, bindLayout);
   }
-  private static getnewUpscaleBinding(passSet: PassOrderList): GPUBindGroup {
+  private static getNewUpscaleBinding(passSet: PassOrderList): GPUBindGroup {
     const sampler = Batcher.getSampler("linear");
     const label = "bloomPassBindData:UpscaleAndBlend";
-    let outputLevel = passSet[3] - 1;
-    // console.log("current", passSet[3], "writeTo", outputLevel);
-    // const currentRes = Batcher.getTextureView(passSet[1], passSet[3]);
-    // const UpscaledRes = Batcher.getTextureView(passSet[1], outputLevel);
-    // const outputView = Batcher.getTextureView(passSet[2], outputLevel);
-    const lowerResInputTexture = passSet[1]; // np. bloomXPass z poprzedniego kroku
-    const outputTexture = passSet[2]; // np. bloomYPass, do którego zapisujemy
+    const lowerResInputTexture = passSet[1];
+    const outputTexture = passSet[2];
     const lowerResMipLevel = passSet[3];
     const outputMipLevel = lowerResMipLevel - 1;
     const lowerResView = Batcher.getTextureView(
       lowerResInputTexture,
       lowerResMipLevel
     );
-
-    // Tekstura z oryginalnego rozmycia na docelowym poziomie mipmap. Zawsze z `bloomYPass`.
-    // To jest tekstura, którą chcemy dodać do naszego upscalowanego wyniku.
     const currentLevelView = Batcher.getTextureView(
       "bloomYPass",
       outputMipLevel
@@ -378,36 +450,14 @@ export default class BloomPipeline {
       label: label,
     };
     const bindLayout = this.getBindLayout("upscale");
-    return Aurora.swapBindGroupData(bindData, bindLayout);
+    return Aurora.getNewBindGroupFromLayout(bindData, bindLayout);
   }
-  private static getBindLayout(passType: PassType) {
-    if (passType === "x" || passType === "y") return this.bloomBlurBindLayout;
-    else if (passType === "downscale") return this.bloomDownscaleBindLayout;
-    else if (passType === "upscale") return this.bloomUpscaleBindLayout;
-    else
-      throw new Error(
-        `Bloom bind layout type should be [x,y,upscale,downscale]. Got: ${passType}`
-      );
-  }
-  private static getGroupSize(passSet: PassOrderList) {
-    const { meta } = Batcher.getTexture("bloomThreshold");
-    const passType = passSet[0];
-    const newMip = passSet[3];
-    if (passType === "downscale") this.currentMipLevel = newMip + 1;
-    else if (passType === "upscale") this.currentMipLevel = newMip - 1;
-    else this.currentMipLevel = newMip;
-
-    const width = Math.max(
-      1,
-      Math.floor(meta.width / (1 << this.currentMipLevel))
-    );
-    const height = Math.max(
-      1,
-      Math.floor(meta.height / (1 << this.currentMipLevel))
-    );
-    return {
-      x: Math.ceil(width / 8),
-      y: Math.ceil(height / 8),
-    };
+  private static generateBindGroups() {
+    for (let i = 0; i <= 10; i++) {
+      this.bindList.push(this.getNewBinding(this.bindListOrder[i]));
+    }
+    for (let i = 11; i <= 13; i++) {
+      this.bindList.push(this.getNewUpscaleBinding(this.bindListOrder[i]));
+    }
   }
 }

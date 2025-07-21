@@ -101,6 +101,7 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
 
     }
     else{
+         out.primary = color;
         if(props.emissive == 1) {out.primary = vec4<f32>(color.rgb * hdr_srt,1.0);}
 
     }

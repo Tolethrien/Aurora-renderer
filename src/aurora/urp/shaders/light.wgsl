@@ -44,26 +44,23 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 
 
-
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
-    var INNER_RADIUS_PCT: f32 = 1.0; // wiekszy procent, aby rdzeń był bardziej zdefiniowany
-    var CORE_INTENSITY_FACTOR: f32 = 1.0; // Jak bardzo rdzeń jest jaśniejszy niż bazowa intensywność
-    var ALPHA_MULTIPLIER: f32 = 1.0; // Zwiększa ogólną przezroczystość, by rdzeń był bardziej widoczny
+    const FALLOFF_EXPONENT: f32 = 2.0;
     let color = convertColor(props.color);
     let baseIntensity = f32(props.intensity) / 255.0;
 
-    let normPos = props.centerPos / (props.size * 0.5);
-    let dist = length(normPos);
+    let radius = props.size.x * 0.5;
+    let dist_pixels = length(props.centerPos);
+    let dist_norm = dist_pixels / radius;
 
-    if (dist > 1.0) {discard;}
+    if (dist_norm > 1.0) {
+        discard;
+    }
 
-    let outer_glow_intensity = smoothstep(1.0, 0.0, dist);
-    let core_intensity = smoothstep(INNER_RADIUS_PCT, 0.0, dist);
-    let final_intensity = max(outer_glow_intensity, core_intensity * CORE_INTENSITY_FACTOR);
-
-    let final_rgb = color.rgb * baseIntensity * final_intensity;
-    let final_alpha = clamp(final_intensity * ALPHA_MULTIPLIER, 0.0, 1.0);
+    let attenuation = pow(max(0.0, 1.0 - dist_norm * dist_norm), FALLOFF_EXPONENT);
+    let final_rgb = color.rgb * baseIntensity * attenuation;
+    let final_alpha = color.a * attenuation;
 
     return vec4<f32>(final_rgb, final_alpha);
 }

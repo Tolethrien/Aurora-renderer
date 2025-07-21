@@ -32,3 +32,20 @@ treshold
 treshold softness
 low freq boost
 high pass freq
+
+## co zrobic
+
+[-] dodac jakis uniform z wlasciwosciami
+[-] przebudowac by nie tworzyc bindow co chwile nowych a juz przygotowac jes
+[-]
+[-] ovverride workgrup
+[-] debugInfo color corr
+
+- wykminic system kolorow
+- zbudowac lepszy system pipelinow
+  [-] leiej smooth swiatla
+  [-] czy swiatla powinny tez byc hdr?
+- threshold oswietlenia globalnego
+- zmniejszyc ilosc pipelinow
+  [-] zmienic te rzeczy co uzywaja .device
+- poprawic faktyczny shader a nie debug by mial tonemap itp

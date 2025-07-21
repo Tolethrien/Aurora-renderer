@@ -1,14 +1,24 @@
+override workgroupSize: u32 = 8;
+
 @group(0) @binding(0) var inputTexture: texture_2d<f32>;
 @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(0) @binding(2) var linearSampler: sampler; 
+@group(1) @binding(0) var<uniform> bloomParams: BloomParams;
+
+struct BloomParams{
+    toneMapping:f32,
+    threshold:f32,
+    thresholdSoftness:f32,
+    bloomIntense:f32
+};
 
 @compute
-@workgroup_size(8, 8)
+@workgroup_size(workgroupSize, workgroupSize)
 fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outputCoords = global_id.xy;
 
     let inputSize = textureDimensions(inputTexture);
-    let outputSize = inputSize / 2u;
+    let outputSize = inputSize;
 
     if (outputCoords.x >= outputSize.x || outputCoords.y >= outputSize.y) {
         return;
@@ -18,8 +28,8 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sampledColor = textureSampleLevel(inputTexture, linearSampler, uv, 0.0);
 
-    let thresholdValue = 1.0; 
-    let kneeValue = 0.1;     
+    let thresholdValue = bloomParams.threshold; 
+    let kneeValue = bloomParams.thresholdSoftness;     
     
     var outputColor = vec4<f32>(0, 0, 0, 0);
 
