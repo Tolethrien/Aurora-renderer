@@ -1,4 +1,4 @@
-import { CreateBindGroup, PipelineBind, Position2D } from "../../aurora";
+import { CreateBindGroup, PipelineBind, Position2D, RGB } from "../../aurora";
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
 import AuroraDebugInfo from "../debugger/debugInfo";
@@ -25,7 +25,7 @@ type PassOrderList = [
   MipMapLevelToUse
 ];
 enum BloomParamsEnum {
-  toneMapping = 0, // 0 - rainhard, 1-ACES
+  toneMapping = 0, // 0 - rainhard, 1-ACES, 2- Filmic
   threshold = 1,
   thresholdSoftness = 2,
   bloomIntense = 3,
@@ -49,6 +49,8 @@ export default class BloomPipeline {
   private static currentMipLevel = 0;
   public static bloomInFrame: boolean = false;
   public static bloomParams = new Float32Array([1, 1, 0.1, 0.7]); // see enum
+  private static baseThreshold = 1;
+  private static thresholdBoostFactor = 1.4;
   private static bindListOrder: PassOrderList[] = [
     ["x", "bloomThreshold", "bloomXPass", 0],
     ["y", "bloomXPass", "bloomYPass", 0],
@@ -196,6 +198,7 @@ export default class BloomPipeline {
       },
     });
     const bloomLayout = Batcher.getBloomParamUniformLayout;
+
     const treshLayout = Aurora.createPipelineLayout([
       this.bloomThresholdBind[1],
       bloomLayout,
@@ -254,11 +257,17 @@ export default class BloomPipeline {
   }
 
   public static usePipeline(): void {
+    const bloomParamBuffer = Batcher.getBloomParamBuffer;
+    const globalIllumination = this.normalizeColorToLuminance(
+      Batcher.getColorCorrection
+    );
+    const newThreshold =
+      this.baseThreshold + globalIllumination * this.thresholdBoostFactor;
+    // this.setBloomParam("threshold", newThreshold);
+    Aurora.device.queue.writeBuffer(bloomParamBuffer, 0, this.bloomParams, 0);
     if (!this.bloomInFrame) return;
     this.currentMipLevel = 0;
     this.thresholdPass();
-    const bloomParamBuffer = Batcher.getBloomParamBuffer;
-    Aurora.device.queue.writeBuffer(bloomParamBuffer, 0, this.bloomParams, 0);
     this.bindListOrder.forEach((instruction, index) => {
       const groupSize = this.getGroupSize(instruction);
       const passType = instruction[0];
@@ -459,5 +468,15 @@ export default class BloomPipeline {
     for (let i = 11; i <= 13; i++) {
       this.bindList.push(this.getNewUpscaleBinding(this.bindListOrder[i]));
     }
+  }
+  private static normalizeColorToLuminance(rgb: RGB) {
+    // 1. Znormalizuj składowe RGB z zakresu 0-255 do 0-1.0
+    const r_normalized = rgb[0] / 255.0;
+    const g_normalized = rgb[1] / 255.0;
+    const b_normalized = rgb[2] / 255.0;
+    const luminance =
+      0.2126 * r_normalized + 0.7152 * g_normalized + 0.0722 * b_normalized;
+
+    return luminance;
   }
 }

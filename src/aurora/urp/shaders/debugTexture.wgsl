@@ -24,6 +24,7 @@ struct VertexOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,1), vec2f(1,1), vec2f(0,0), vec2f(1,0));
+  const exposure = 0.7;
 
 
 @vertex
@@ -35,20 +36,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     return out;
 }
 
-// Reinhard-podobny Tone Mapping
-fn reinhard_tone_map(x: vec3f) -> vec3f {
-    return x / (x + vec3<f32>(1.0));
-}
 
-// Simplified ACES Film Look Tone Mapping
-fn aces_tone_map(x: vec3f) -> vec3f {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return (x * (a * x + b)) / (x * (c * x + d) + e);
-}
 
 @fragment
 fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
@@ -56,22 +44,24 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   let offscreen = textureSampleLevel(offscreen,textureSampler,props.coords,0);
   let lightMap = textureSampleLevel(lightMap,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
-  
-  let finalColor = (offscreen.rgb + bloom.rgb) * lightMap.rgb;
+  let finalColor = (offscreen.rgb * exposure + bloom.rgb) * lightMap.rgb;
   
   var toneMapped: vec3f;
   var bloomToned: vec3f;
-
+  
     if (bloomParams.toneMapping == 0.0) {
-        // Zastosuj ACES tone mapping
         toneMapped = reinhard_tone_map(finalColor);
         bloomToned = reinhard_tone_map(bloom.rgb);
-    } else {
-        // Zastosuj Reinhard-podobny tone mapping
+
+    } else if (bloomParams.toneMapping == 1.0) {
         toneMapped = aces_tone_map(finalColor);
         bloomToned = aces_tone_map(bloom.rgb);
-    }
 
+    } else if (bloomParams.toneMapping == 2.0) {
+        toneMapped = filmic_tone_map(finalColor);
+        bloomToned = filmic_tone_map(bloom.rgb);
+
+    }
   if(index == 3) {
     let depthValue = textureSampleLevel(depth,textureSampler,props.coords,0).r;
     let objectDepth = select(depthValue*10,0,depthValue == 0);
@@ -82,4 +72,23 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   else if(index == 2) {out = lightMap;}
   else if(index == 4) {out = vec4<f32>(bloomToned,1.0);}
    return out;
+}
+
+fn reinhard_tone_map(x: vec3f) -> vec3f {
+    return x / (x + vec3<f32>(1.0));
+}
+
+fn aces_tone_map(x: vec3f) -> vec3f {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return (x * (a * x + b)) / (x * (c * x + d) + e);
+}
+
+fn filmic_tone_map(x: vec3f) -> vec3f {
+    let val = max(vec3<f32>(0.0), x - 0.004);
+    let result = (val * (6.2 * x + 0.5)) / (val * (6.2 * x + 1.7) + 0.06);
+    return result;
 }

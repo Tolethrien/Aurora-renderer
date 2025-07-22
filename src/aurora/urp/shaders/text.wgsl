@@ -36,7 +36,6 @@ struct FragmentOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
-const hdr_srt = 5.0;
 
 @vertex
 fn vertexMain(props : VertexInput) -> VertexOutput {
@@ -71,7 +70,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
 fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   // pxRange (AKA distanceRange) comes from the msdfgen tool. Don McCurdy's tool
   // uses the default which is 4.
-  let color = convertColor(props.color);
+  let color = convertColor(props.color,props.emissive);
   var out:FragmentOutput;
   out.depth = vec4<f32>(props.z,0,0,0);
   
@@ -94,7 +93,6 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   alpha = pow(alpha, 0.4); // korekta gamma
   let finalColor = vec4f(color.rgb, color.a * alpha);
   out.primary = finalColor;
-  if(props.emissive == 1){out.primary = vec4<f32>(color.rgb * hdr_srt,1.0);}
   return out;
 
 }
@@ -105,6 +103,8 @@ fn sampleMsdf(texcoord: vec2f,index:u32) -> f32 {
   return max(min(c.r, c.g), min(max(c.r, c.g), c.b));
 }
 
-fn convertColor(color: vec4u) -> vec4f {
-  return vec4f(color)/255;
+fn convertColor(color: vec4u,emissive:u32) -> vec4f {
+    let rgb = vec3f(color.rgb) / 255.0;
+    let a = f32(color.a) /255;
+  return vec4f(rgb * f32(emissive) ,a);
 }

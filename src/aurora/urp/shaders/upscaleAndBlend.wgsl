@@ -25,5 +25,6 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let upscaledBlurColor = textureSampleLevel(lowerResBlurTexture, linearSampler, uv, 0.0);
     let currentLevelColor = textureSampleLevel(currentLevelTexture, linearSampler, uv, 0.0);
     let blendedColor = (upscaledBlurColor * bloomParams.bloomIntense) +  currentLevelColor;
+
     textureStore(outputTexture, global_id.xy, blendedColor);
 }

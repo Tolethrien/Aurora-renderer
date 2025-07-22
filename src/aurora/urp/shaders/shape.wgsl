@@ -36,7 +36,6 @@ struct FragmentOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
-const hdr_srt = 5.0;
 
 @vertex
 fn vertexMain(props: VertexInput) -> VertexOutput {
@@ -75,7 +74,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props: VertexOutput) -> FragmentOutput {
-    let color = convertColor(props.color);
+    let color = convertColor(props.color,props.emissive);
     var out:FragmentOutput;
     out.depth = vec4<f32>(props.z,0,0,0);
     if(props.shapeType == 2){
@@ -83,7 +82,6 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(texture.w < 0.001){discard;};
          let finalColor = texture * color;
          out.primary = finalColor;
-        if(props.emissive == 1) {out.primary = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
 
     }
     else if(props.shapeType == 1){
@@ -97,18 +95,18 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
          if(alpha == 0){discard;};
         let finalColor = vec4f(color.rgb,alpha);
          out.primary = finalColor;
-        if(props.emissive == 1) {out.primary = vec4<f32>(finalColor.rgb * hdr_srt,1.0);}
 
     }
     else{
          out.primary = color;
-        if(props.emissive == 1) {out.primary = vec4<f32>(color.rgb * hdr_srt,1.0);}
 
     }
     return out;
 }
 
-fn convertColor(color: vec4u) -> vec4f {
-  return vec4f(color)/255;
+fn convertColor(color: vec4u,emissive:u32) -> vec4f {
+    let rgb = vec3f(color.rgb) / 255.0;
+    let a = f32(color.a) /255;
+  return vec4f(rgb * f32(emissive) ,a);
 }
 

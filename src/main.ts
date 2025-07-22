@@ -18,13 +18,14 @@ interface t {
   intence: number;
   pos: [number, number];
   size: [number, number];
+  emis: number;
 }
-function makeLight({ intence, lightcolor, pos, size }: t) {
+function makeLight({ intence, lightcolor, pos, size, emis }: t) {
   Draw.rect({
     position: { x: pos[0], y: pos[1] },
     size: { height: size[0], width: size[1] },
     tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
-    emissive: true,
+    emissive: emis,
   });
   Draw.pointLight({
     position: { x: pos[0], y: pos[1] },
@@ -45,7 +46,8 @@ async function create() {
     ],
     fonts: [yaFont],
   });
-  Batcher.setColorCorrection([25, 25, 25]);
+  const l = 50;
+  Batcher.setColorCorrection([l, l, l]);
 }
 const arr = Array(100)
   .fill(0)
@@ -60,7 +62,7 @@ function start(timestamp: number) {
   // Draw.rect({
   //   position: { x: 375, y: 275 },
   //   size: { height: h, width: w },
-  //   tint: [0, 255, 0, 255 / 2],
+  //   tint: [255, 255, 0, 255],
   // });
   // Draw.rect({
   //   position: { x: 425, y: 325 },
@@ -77,59 +79,61 @@ function start(timestamp: number) {
     });
   });
   makeLight({
-    intence: 100,
-    lightcolor: [255, 50, 50],
+    intence: 255,
+    lightcolor: [255, 70, 70],
     pos: [300, 300],
     size: [100, 100],
-  });
-  makeLight({
-    intence: 100,
-    lightcolor: [255, 0, 150],
-    pos: [50, 50],
-    size: [50, 50],
+    emis: 5,
   });
   makeLight({
     intence: 255,
-    lightcolor: [255, 255, 250],
+    lightcolor: [255, 50, 255],
+    pos: [50, 50],
+    size: [50, 50],
+    emis: 5,
+  });
+  makeLight({
+    intence: 255,
+    lightcolor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
+    emis: 4,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [255, 125, 50],
+    intence: 255,
+    lightcolor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
+    emis: 5,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [100, 80, 250],
+    intence: 255,
+    lightcolor: [70, 70, 255],
     pos: [550, 50],
     size: [50, 50],
+    emis: 6,
   });
   // const lightColor = 255;
   // Draw.rect({
   //   position: { x: x - 50, y: 250 },
   //   size: { height: 100, width: 100 },
   //   tint: [lightColor, 100, 0, 255],
-  //   emissive: true,
   // });
   // Draw.rect({
   //   position: { x: x, y: 250 + 150 },
   //   size: { height: 100, width: 100 },
   //   tint: [lightColor, 100, 0, 255],
-  //   emissive: true,
   // });
   // Draw.rect({
   //   position: { x: x + 50, y: 250 - 150 },
   //   size: { height: 100, width: 100 },
   //   tint: [lightColor, 100, 0, 255],
-  //   emissive: true,
   // });
   // Draw.circle({
   //   position: { x: 425, y: 225 },
   //   size: { height: 50, width: 50 },
-  //   tint: [255, 0, 0, 255],
-  //   // emissive: true,
+  //   tint: [255, 70, 70, 255],
+  //   emissive: 5,
   // });
   // Draw.pointLight({
   //   position: { x: x, y: 250 },
@@ -150,7 +154,7 @@ function start(timestamp: number) {
   //   intensity: 255,
   // });
   // Draw.rect({
-  //   position: { x: 400, y: 300 },
+  //   position: { x: 480, y: 270 },
   //   size: { height: h, width: w },
   //   tint: [0, 0, 255, 255 / 2],
   // });
@@ -168,7 +172,6 @@ function start(timestamp: number) {
   //   fontSize: 62,
   //   text: "Scalable big text!",
   //   fontColor: [255, 255, 0, 255],
-  //   emissive: true,
   // });
   // Draw.text({
   //   position: { x: 150, y: 480 },

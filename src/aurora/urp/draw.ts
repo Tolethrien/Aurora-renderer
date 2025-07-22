@@ -13,15 +13,15 @@ interface BaseDraw {
   tint?: RGBA;
 }
 interface DrawRect extends BaseDraw {
-  emissive?: boolean;
+  emissive?: number;
 }
 interface DrawCircle extends BaseDraw {
-  emissive?: boolean;
+  emissive?: number;
 }
 interface DrawSprite extends BaseDraw {
   crop: Position2D & Size2D;
   textureToUse: string;
-  emissive?: boolean;
+  emissive?: number;
 }
 interface DrawText {
   position: Position2D;
@@ -29,7 +29,7 @@ interface DrawText {
   font: string;
   fontSize: number;
   fontColor?: RGBA;
-  emissive?: boolean;
+  emissive?: number;
 }
 interface DrawPointLight extends BaseDraw {
   intensity: number;
@@ -46,7 +46,29 @@ export interface BatchAccumulator {
   type: GetBatch["type"];
 }
 export default class Draw {
-  public static rect({ position, size, tint, emissive = false }: DrawRect) {
+  public static hdrBloomTone(
+    color: [number, number, number],
+    emissive: number
+  ): [number, number, number] {
+    const [r, g, b] = color;
+    const rn = r / 255;
+    const gn = g / 255;
+    const bn = b / 255;
+
+    const er = rn * emissive;
+    const eg = gn * emissive;
+    const eb = bn * emissive;
+
+    const alpha = 1 / Math.pow(emissive, 3);
+    const bleed = emissive * alpha;
+
+    const rOut = (er + (1 - rn) * bleed) * 255;
+    const gOut = (eg + (1 - gn) * bleed) * 255;
+    const bOut = (eb + (1 - bn) * bleed) * 255;
+
+    return [rOut, gOut, bOut];
+  }
+  public static rect({ position, size, tint, emissive = 1 }: DrawRect) {
     const pipeline = getDrawPipeline();
     const color: RGBA = tint ? tint : [255, 255, 255, 255];
     const batch = pipeline.getBatch("shape", color[3]);
@@ -67,14 +89,14 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
-    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+    batch.addData[batch.count * addStride + 6] = emissive;
 
     batch.count++;
-    if (emissive) BloomPipeline.bloomInFrame = true;
+    if (emissive !== 0) BloomPipeline.bloomInFrame = true;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
 
-  public static circle({ position, size, tint, emissive }: DrawCircle) {
+  public static circle({ position, size, tint, emissive = 1 }: DrawCircle) {
     const pipeline = getDrawPipeline();
 
     const color: RGBA = tint ? tint : [255, 255, 255, 255];
@@ -96,7 +118,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
-    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+    batch.addData[batch.count * addStride + 6] = emissive;
     batch.count++;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
   }
@@ -106,7 +128,7 @@ export default class Draw {
     tint,
     crop,
     textureToUse,
-    emissive,
+    emissive = 1,
   }: DrawSprite) {
     const pipeline = getDrawPipeline();
 
@@ -130,7 +152,7 @@ export default class Draw {
     batch.addData[batch.count * addStride + 3] = color[1];
     batch.addData[batch.count * addStride + 4] = color[2];
     batch.addData[batch.count * addStride + 5] = color[3];
-    batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+    batch.addData[batch.count * addStride + 6] = emissive;
 
     batch.count++;
     AuroraDebugInfo.accumulate("drawnQuads", 1);
@@ -141,7 +163,7 @@ export default class Draw {
     fontColor,
     fontSize,
     text,
-    emissive,
+    emissive = 1,
   }: DrawText) {
     const pipeline = getDrawPipeline();
 
@@ -208,7 +230,7 @@ export default class Draw {
       batch.addData[batch.count * addStride + 3] = color[1];
       batch.addData[batch.count * addStride + 4] = color[2];
       batch.addData[batch.count * addStride + 5] = color[3];
-      batch.addData[batch.count * addStride + 6] = emissive ? 1 : 0;
+      batch.addData[batch.count * addStride + 6] = 1;
 
       batch.count++;
       AuroraDebugInfo.accumulate("drawnQuads", 1);
