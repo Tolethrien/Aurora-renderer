@@ -45,7 +45,7 @@ export function startPipelines() {
     : PresentationPipe.usePipeline();
 }
 export function getDrawPipeline() {
-  return Batcher.getBatcherOptions.sortOrder === "none"
+  return Batcher.getConfigGroup("rendering").sortOrder === "none"
     ? UnsortedDrawPipeline
     : SortedDrawPipeline;
 }

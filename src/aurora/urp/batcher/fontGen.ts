@@ -58,8 +58,6 @@ export default class FontGen {
   private meta!: FontData;
   private index: number;
 
-  //TODO: obecnie robisz jedna teksture zmaiast po prostu miec array tekstur w batcherze! potem to popraw
-
   public static async generateFont(props: FontGenProps & { index: number }) {
     const font = new FontGen(props);
     await font.generator();

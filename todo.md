@@ -1,24 +1,58 @@
 # Think
 
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
+
 - zamiast miec buffer z opcjami batchera mozesz miec fragment constants
+
 - w debugerInfo zacznij uzywac aurory buffer
+
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
+
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
+
 - zrobic zamiast bufferu z opcjami overridy
+
 - jakis system ustawiania kolejnosci pipelinow bo teraz sie ustawia wedle kolejnosci Draw
+
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
+
 - posprzatac drawPipeliny bo za duzo tam pracy przy jakichkolwiek zmianach
+
 - zrobic zwyczajnie need Clean w pipelinie i na 1 batchu czyscic teksture a potem loadowac(1 render pass mniej)
+
 - czyszczenie tekstur powinno byc w pipelinach a nie jak teraz jako wielki pass pierwszy batcheru
+
 - moze by zrobic tylko sprite/circle i oba one moga byc texturowane po prostu
+
 - jak nie masz zadnego point lightu to nie masz swiatla w ogole
+
 - zrobic debuuger na process.env by dzialal tree-shaking
+
 - mniej compute passow na bloomie (polacz downscale z xpassem)
+
 - dodac wagi do upscale blendowania
-- przebudowac sposob tworzenia pipelinow zamiast klas na jakis system
+
+- przebudowac sposob tworzenia pipelinow zamiast klas na jakis system(render graph)
+
 - przemyslec jak Draw dostaje dane bo moglby wysylac sygnaly do pipelinow lepiej na bazie swoich zmiennych
+
 - parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
+
+- Zbuffer prepass, okresla co jest widoczne na ekranie by potem dzialalo renderowanie front-to-back
+
+- poprawic faktyczny shader a nie debug by mial tonemap itp
+
+- przebudowac corowe funkcje np bindgroup na cos takiego: {
+  label: "batcherOptionsBind",
+  entries: [
+  {
+  binding: 0,
+  visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+  layout:{ buffer:{ type: "uniform" }},
+  data: {resource: { buffer: optionsBindBuffer },}
+  },
+  ]
+  } by mniej zajmowalo - funkcja sama bedzie dodawala layut i data do stringu
 
 # Done
 

@@ -177,14 +177,9 @@ export default class Draw {
     AuroraCamera.setCameraBounds(position.y + fontSize * (lineHeight * 2));
 
     const textMeasure = FontGen.measureText({ fontName: font, fontSize, text });
-    const originX =
-      Batcher.getBatcherOptions.drawOrigin === "center"
-        ? textMeasure.width / 2
-        : 0;
-    const originY =
-      Batcher.getBatcherOptions.drawOrigin === "center"
-        ? textMeasure.height / 2
-        : 0;
+    const drawOrigin = Batcher.getConfigGroup("rendering").drawOrigin;
+    const originX = drawOrigin === "center" ? textMeasure.width / 2 : 0;
+    const originY = drawOrigin === "center" ? textMeasure.height / 2 : 0;
     let xCursor = position.x - originX;
     let yCursor = position.y - originY;
 
@@ -230,7 +225,7 @@ export default class Draw {
       batch.addData[batch.count * addStride + 3] = color[1];
       batch.addData[batch.count * addStride + 4] = color[2];
       batch.addData[batch.count * addStride + 5] = color[3];
-      batch.addData[batch.count * addStride + 6] = 1;
+      batch.addData[batch.count * addStride + 6] = emissive;
 
       batch.count++;
       AuroraDebugInfo.accumulate("drawnQuads", 1);

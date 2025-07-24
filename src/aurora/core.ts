@@ -360,10 +360,6 @@ export default class Aurora {
     textures,
     flipY,
   }: TextureArrayProps) {
-    assert(
-      textures.length > 1,
-      `AuroraTexture Error: Textures length too short\nTexture Label: ${label}\nMinimal Textures in Array: 2\nActual Textures added: ${textures.length}`
-    );
     const bitmaps: ImageBitmap[] = [];
     for (const { url } of textures) {
       const img = await loadImg(url);

@@ -1,6 +1,7 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
-import Batcher, { BatcherOptions } from "../batcher/batcher";
+import Batcher from "../batcher/batcher";
+import { AuroraConfig } from "../batcher/config";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
@@ -25,8 +26,8 @@ interface DebugData {
   drawnVertices: number;
   colorCorrection: RGB;
   usedPostProcessing: string[];
-  sortOrder: BatcherOptions["sortOrder"];
-  drawOrigin: BatcherOptions["drawOrigin"];
+  sortOrder: AuroraConfig["rendering"]["sortOrder"];
+  drawOrigin: AuroraConfig["rendering"]["drawOrigin"];
 }
 const DATA_INIT: DebugData = {
   fps: 0,
@@ -127,9 +128,11 @@ export default class AuroraDebugInfo {
     this.data = structuredClone(DATA_INIT);
     this.data.GPUTime = gpuTime;
     this.data.displayedTexture = texture;
-    this.data.sortOrder = Batcher.getBatcherOptions.sortOrder;
-    this.data.drawOrigin = Batcher.getBatcherOptions.drawOrigin;
-    this.data.colorCorrection = Batcher.getBatcherOptions.colorCorrection;
+    const renderOptions = Batcher.getConfigGroup("rendering");
+    this.data.sortOrder = renderOptions.sortOrder;
+    this.data.drawOrigin = renderOptions.drawOrigin;
+    this.data.colorCorrection =
+      Batcher.getConfigGroup("screen").colorCorrection;
   }
   public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;

@@ -1,10 +1,54 @@
-## Nowy Projekt Aurory!
+## Aurora 2.0!
 
-nauczony wiedzą z pierwszej próby przystępuję do ulepszenia renderera!
+Aurora is webGPU based 2D renderer written in TS.
 
-canvas view:
+"This is part of the Misa game engine, but it can also be used as a standalone lib."
+
+based of new knowledge time for some rework!
 
 ![Current State](/public/current.png)
+
+## Changes!
+
+[] multiShader draw
+
+[x] zBuffer with depth(set to Y)
+
+[x] better font rendering with MSDF
+
+[] more shapes then quad
+
+[] Path2D to render polygons
+
+[] draw video
+
+[] draw Gif
+
+[] gpu rotation
+
+[x] proper GPU diagnostics
+
+[x] async pipelines and shaders
+
+[x] lights drawn on gpu and not from texture
+
+[] normal and shadow maps
+
+[] renderResolution and resize
+
+[x] HDR colors
+
+[x] HDR bloom with toneMapping
+
+[] other camera views (isometric, ortho,perspective etc...)
+
+[] custom pipelines/shaders/materials
+
+## Future changes!
+
+total shift to render graph with resource manager
+
+## Screenshots from current State
 
 debug info:
 
@@ -21,25 +65,3 @@ bloom HDR + toneMapping(rainhard)
 bloom HDR + toneMapping(ACES)
 
 ![bloom State](/public/bloom-aces.png)
-
-## zmiany wzgledem starej wersji!
-
-- zamiast jednego shadera multishadering
-- zamiast sortowac obiekty na CPU używany Z-buffer (ustawionym na Y)
-- ulepszone renderowanie tekstu używając MSDF zamiast po prostu próbkowania tekstury
-- Draw ma inne kształty niż tylko rect
-- Path2d do renderowania poligonów
-- możliwość renderowania wideo
-- poprawny debugger faktycznie na GPU
-- asynchroniczne kompilowanie pipelinów i shaderów
-- generowane na GPU pełne oświetlenie a nie ze spritów
-- normal mapy i shadow mapy
-- pixel density
-- poprawny bloom za pomoca HDR i piramidowania + toneMapping
-- izometria
-- możliwość dodawania własnych pipelinów
-- rotacja na GPU
-
-## Pełne TODO
-
-lista postępów znajduję się w todo.md

@@ -7,7 +7,15 @@ import spritesheet from "./assets/radial.png";
 import ftex from "./assets/ya-hei-ascii.png";
 import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
+import auroraConfig from "./aurora/urp/batcher/config";
 
+const yaFont = { fontName: "ya", img: ftex, json: fjson };
+const texA = { name: "main", url: spritesheet };
+const texB = { name: "char", url: char };
+const config = auroraConfig({
+  userFonts: [yaFont],
+  userTextures: [texA, texB],
+});
 async function preload() {
   await Aurora.init();
   await create();
@@ -35,17 +43,8 @@ function makeLight({ intence, lightcolor, pos, size, emis }: t) {
   });
 }
 async function create() {
-  const yaFont = { fontName: "ya", img: ftex, json: fjson };
-  await Batcher.Initialize({
-    drawOrigin: "center",
-    sortOrder: "y",
-    debugger: true,
-    textures: [
-      { name: "main", url: spritesheet },
-      { name: "char", url: char },
-    ],
-    fonts: [yaFont],
-  });
+  await Batcher.Initialize(config);
+
   const l = 50;
   Batcher.setColorCorrection([l, l, l]);
 }

@@ -1,8 +1,7 @@
 import Aurora from "../../core";
 import AuroraCamera from "../camera";
-import dummyTexture from "../assets/dummy.png";
 import { GPUAuroraTexture, PipelineBind, RGB } from "../../aurora";
-import generateFont, { FontGenProps } from "./fontGen";
+import generateFont from "./fontGen";
 import FontGen from "./fontGen";
 import {
   clearTextureBuffer,
@@ -15,32 +14,13 @@ import {
   DRAW_PIPES,
   startPipelines,
 } from "./pipes";
-import jerseyImg from "../assets/Jersey25-Regular.png";
-import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
-import latoImg from "../assets/Lato-Regular.png";
-import latoJson from "../assets/Lato-Regular-msdf.json";
+
 import { compileShaders } from "./shaders";
 import AuroraDebugInfo from "../debugger/debugInfo";
+import { AuroraConfig } from "./config";
 
-export type BatcherOptions = {
-  sortOrder: "none" | "y";
-  textures: { name: string; url: string }[];
-  fonts: FontGenProps[];
-  drawOrigin: "center" | "topLeft";
-  debugger: boolean;
-  colorCorrection: RGB;
-};
-
-const INIT_OPTIONS: BatcherOptions = {
-  sortOrder: "y",
-  drawOrigin: "center",
-  textures: [],
-  fonts: [],
-  debugger: true,
-  colorCorrection: [255, 255, 255],
-};
 export default class Batcher {
-  private static batcherOptions: BatcherOptions = structuredClone(INIT_OPTIONS);
+  private static auroraConfig: AuroraConfig;
   private static indexBuffer: GPUBuffer;
   private static bloomParamsBuffer: GPUBuffer;
 
@@ -57,10 +37,10 @@ export default class Batcher {
   private static batchEncoder: GPUCommandEncoder;
   public static userFonts: Map<string, generateFont> = new Map();
   private static clearBuffer: GPUBuffer;
-  public static async Initialize(options?: Partial<BatcherOptions>) {
-    this.batcherOptions = { ...this.batcherOptions, ...options };
+  public static async Initialize(config: AuroraConfig) {
+    this.auroraConfig = config;
 
-    if (this.batcherOptions.debugger) AuroraDebugInfo.setWorking(true);
+    if (this.auroraConfig.debugger !== "none") AuroraDebugInfo.setWorking(true);
 
     this.indexBuffer = Aurora.createMappedBuffer({
       data: [0, 1, 2, 1, 2, 3],
@@ -152,18 +132,8 @@ export default class Batcher {
     AuroraDebugInfo.update("totalCalls", drawCalls + computeCalls);
   }
   private static async generateFonts() {
-    this.batcherOptions.fonts.push({
-      fontName: "lato",
-      img: latoImg,
-      json: latoJson,
-    });
-    this.batcherOptions.fonts.push({
-      fontName: "jersey",
-      img: jerseyImg,
-      json: jerseyJson,
-    });
     let index = 0;
-    for (const { img, json, fontName } of this.batcherOptions.fonts) {
+    for (const { img, json, fontName } of this.auroraConfig.userFonts) {
       const font = await FontGen.generateFont({
         fontName,
         img,
@@ -256,23 +226,12 @@ export default class Batcher {
   }
 
   private static async createUserTextureArray() {
-    let textures: BatcherOptions["textures"] = [];
-    if (this.batcherOptions.textures.length === 0) {
-      textures.push({ name: "colorRect", url: dummyTexture });
-      textures.push({ name: "colorRectTwo", url: dummyTexture });
-      this.userTextureIndexes.set("colorRectDummy", 0);
-      this.userTextureIndexes.set("colorRectDummyOne", 1);
-    } else {
-      textures.push({ name: "colorRect", url: dummyTexture });
-      this.userTextureIndexes.set("colorRectDummy", 0);
-      this.batcherOptions.textures.forEach((texture, index) => {
-        textures.push(texture);
-        this.userTextureIndexes.set(texture.name, index + 1);
-      });
-    }
+    this.auroraConfig.userTextures.forEach((texture, index) => {
+      this.userTextureIndexes.set(texture.name, index + 1);
+    });
     this.userTexture = await Aurora.createTextureArray({
       label: "userTextures",
-      textures: textures,
+      textures: this.auroraConfig.userTextures,
     });
     this.userTextureBind = Aurora.creteBindGroup({
       layout: {
@@ -302,8 +261,9 @@ export default class Batcher {
   private static createBatcherOptionsBind() {
     //tutaj mozesz dawac pozniej wszystkie potrzebne globalnie w gbpu dane jak ellapsedTime czy wlasnie opcje itp
     //zmienic wtedy z mapped na zwykle
-    const isCenter = this.batcherOptions.drawOrigin == "center" ? 0 : 1;
-    const zSort = this.batcherOptions.sortOrder == "none" ? 0 : 1;
+    const isCenter = this.auroraConfig.rendering.drawOrigin == "center" ? 0 : 1;
+    const zSort = this.auroraConfig.rendering.sortOrder == "none" ? 0 : 1;
+
     const optionsBindBuffer = Aurora.createMappedBuffer({
       bufferType: "uniform",
       data: [isCenter, zSort],
@@ -333,9 +293,12 @@ export default class Batcher {
     });
   }
   public static setColorCorrection(color: RGB) {
-    this.batcherOptions.colorCorrection = color;
+    this.auroraConfig.screen.colorCorrection = color;
     if (AuroraDebugInfo.isWorking)
       AuroraDebugInfo.update("colorCorrection", color);
+  }
+  public static getConfigGroup<T extends keyof AuroraConfig>(option: T) {
+    return this.auroraConfig[option];
   }
 
   public static getTexture(name: string) {
@@ -373,17 +336,17 @@ export default class Batcher {
     return texture ?? 0;
   }
   public static get getColorCorrection() {
-    return this.batcherOptions.colorCorrection;
+    return this.auroraConfig.screen.colorCorrection;
   }
   public static get getNormalizedColorCorrection() {
-    const color = this.batcherOptions.colorCorrection;
+    const color = this.auroraConfig.screen.colorCorrection;
     return [color[0] / 255, color[1] / 255, color[2] / 255];
   }
   public static get getIndexBuffer() {
     return this.indexBuffer;
   }
-  public static get getBatcherOptions() {
-    return this.batcherOptions;
+  public static get getAllConfig() {
+    return this.auroraConfig;
   }
   public static get getUserTextureBindGroup() {
     return this.userTextureBind[0];
