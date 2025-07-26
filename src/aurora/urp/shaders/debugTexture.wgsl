@@ -24,7 +24,7 @@ struct VertexOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,1), vec2f(1,1), vec2f(0,0), vec2f(1,0));
-  const exposure = 0.7;
+  const exposure = 0.8;
 
 
 @vertex

@@ -10,10 +10,9 @@ struct VertexInput {
     @location(0) pos: vec2<f32>, // x,y
     @location(1) size: vec2<f32>, // w,h
     @location(2) crop: vec4<f32>,    // crop
-    @location(3) shapeType: u32,    // 0 = rect, 1 = circle, 2 = sprite
-    @location(4) textureIndex: u32,    //texture index
-    @location(5) color: vec4<u32>,    // rgba
-    @location(6) emissive: u32,    // bool
+    @location(3) textureIndex: f32,    //texture index
+    @location(4) color: vec4<f32>,    // rgba
+    @location(5) emissive: f32,    // bool
 };
 
 struct VertexOutput {
@@ -21,11 +20,10 @@ struct VertexOutput {
     @location(0) crop: vec2<f32>,
     @location(1) size: vec2<f32>,
     @location(2) centerSize: vec2<f32>,
-    @location(3) @interpolate(flat) shapeType: u32,
-    @location(4) @interpolate(flat) textureIndex: u32,
-    @location(5) @interpolate(flat) color: vec4<u32>,
-    @location(6) z: f32,
-    @location(7) @interpolate(flat) emissive: u32,
+    @location(3) @interpolate(flat) textureIndex: f32,
+    @location(4) @interpolate(flat) color: vec4<f32>,
+    @location(5) z: f32,
+    @location(6) @interpolate(flat) emissive: f32,
 
 };
 struct FragmentOutput {
@@ -60,7 +58,6 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     out.crop = normalizeCrop.xy + textureQuad[props.vi] * normalizeCrop.zw;
     out.centerSize = centerSize;
     out.size = props.size;
-    out.shapeType = props.shapeType;
     out.color = props.color;
     out.textureIndex = props.textureIndex;
     out.position = vec4<f32>(translatePosition.xy, zValue, 1.0);
@@ -74,39 +71,31 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props: VertexOutput) -> FragmentOutput {
-    let color = convertColor(props.color,props.emissive);
     var out:FragmentOutput;
     out.depth = vec4<f32>(props.z,0,0,0);
-    if(props.shapeType == 2){
-        let texture = textureSampleLevel(userTextures,universalSampler, props.crop,props.textureIndex,0);
-         if(texture.w < 0.001){discard;};
-         let finalColor = texture * color;
-         out.primary = finalColor;
+    let color = convertColor(props.color,props.emissive);
+    let index = u32(props.textureIndex);
 
-    }
-    else if(props.shapeType == 1){
-        let drawOrigin = batcherOption.x;
-        let halfSize = props.size * 0.5;
-        let size = select(props.size * 0.5,props.size * 0.5,drawOrigin == 1u);
-        let unitDist = length(props.centerSize / halfSize) - 1.0;
-        let dist = unitDist * min(halfSize.x, halfSize.y);
-        let smoothing: f32 = 0.5;
-        let alpha = smoothstep(-smoothing, smoothing, -dist);
-         if(alpha == 0){discard;};
-        let finalColor = vec4f(color.rgb,alpha);
-         out.primary = finalColor;
-
-    }
-    else{
-         out.primary = color;
-
-    }
+    let texture = textureSampleLevel(userTextures,universalSampler, props.crop,index,0);
+    
+    let drawOrigin = batcherOption.x;
+    let halfSize = props.size * 0.5;
+    let size = select(props.size * 0.5,props.size * 0.5,drawOrigin == 1u);
+    let unitDist = length(props.centerSize / halfSize) - 1.0;
+    let dist = unitDist * min(halfSize.x, halfSize.y);
+    let smoothing: f32 = 0.5;
+    let alpha = smoothstep(-smoothing, smoothing, -dist);
+    
+    if(alpha < 0.001 ){discard;};
+    
+    let finalColor = texture * color;
+    out.primary = finalColor;
     return out;
 }
 
-fn convertColor(color: vec4u,emissive:u32) -> vec4f {
-    let rgb = vec3f(color.rgb) / 255.0;
-    let a = f32(color.a) /255;
-  return vec4f(rgb * f32(emissive) ,a);
+fn convertColor(color: vec4f,emissive:f32) -> vec4f {
+    let rgb = color.rgb / 255.0;
+    let a = color.a /255.00;
+  return vec4f(rgb * emissive ,a);
 }
 

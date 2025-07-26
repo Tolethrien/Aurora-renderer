@@ -9,26 +9,28 @@ import {
   generateInternalTextures,
 } from "./textures";
 import {
+  ALL_PIPES,
   clearPipelines,
   createPipelines,
-  DRAW_PIPES,
   startPipelines,
 } from "./pipes";
 
 import { compileShaders } from "./shaders";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import { AuroraConfig } from "./config";
+import SequentialDrawPipeline from "../pipelines/sequentialDrawPipe";
+import SortedDrawPipeline from "../pipelines/sortedDrawPipe";
 
 export default class Batcher {
   private static auroraConfig: AuroraConfig;
   private static indexBuffer: GPUBuffer;
   private static bloomParamsBuffer: GPUBuffer;
-
+  private static usedDrawPipeline: SequentialDrawPipeline | SortedDrawPipeline;
   private static userTextureBind: PipelineBind;
   private static userFontBind: PipelineBind;
   private static batcherOptionsBind: PipelineBind;
   private static bloomParamsUniform: PipelineBind;
-  public static pipelinesUsedInFrame: Set<keyof typeof DRAW_PIPES> = new Set();
+  public static pipelinesUsedInFrame: Set<keyof typeof ALL_PIPES> = new Set();
   public static internatTextures: Map<string, GPUAuroraTexture> = new Map();
   public static loadedShaders: Map<string, GPUShaderModule> = new Map();
   public static internatSamplers: Map<string, GPUSampler> = new Map();
@@ -196,31 +198,6 @@ export default class Batcher {
     );
   }
   private static clearTextures() {
-    const commandEncoder = this.batchEncoder;
-
-    const passEncoder = commandEncoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: this.getTextureView("offscreenCanvas"),
-          clearValue: [0.5, 0.5, 0.5, 1],
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ],
-      depthStencilAttachment: {
-        view: this.getTextureView("depthTexture"),
-        depthClearValue: 0.0,
-        depthLoadOp: "clear",
-        depthStoreOp: "store",
-      },
-      timestampWrites: AuroraDebugInfo.isWorking
-        ? {
-            querySet: AuroraDebugInfo.getQuery().qSet,
-            beginningOfPassWriteIndex: 0,
-          }
-        : undefined,
-    });
-    passEncoder.end();
     this.clearTexture("zBufferDump");
     this.clearTexture("bloomThreshold");
   }
@@ -261,6 +238,7 @@ export default class Batcher {
   private static createBatcherOptionsBind() {
     //tutaj mozesz dawac pozniej wszystkie potrzebne globalnie w gbpu dane jak ellapsedTime czy wlasnie opcje itp
     //zmienic wtedy z mapped na zwykle
+    console.log(this.auroraConfig.rendering);
     const isCenter = this.auroraConfig.rendering.drawOrigin == "center" ? 0 : 1;
     const zSort = this.auroraConfig.rendering.sortOrder == "none" ? 0 : 1;
 

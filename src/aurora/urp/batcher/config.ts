@@ -10,12 +10,17 @@ type SortOrder = "none" | "y" | "y+x";
 type Profiler = "none" | "minimal" | "normal" | "extended";
 type UserTexture = { name: string; url: string };
 type CameraProjection = "ortho" | "perspective" | "isometric";
-
+type ToneMaps = "rainhard" | "aces" | "filmic" | "none";
 export interface AuroraConfig {
   HDR: {
-    toneMapping: "rainhard" | "aces" | "filmic";
+    toneMapping: ToneMaps;
+  };
+  feature: {
+    bloom: boolean;
+    lighting: boolean;
   };
   bloom: {
+    numberOfPasses: number;
     threshold: number;
     knee: number;
     intense: number;
@@ -41,7 +46,11 @@ export interface AuroraConfig {
   userFonts: FontGenProps[];
 }
 const INIT_OPTIONS: AuroraConfig = {
-  bloom: { intense: 0.7, knee: 0.2, threshold: 1 },
+  feature: {
+    bloom: true,
+    lighting: true,
+  },
+  bloom: { intense: 0.7, knee: 0.2, threshold: 1, numberOfPasses: 3 },
   HDR: { toneMapping: "aces" },
   rendering: {
     drawOrigin: "center",

@@ -15,6 +15,7 @@ const texB = { name: "char", url: char };
 const config = auroraConfig({
   userFonts: [yaFont],
   userTextures: [texA, texB],
+  HDR: { toneMapping: "aces" },
 });
 async function preload() {
   await Aurora.init();
@@ -45,29 +46,53 @@ function makeLight({ intence, lightcolor, pos, size, emis }: t) {
 async function create() {
   await Batcher.Initialize(config);
 
-  const l = 50;
+  const l = 25;
   Batcher.setColorCorrection([l, l, l]);
 }
-const arr = Array(100)
+const arr = Array(1000)
   .fill(0)
   .map(() => [Math.random() * 600, Math.random() * 600]);
 
-let w = 135;
-let h = 114;
-let x = 200;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Batcher.beginBatch();
-  // Draw.rect({
-  //   position: { x: 375, y: 275 },
-  //   size: { height: h, width: w },
-  //   tint: [255, 255, 0, 255],
-  // });
-  // Draw.rect({
-  //   position: { x: 425, y: 325 },
-  //   size: { height: h, width: w },
-  //   tint: [255, 0, 255, 255 / 2],
-  // });
+  showLights();
+  showSprites();
+  showOrderOFDraw();
+
+  // showText();
+
+  Batcher.endBatch();
+  AuroraDebugInfo.endCount();
+  AuroraDebugInfo.displayEveryFrame(60, true);
+  // x++;
+  requestAnimationFrame(start);
+}
+function showText() {
+  Draw.text({
+    position: { x: 200, y: 330 },
+    font: "ya",
+    fontSize: 14,
+    text: "Player One",
+    fontColor: [255, 0, 255, 150],
+  });
+
+  Draw.text({
+    position: { x: 300, y: 550 },
+    font: "lato",
+    fontSize: 62,
+    text: "Scalable big text!",
+    fontColor: [255, 255, 0, 255],
+  });
+  Draw.text({
+    position: { x: 150, y: 480 },
+    font: "ya",
+    fontSize: 8,
+    text: "this will be a little bit of a problem couse i sure will use even a 8 size",
+    fontColor: [255, 255, 255, 255],
+  });
+}
+function showSprites() {
   arr.forEach((el) => {
     Draw.sprite({
       position: { x: el[0], y: el[1] },
@@ -77,6 +102,32 @@ function start(timestamp: number) {
       textureToUse: "char",
     });
   });
+}
+function showOrderOFDraw() {
+  let w = 135;
+  let h = 114;
+  Draw.rect({
+    position: { x: 250, y: 250 },
+    size: { height: h, width: w },
+    tint: [255, 255, 255, 255],
+  });
+  Draw.rect({
+    position: { x: 275, y: 275 },
+    size: { height: h, width: w },
+    tint: [0, 0, 0, 150],
+  });
+  Draw.rect({
+    position: { x: 300, y: 300 },
+    size: { height: h, width: w },
+    tint: [0, 255, 0, 150],
+  });
+  Draw.circle({
+    position: { x: 340, y: 340 },
+    size: { height: 80, width: 80 },
+    tint: [255, 0, 0, 150],
+  });
+}
+function showLights() {
   makeLight({
     intence: 255,
     lightcolor: [255, 70, 70],
@@ -112,78 +163,5 @@ function start(timestamp: number) {
     size: [50, 50],
     emis: 6,
   });
-  // const lightColor = 255;
-  // Draw.rect({
-  //   position: { x: x - 50, y: 250 },
-  //   size: { height: 100, width: 100 },
-  //   tint: [lightColor, 100, 0, 255],
-  // });
-  // Draw.rect({
-  //   position: { x: x, y: 250 + 150 },
-  //   size: { height: 100, width: 100 },
-  //   tint: [lightColor, 100, 0, 255],
-  // });
-  // Draw.rect({
-  //   position: { x: x + 50, y: 250 - 150 },
-  //   size: { height: 100, width: 100 },
-  //   tint: [lightColor, 100, 0, 255],
-  // });
-  // Draw.circle({
-  //   position: { x: 425, y: 225 },
-  //   size: { height: 50, width: 50 },
-  //   tint: [255, 70, 70, 255],
-  //   emissive: 5,
-  // });
-  // Draw.pointLight({
-  //   position: { x: x, y: 250 },
-  //   size: { height: 550, width: 550 },
-  //   tint: [255, 100, 0, 255],
-  //   intensity: 255,
-  // });
-  // Draw.pointLight({
-  //   position: { x: 300, y: 300 },
-  //   size: { height: 350, width: 350 },
-  //   tint: [100, lightColor, 100, 255],
-  //   intensity: 255,
-  // });
-  // Draw.pointLight({
-  //   position: { x: 100, y: 500 },
-  //   size: { height: 350, width: 350 },
-  //   tint: [100, 100, lightColor, 255],
-  //   intensity: 255,
-  // });
-  // Draw.rect({
-  //   position: { x: 480, y: 270 },
-  //   size: { height: h, width: w },
-  //   tint: [0, 0, 255, 255 / 2],
-  // });
-  // Draw.text({
-  //   position: { x: 200, y: 330 },
-  //   font: "ya",
-  //   fontSize: 14,
-  //   text: "Player One",
-  //   fontColor: [255, 0, 255, 150],
-  // });
-
-  // Draw.text({
-  //   position: { x: 300, y: 550 },
-  //   font: "lato",
-  //   fontSize: 62,
-  //   text: "Scalable big text!",
-  //   fontColor: [255, 255, 0, 255],
-  // });
-  // Draw.text({
-  //   position: { x: 150, y: 480 },
-  //   font: "ya",
-  //   fontSize: 8,
-  //   text: "this will be a little bit of a problem couse i sure will use even a 8 size",
-  //   fontColor: [255, 255, 255, 255],
-  // });
-
-  Batcher.endBatch();
-  AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(60, true);
-  // x++;
-  requestAnimationFrame(start);
 }
 await preload();

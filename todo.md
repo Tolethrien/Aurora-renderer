@@ -1,5 +1,7 @@
 # Think
 
+- przeleciec wszystko w config i sprawic by tam dzialalo, by wszystkie te rzeczy tam byly zaimpementowane itp
+
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
 
 - zamiast miec buffer z opcjami batchera mozesz miec fragment constants
@@ -53,6 +55,8 @@
   },
   ]
   } by mniej zajmowalo - funkcja sama bedzie dodawala layut i data do stringu
+
+- ddac moziwosc customowej kamery
 
 # Done
 

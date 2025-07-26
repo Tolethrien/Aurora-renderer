@@ -1,74 +1,161 @@
 import Aurora from "../../core";
 import Batcher from "../batcher/batcher";
-import AuroraDebugInfo from "../debugger/debugInfo";
 import AuroraCamera from "../camera";
-import { BatchAccumulator, GetBatch } from "../draw";
-
-interface DrawBatch {
-  shape: BatchAccumulator[];
-  text: BatchAccumulator[];
-  transparent: BatchAccumulator[];
+import AuroraDebugInfo from "../debugger/debugInfo";
+//POPRAWKI POTEM:
+// trzymac gdzies generalnie shadery bo po co generowac takie same
+// przebudowac shadery na vert i frag bo sporo vertow tych samych uzywam
+const BATCH_INIT_SIZE = {
+  quad: 100,
+  circle: 50,
+  quadTransparent: 20,
+  circleTransparent: 20,
+};
+interface BatchNode {
+  initBatchSize: number;
+  batchSize: number;
+  vertices: Float32Array;
+  counter: number;
+  shader: keyof typeof BATCH_INIT_SIZE;
 }
-/**
- * Main sorted pipeline to draw shapes,sprites etc.
- */
+interface PipelineDescriptor {
+  name: keyof typeof BATCH_INIT_SIZE;
+  depthWrite: boolean;
+  shader: string;
+}
+
+const PIPELINES_DATA: PipelineDescriptor[] = [
+  { depthWrite: true, name: "quad", shader: "quadShader" },
+  { depthWrite: true, name: "circle", shader: "circleShader" },
+  { depthWrite: false, name: "quadTransparent", shader: "quadShader" },
+  { depthWrite: false, name: "circleTransparent", shader: "circleShader" },
+];
 export default class SortedDrawPipeline {
-  private static BATCH_SIZE = 1000000; //assumption is - will never hit this amount xD maybe change later
-  private static VERTEX_STRIDE = 8;
-  private static ADD_STRIDE = 7;
+  private static VERTEX_STRIDE = 14;
+  private static bufferNeedResize = false;
 
-  public static drawBatch: DrawBatch = {
-    shape: [],
-    text: [],
-    transparent: [],
-  };
-  private static shapePipeline: GPURenderPipeline;
-  private static textPipeline: GPURenderPipeline;
-  private static transparentShapePipeline: GPURenderPipeline;
-  private static transparentTextPipeline: GPURenderPipeline;
   private static vertexBuffer: GPUBuffer;
-  private static addBuffer: GPUBuffer;
+  public static batchList: Map<string, BatchNode> = new Map();
+  private static pipelines: Map<string, GPURenderPipeline> = new Map();
+  public static async createPipeline() {
+    this.generateBatchData();
+    this.generateGPUBuffer();
+    for (const descriptor of PIPELINES_DATA) {
+      const name = descriptor.name;
+      const pipeline = await this.generatePipeline(descriptor);
+      this.pipelines.set(name, pipeline);
+    }
+  }
+  public static usePipeline() {
+    if (this.bufferNeedResize) this.generateGPUBuffer();
+    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
+    const zBufferTexture = Batcher.getTextureView("zBufferDump");
+    const userTextureBind = Batcher.getUserTextureBindGroup;
+    const indexBuffer = Batcher.getIndexBuffer;
+    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
+    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
+    const commandEncoder = Batcher.getEncoder;
+    let byteOffset = 0;
 
+    this.batchList.forEach((batch) => {
+      //let first pass go even when empty to clear canvas, no need for other empty passes
+      if (byteOffset !== 0 && batch.counter === 0) return;
+      const list = batch.vertices;
+      if (batch.shader.includes("Transparent"))
+        this.sortTransparentBatch(batch);
+      Aurora.device.queue.writeBuffer(this.vertexBuffer, byteOffset, list, 0);
+      //use zbuffer dump when debug mode
+      const loadOperation = byteOffset === 0 ? "clear" : "load";
+      const zDumpTarget = this.getZDump(zBufferTexture, loadOperation);
+      const pipeline = this.getPipeline(batch.shader);
+      const timestamp = this.getFrameQuery(byteOffset === 0);
+      const passEncoder = commandEncoder.beginRenderPass({
+        label: `SortedDrawShapeRenderPass:${batch.shader}`,
+        colorAttachments: [
+          {
+            view: offscreenTexture,
+            loadOp: loadOperation,
+            clearValue: [0.5, 0.5, 0.5, 1],
+            storeOp: "store",
+          },
+          zDumpTarget,
+        ],
+        depthStencilAttachment: {
+          view: Batcher.getTextureView("depthTexture"),
+          depthLoadOp: loadOperation,
+          depthClearValue: 0.0,
+          depthStoreOp: "store",
+        },
+        timestampWrites: timestamp,
+      });
+      passEncoder.setPipeline(pipeline);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffset);
+      passEncoder.setBindGroup(0, cameraBind);
+      passEncoder.setBindGroup(1, userTextureBind);
+      passEncoder.setBindGroup(2, batcherOptionsBind);
+      passEncoder.setIndexBuffer(indexBuffer, "uint32");
+      passEncoder.drawIndexed(6, batch.counter);
+      passEncoder.end();
+      byteOffset += list.byteLength;
+      AuroraDebugInfo.accumulate("drawCalls", 1);
+    });
+    Batcher.pipelinesUsedInFrame.add("SortedDrawPipeline");
+    AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
+  }
+  public static clearPipeline() {
+    this.batchList.forEach((shader) => (shader.counter = 0));
+    this.bufferNeedResize = false;
+  }
   public static get getStride() {
-    return {
-      vertexStride: this.VERTEX_STRIDE,
-      addStride: this.ADD_STRIDE,
-    };
+    return this.VERTEX_STRIDE;
+  }
+  public static getBatch(key: keyof typeof BATCH_INIT_SIZE) {
+    const batch = this.batchList.get(key);
+    if (!batch)
+      throw new Error(
+        `no Draw Batch with name ${key} in sortedDraw, should be imposable`
+      );
+    if (batch.counter === batch.batchSize) {
+      const newSize = Math.floor(batch.batchSize * 1.5);
+      batch.batchSize = newSize;
+      const batchVerticesCopy = batch.vertices;
+      batch.vertices = new Float32Array(newSize * this.VERTEX_STRIDE);
+      batch.vertices.set(batchVerticesCopy, 0);
+      this.bufferNeedResize = true;
+    }
+    return batch;
+  }
+  private static generateBatchData() {
+    Object.entries(BATCH_INIT_SIZE).forEach((shader) => {
+      const initSize = shader[1];
+      this.batchList.set(shader[0], {
+        batchSize: initSize,
+        initBatchSize: initSize,
+        vertices: new Float32Array(initSize * this.VERTEX_STRIDE),
+        counter: 0,
+        shader: shader[0] as keyof typeof BATCH_INIT_SIZE,
+      });
+    });
   }
 
-  public static async createPipeline() {
-    const shapeSh = Batcher.getShader("shapeShader");
-    const textSh = Batcher.getShader("textShader");
+  private static getPipeline(name: keyof typeof BATCH_INIT_SIZE) {
+    return this.pipelines.get(name)!;
+  }
 
+  private static generateGPUBuffer() {
+    const totalBatchSize = Array.from(this.batchList.values()).reduce(
+      (sum, node) => (sum += node.batchSize),
+      0
+    );
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "sortedDrawVertexBuffer",
-      dataLength: this.BATCH_SIZE * this.VERTEX_STRIDE,
+      dataLength: totalBatchSize * this.VERTEX_STRIDE,
       dataType: "Float32Array",
     });
-    this.addBuffer = Aurora.createBuffer({
-      bufferType: "vertex",
-      label: "sortedDrawAddDataBuffer",
-      dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
-      dataType: "Uint32Array",
-    });
-    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
-    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
-    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
-    const textBindLayout = Batcher.getUserFontBindGroupLayout;
-
-    const shapePipelineLayout = Aurora.createPipelineLayout([
-      cameraBindLayout,
-      userTextureLayout,
-      batcherOptionsLayout,
-    ]);
-    const textPipelineLayout = Aurora.createPipelineLayout([
-      cameraBindLayout,
-      textBindLayout,
-      batcherOptionsLayout,
-    ]);
-
-    const vertBuffLay = Aurora.createVertexBufferLayout({
+  }
+  private static generateVertexLayout() {
+    return Aurora.createVertexBufferLayout({
       arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
       attributes: [
@@ -87,296 +174,95 @@ export default class SortedDrawPipeline {
           offset: 4 * Float32Array.BYTES_PER_ELEMENT,
           shaderLocation: 2, // textureCrop
         },
-      ],
-    });
-    const AddDataBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: this.ADD_STRIDE * Uint32Array.BYTES_PER_ELEMENT,
-      stepMode: "instance",
-      attributes: [
         {
-          format: "uint32",
-          offset: 0,
-          shaderLocation: 3, // shapeType: 0 - rect, 1 - ellipse, 2 - sprite
+          format: "float32",
+          offset: 8 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 3, // textureIndex
         },
         {
-          format: "uint32",
-          offset: 1 * Uint32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 4, //textureIndex
+          format: "float32x4",
+          offset: 9 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 4, // tint
         },
         {
-          format: "uint32x4",
-          offset: 2 * Uint32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 5, //tint
-        },
-        {
-          format: "uint32",
-          offset: 6 * Uint32Array.BYTES_PER_ELEMENT,
-          shaderLocation: 6, //emissive
+          format: "float32",
+          offset: 13 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 5, // emissive
         },
       ],
     });
+  }
+
+  private static async generatePipeline({
+    depthWrite,
+    name,
+    shader,
+  }: PipelineDescriptor) {
+    const vertexLayout = this.generateVertexLayout();
+    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
+    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
+    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
+    const shapePipelineLayout = Aurora.createPipelineLayout([
+      cameraBindLayout,
+      userTextureLayout,
+      batcherOptionsLayout,
+    ]);
+    const gpuShader = Batcher.getShader(shader);
     const targets = AuroraDebugInfo.isWorking
       ? [
           Aurora.getColorTargetTemplate("HDR"),
           Aurora.getColorTargetTemplate("zBufferDump"),
         ]
-      : [Aurora.getColorTargetTemplate("standard")];
-    this.shapePipeline = await Aurora.createRenderPipeline({
-      shader: shapeSh,
-      pipelineName: "sortedDrawShape",
-      buffers: [vertBuffLay, AddDataBuffLay],
+      : [Aurora.getColorTargetTemplate("HDR")];
+    const pipe = await Aurora.createRenderPipeline({
+      shader: gpuShader,
+      pipelineName: `${name}Pipeline`,
+      buffers: [vertexLayout],
       pipelineLayout: shapePipelineLayout,
       primitive: { topology: "triangle-list" },
       colorTargets: targets,
       depthStencil: {
         format: "depth24plus",
-        depthWriteEnabled: true,
+        depthWriteEnabled: depthWrite,
         depthCompare: "greater-equal",
       },
     });
-    this.textPipeline = await Aurora.createRenderPipeline({
-      shader: textSh,
-      pipelineName: "sortedDrawText",
-      buffers: [vertBuffLay, AddDataBuffLay],
-      pipelineLayout: textPipelineLayout,
-      primitive: { topology: "triangle-list" },
-      colorTargets: targets,
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: true,
-        depthCompare: "greater-equal",
-      },
-    });
-    this.transparentShapePipeline = await Aurora.createRenderPipeline({
-      shader: shapeSh,
-      pipelineName: "ortedDrawTransparentShape",
-      buffers: [vertBuffLay, AddDataBuffLay],
-      pipelineLayout: shapePipelineLayout,
-      primitive: { topology: "triangle-list" },
-      colorTargets: targets,
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "greater-equal",
-      },
-    });
-    this.transparentTextPipeline = await Aurora.createRenderPipeline({
-      shader: textSh,
-      pipelineName: "sortedDrawTransparentText",
-      buffers: [vertBuffLay, AddDataBuffLay],
-      pipelineLayout: textPipelineLayout,
-      primitive: { topology: "triangle-list" },
-      colorTargets: targets,
-      depthStencil: {
-        format: "depth24plus",
-        depthWriteEnabled: false,
-        depthCompare: "greater-equal",
-      },
-    });
+    return pipe;
   }
-
-  private static createEmptyBatch(type: GetBatch["type"]): BatchAccumulator {
+  private static getFrameQuery(write: boolean) {
+    if (!AuroraDebugInfo.isWorking || write === false) return undefined;
     return {
-      verticesData: [],
-      addData: [],
-      count: 0,
-      type,
+      querySet: AuroraDebugInfo.getQuery().qSet,
+      beginningOfPassWriteIndex: 0,
     };
   }
-  public static getBatch(type: GetBatch["type"], alpha: number) {
-    const isTransparent = alpha !== 255;
-    const key = isTransparent ? "transparent" : type;
-    const batchAccumulator: BatchAccumulator[] = this.drawBatch[key];
-
-    if (batchAccumulator.length === 0) {
-      batchAccumulator.push(this.createEmptyBatch(type));
-    }
-
-    let batch = batchAccumulator.at(-1)!;
-    if (AuroraDebugInfo.isWorking && batch.count >= this.BATCH_SIZE)
-      throw new Error(
-        `batch count in sortedDraw is more then theoretical limit you should never achieve \n count:${batch.count} \n limit:${this.BATCH_SIZE}`
-      );
-
-    if (batch.type !== type) {
-      batchAccumulator.push(this.createEmptyBatch(type));
-      batch = batchAccumulator.at(-1)!;
-    }
-
-    Batcher.pipelinesUsedInFrame.add("sortedDraw");
-    return batch;
-  }
-  public static usePipeline() {
-    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
-    const zBufferTexture = Batcher.getTextureView("zBufferDump");
-    const userTextureBind = Batcher.getUserTextureBindGroup;
-    const fontBind = Batcher.getUserFontBindGroup;
-    const indexBuffer = Batcher.getIndexBuffer;
-    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
-    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
-    let byteOffsetVert = 0;
-    let byteOffsetAdd = 0;
-    const colorAttachments: GPURenderPassColorAttachment[] = [
-      {
-        view: offscreenTexture,
-        loadOp: "load",
-        storeOp: "store",
-      },
-    ];
-    if (AuroraDebugInfo.isWorking)
-      colorAttachments.push({
-        view: zBufferTexture,
-        loadOp: "load",
-        storeOp: "store",
-      });
-    const commandEncoder = Batcher.getEncoder;
-    this.drawBatch.shape.forEach((batch, index) => {
-      const vert = new Float32Array(batch.verticesData);
-      const add = new Uint32Array(batch.addData);
-      Aurora.device.queue.writeBuffer(
-        this.vertexBuffer,
-        byteOffsetVert,
-        vert,
-        0
-      );
-      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `SortedDrawShapeRenderPass:${index}`,
-        colorAttachments: colorAttachments,
-        depthStencilAttachment: {
-          view: Batcher.getTextureView("depthTexture"),
-          depthLoadOp: "load",
-          depthStoreOp: "store",
-        },
-      });
-      passEncoder.setPipeline(this.shapePipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
-      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
-      passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, userTextureBind);
-      passEncoder.setBindGroup(2, batcherOptionsBind);
-      passEncoder.setIndexBuffer(indexBuffer, "uint32");
-      passEncoder.drawIndexed(6, batch.count);
-      passEncoder.end();
-      byteOffsetVert += vert.byteLength;
-      byteOffsetAdd += add.byteLength;
-      AuroraDebugInfo.accumulate("drawCalls", 1);
-    });
-
-    this.drawBatch.text.forEach((batch, index) => {
-      const vert = new Float32Array(batch.verticesData);
-      const add = new Uint32Array(batch.addData);
-
-      Aurora.device.queue.writeBuffer(
-        this.vertexBuffer,
-        byteOffsetVert,
-        vert,
-        0
-      );
-      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, add, 0);
-
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `SortedDrawTextRenderPass:${index}`,
-
-        colorAttachments: colorAttachments,
-        depthStencilAttachment: {
-          view: Batcher.getTextureView("depthTexture"),
-          depthLoadOp: "load",
-          depthStoreOp: "store",
-        },
-      });
-      passEncoder.setPipeline(this.textPipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
-      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
-      passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, fontBind);
-      passEncoder.setBindGroup(2, batcherOptionsBind);
-
-      passEncoder.setIndexBuffer(indexBuffer, "uint32");
-      passEncoder.drawIndexed(6, batch.count);
-      passEncoder.end();
-      byteOffsetVert += vert.byteLength;
-      byteOffsetAdd += add.byteLength;
-      AuroraDebugInfo.accumulate("drawCalls", 1);
-    });
-
-    this.drawBatch.transparent.forEach((batch, index) => {
-      const pipeline =
-        batch.type === "shape"
-          ? this.transparentShapePipeline
-          : this.transparentTextPipeline;
-      const textureBind = batch.type === "shape" ? userTextureBind : fontBind;
-      const { add, verts } = this.sortData(batch.verticesData, batch.addData);
-      const vertArr = new Float32Array(verts);
-      const addArr = new Uint32Array(add);
-
-      Aurora.device.queue.writeBuffer(
-        this.vertexBuffer,
-        byteOffsetVert,
-        vertArr,
-        0
-      );
-      Aurora.device.queue.writeBuffer(this.addBuffer, byteOffsetAdd, addArr, 0);
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `SortedDrawTransparentRenderPass:${index}(${
-          batch.type === "shape" ? "shape" : "text"
-        })`,
-        colorAttachments: colorAttachments,
-        depthStencilAttachment: {
-          view: Batcher.getTextureView("depthTexture"),
-          depthLoadOp: "load",
-          depthStoreOp: "store",
-        },
-      });
-      passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffsetVert);
-      passEncoder.setVertexBuffer(1, this.addBuffer, byteOffsetAdd);
-      passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, textureBind);
-      passEncoder.setBindGroup(2, batcherOptionsBind);
-
-      passEncoder.setIndexBuffer(indexBuffer, "uint32");
-      passEncoder.drawIndexed(6, batch.count);
-      passEncoder.end();
-      byteOffsetVert += vertArr.byteLength;
-      byteOffsetAdd += addArr.byteLength;
-      AuroraDebugInfo.accumulate("drawCalls", 1);
-    });
-    AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
-  }
-
-  private static sortData(dataVert: number[], dataAdd: number[]) {
-    if (
-      dataVert.length % this.VERTEX_STRIDE !== 0 ||
-      dataAdd.length % this.ADD_STRIDE !== 0
-    ) {
-      throw new Error(
-        `Transparent data is not multiple of ${this.VERTEX_STRIDE} and ${this.ADD_STRIDE}`
-      );
-    }
-    const vertChunks: number[][] = [];
-    const addChunks: number[][] = [];
-    for (let i = 0; i < dataVert.length; i += this.VERTEX_STRIDE) {
-      vertChunks.push(dataVert.slice(i, i + this.VERTEX_STRIDE));
-    }
-    for (let i = 0; i < dataAdd.length; i += this.ADD_STRIDE) {
-      addChunks.push(dataAdd.slice(i, i + this.ADD_STRIDE));
-    }
-    const combined = vertChunks.map((vert, index) => ({
-      vert,
-      add: addChunks[index],
-    }));
-    combined.sort((a, b) => a.vert[1] - b.vert[1]);
+  private static getZDump(texture: GPUTextureView, loadOp: "clear" | "load") {
+    if (!AuroraDebugInfo.isWorking) return undefined;
     return {
-      verts: combined.flatMap((c) => c.vert),
-      add: combined.flatMap((c) => c.add),
-    };
+      view: texture,
+      loadOp: loadOp,
+      storeOp: "store",
+    } as GPURenderPassColorAttachment;
   }
-  public static clearBatch() {
-    this.drawBatch = {
-      shape: [],
-      text: [],
-      transparent: [],
-    };
+  private static sortTransparentBatch(shaderNode: BatchNode) {
+    const { vertices, counter, batchSize } = shaderNode;
+    const Y_OFFSET_IN_STRIDE = 1;
+    const indices = Array.from({ length: counter }, (_, i) => i);
+    indices.sort((a, b) => {
+      const yA = vertices[a * this.VERTEX_STRIDE + Y_OFFSET_IN_STRIDE];
+      const yB = vertices[b * this.VERTEX_STRIDE + Y_OFFSET_IN_STRIDE];
+      return yA - yB;
+    });
+    const sortedVertices = new Float32Array(batchSize * this.VERTEX_STRIDE);
+
+    for (let i = 0; i < counter; i++) {
+      const originalIndex = indices[i];
+      const sourceOffset = originalIndex * this.VERTEX_STRIDE;
+      const destOffset = i * this.VERTEX_STRIDE;
+      for (let j = 0; j < this.VERTEX_STRIDE; j++) {
+        sortedVertices[destOffset + j] = vertices[sourceOffset + j];
+      }
+    }
+    shaderNode.vertices = sortedVertices;
   }
 }

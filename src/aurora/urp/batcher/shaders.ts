@@ -1,10 +1,12 @@
 import Aurora from "../../core";
-import shapeShader from "../shaders/shape.wgsl?raw";
+import quad from "../shaders/drawQuad.wgsl?raw";
+import circle from "../shaders/drawCircle.wgsl?raw";
 import debugTextureShader from "../shaders/debugTexture.wgsl?raw";
 import textShader from "../shaders/text.wgsl?raw";
 import Batcher from "./batcher";
 export function compileShaders() {
-  const shape = Aurora.createShader("shapeShader", shapeShader);
+  const quadShader = Aurora.createShader("quadShader", quad);
+  const circleShader = Aurora.createShader("circleShader", circle);
   const text = Aurora.createShader("textShader", textShader);
   const textureArr = Aurora.createShader(
     "displayTextureFromArray",
@@ -12,7 +14,8 @@ export function compileShaders() {
   );
 
   Batcher.loadedShaders = new Map([
-    ["shapeShader", shape],
+    ["quadShader", quadShader],
+    ["circleShader", circleShader],
     ["textShader", text],
     ["textureFromArray", textureArr],
   ]);

@@ -115,9 +115,11 @@ export default class AuroraCamera {
       this.cameraBounds
     );
   }
-  public static setCameraBounds(value: number) {
-    this.cameraBounds[0] = Math.min(this.cameraBounds[0], value);
-    this.cameraBounds[1] = Math.max(this.cameraBounds[1], value);
+  public static setCameraBounds(y: number, h: number) {
+    const top = y;
+    const bottom = y + h;
+    this.cameraBounds[0] = Math.min(this.cameraBounds[0], top);
+    this.cameraBounds[1] = Math.max(this.cameraBounds[1], bottom);
   }
 
   public static get getProjectionViewMatrix() {
