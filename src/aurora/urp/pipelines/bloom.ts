@@ -1,12 +1,12 @@
 import { CreateBindGroup, PipelineBind, Position2D, RGB } from "../../aurora";
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import bloomX from "../shaders/bloomX.wgsl?raw";
 import bloomY from "../shaders/bloomY.wgsl?raw";
 import downscale from "../shaders/downscaling.wgsl?raw";
 import upscale from "../shaders/upscaleAndBlend.wgsl?raw";
 import threshold from "../shaders/bloomThreshold.wgsl?raw";
+import Renderer from "../batcher/renderer";
 //TODO: optimize pass amount and then change generate
 //TODO: threshold can blurX
 //TODO: bloomY can downscale
@@ -184,20 +184,20 @@ export default class BloomPipeline {
         entries: [
           {
             binding: 0,
-            resource: Batcher.getTextureView("offscreenCanvas"),
+            resource: Renderer.getTextureView("offscreenCanvas"),
           },
           {
             binding: 1,
-            resource: Batcher.getTextureView("bloomThreshold"),
+            resource: Renderer.getTextureView("bloomThreshold"),
           },
           {
             binding: 2,
-            resource: Batcher.getSampler("linear"),
+            resource: Renderer.getSampler("linear"),
           },
         ],
       },
     });
-    const bloomLayout = Batcher.getBloomParamUniformLayout;
+    const [_, bloomLayout] = Renderer.getBind("bloomParams");
 
     const treshLayout = Aurora.createPipelineLayout([
       this.bloomThresholdBind[1],
@@ -257,9 +257,9 @@ export default class BloomPipeline {
   }
 
   public static usePipeline(): void {
-    const bloomParamBuffer = Batcher.getBloomParamBuffer;
+    const bloomParamBuffer = Renderer.getBuffer("bloomParams");
     const globalIllumination = this.normalizeColorToLuminance(
-      Batcher.getColorCorrection
+      Renderer.getGlobalIllumination("normalized")
     );
     const newThreshold =
       this.baseThreshold + globalIllumination * this.thresholdBoostFactor;
@@ -282,7 +282,7 @@ export default class BloomPipeline {
     });
     AuroraDebugInfo.accumulate("pipelineInUse", ["bloom"]);
   }
-  public static clearBatch() {
+  public static clearPipeline() {
     this.bloomInFrame = false;
   }
   public static setBloomParam(
@@ -293,13 +293,14 @@ export default class BloomPipeline {
     this.bloomParams[key] = value;
   }
   private static thresholdPass() {
-    const { meta } = Batcher.getTexture("bloomThreshold");
+    const { meta } = Renderer.getTexture("bloomThreshold");
     const size = {
       x: Math.ceil(meta.width / this.GROUP_SIZE),
       y: Math.ceil(meta.height / this.GROUP_SIZE),
     };
-    const bloomParams = Batcher.getBloomParamUniform;
-    const commandEncoder = Batcher.getEncoder;
+    const [bloomParams] = Renderer.getBind("bloomParams");
+
+    const commandEncoder = Renderer.getEncoder;
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomThresholdPass",
     });
@@ -311,7 +312,7 @@ export default class BloomPipeline {
     AuroraDebugInfo.accumulate("computeCalls", 1);
   }
   private static downscalePass(groupSize: Position2D, index: number) {
-    const commandEncoder = Batcher.getEncoder;
+    const commandEncoder = Renderer.getEncoder;
     const currentBindData = this.bindList[index];
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomComputePassDownscale",
@@ -332,7 +333,7 @@ export default class BloomPipeline {
     else if (blurPass === "y") pipeline = this.pipelineY;
     else throw new Error(`Bloom pipeline should be X or Y. Got: ${blurPass}`);
 
-    const commandEncoder = Batcher.getEncoder;
+    const commandEncoder = Renderer.getEncoder;
     const currentBindData = this.bindList[index];
 
     const passEncoderOne = commandEncoder.beginComputePass({
@@ -345,9 +346,9 @@ export default class BloomPipeline {
     AuroraDebugInfo.accumulate("computeCalls", 1);
   }
   private static upscalePass(groupSize: Position2D, index: number) {
-    const commandEncoder = Batcher.getEncoder;
+    const commandEncoder = Renderer.getEncoder;
     const currentBindData = this.bindList[index];
-    const bloomParams = Batcher.getBloomParamUniform;
+    const [bloomParams] = Renderer.getBind("bloomParams");
 
     const passEncoderOne = commandEncoder.beginComputePass({
       label: "bloomComputePassUpscale",
@@ -370,7 +371,7 @@ export default class BloomPipeline {
       );
   }
   private static getGroupSize(passSet: PassOrderList) {
-    const { meta } = Batcher.getTexture("bloomThreshold");
+    const { meta } = Renderer.getTexture("bloomThreshold");
     const passType = passSet[0];
     const newMip = passSet[3];
     if (passType === "downscale") this.currentMipLevel = newMip + 1;
@@ -391,13 +392,13 @@ export default class BloomPipeline {
     };
   }
   private static getNewBinding(passSet: PassOrderList): GPUBindGroup {
-    const sampler = Batcher.getSampler("linear");
+    const sampler = Renderer.getSampler("linear");
     const passType = passSet[0];
     const label = `bloomPassBindData:${passType}`;
     let outputLevel = passSet[3];
     if (passType === "downscale") outputLevel = passSet[3] + 1;
-    const inputView = Batcher.getTextureView(passSet[1], passSet[3]);
-    const outputView = Batcher.getTextureView(passSet[2], outputLevel);
+    const inputView = Renderer.getTextureView(passSet[1], passSet[3]);
+    const outputView = Renderer.getTextureView(passSet[2], outputLevel);
     const bindEntries: GPUBindGroupEntry[] = [
       {
         binding: 0,
@@ -421,22 +422,22 @@ export default class BloomPipeline {
     return Aurora.getNewBindGroupFromLayout(bindData, bindLayout);
   }
   private static getNewUpscaleBinding(passSet: PassOrderList): GPUBindGroup {
-    const sampler = Batcher.getSampler("linear");
+    const sampler = Renderer.getSampler("linear");
     const label = "bloomPassBindData:UpscaleAndBlend";
     const lowerResInputTexture = passSet[1];
     const outputTexture = passSet[2];
     const lowerResMipLevel = passSet[3];
     const outputMipLevel = lowerResMipLevel - 1;
-    const lowerResView = Batcher.getTextureView(
+    const lowerResView = Renderer.getTextureView(
       lowerResInputTexture,
       lowerResMipLevel
     );
-    const currentLevelView = Batcher.getTextureView(
+    const currentLevelView = Renderer.getTextureView(
       "bloomYPass",
       outputMipLevel
     );
 
-    const outputView = Batcher.getTextureView(outputTexture, outputMipLevel);
+    const outputView = Renderer.getTextureView(outputTexture, outputMipLevel);
     const bindData: CreateBindGroup["data"] = {
       entries: [
         {

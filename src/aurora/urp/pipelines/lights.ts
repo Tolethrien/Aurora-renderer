@@ -1,14 +1,13 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
-import AuroraCamera from "../camera";
+import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import lightsShader from "../shaders/light.wgsl?raw";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
-export default class LightsPipe {
+export default class LightsPipeline {
   private static BATCH_SIZE = 1000; //assumption is - will never hit this amount xD maybe change later
   private static VERTEX_STRIDE = 4;
   private static ADD_STRIDE = 5;
@@ -44,8 +43,7 @@ export default class LightsPipe {
   }
   public static async createPipeline() {
     const shader = Aurora.createShader("lightsShader", lightsShader);
-    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
-
+    const [_, cameraBindLayout] = Renderer.getBind("camera");
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "lightVertexBuffer",
@@ -77,11 +75,11 @@ export default class LightsPipe {
       data: {
         label: "lightsBindData",
         entries: [
-          { binding: 0, resource: Batcher.getSampler("universal") },
+          { binding: 0, resource: Renderer.getSampler("universal") },
 
           {
             binding: 1,
-            resource: Batcher.getTextureView("offscreenCanvas"),
+            resource: Renderer.getTextureView("offscreenCanvas"),
           },
         ],
       },
@@ -131,14 +129,14 @@ export default class LightsPipe {
       colorTargets: [Aurora.getColorTargetTemplate("additiveHDR")],
     });
   }
-  public static clearBatch() {
+  public static clearPipeline() {
     this.frameCount = 0;
   }
   public static usePipeline(): void {
-    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
-    const indexBuffer = Batcher.getIndexBuffer;
-    const commandEncoder = Batcher.getEncoder;
-    const correction = Batcher.getNormalizedColorCorrection;
+    const [cameraBind] = Renderer.getBind("camera");
+    const indexBuffer = Renderer.getBuffer("index");
+    const commandEncoder = Renderer.getEncoder;
+    const correction = Renderer.getGlobalIllumination("normalized");
     Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertexArray, 0);
     Aurora.device.queue.writeBuffer(this.addBuffer, 0, this.addDataArray, 0);
 
@@ -146,7 +144,7 @@ export default class LightsPipe {
       label: "lightsRenderPass",
       colorAttachments: [
         {
-          view: Batcher.getTextureView("lightMap"),
+          view: Renderer.getTextureView("lightMap"),
           clearValue: [...correction, 1],
           loadOp: "clear",
           storeOp: "store",
@@ -162,6 +160,7 @@ export default class LightsPipe {
     passEncoder.drawIndexed(6, this.frameCount);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
+    AuroraDebugInfo.setParam("drawnLights", this.frameCount);
 
     AuroraDebugInfo.accumulate("pipelineInUse", ["lights"]);
   }

@@ -2,6 +2,8 @@ import Mat4 from "../../utils/mat4";
 import { assert } from "../../utils/utils";
 import { PipelineBind } from "../aurora";
 import Aurora from "../core";
+import Aurora2DRenderer from "./batcher/renderer";
+import { AuroraConfig } from "./batcher/config";
 type CameraZoom = { current: number; max: number; min: number };
 type CameraPosition = { x: number; y: number };
 const cameraData = {
@@ -20,39 +22,30 @@ export default class AuroraCamera {
   };
   private static buildInCameraBind: PipelineBind | undefined;
   private static cameraBounds = new Float32Array([Infinity, -Infinity]);
-  private static buildInCameraBuffer: GPUBuffer;
-  private static buildInCameraBoundBuffer: GPUBuffer;
+  private static useInputs: boolean = false;
 
-  public static initialize() {
+  public static initialize(config: AuroraConfig["camera"]) {
+    console.log(config);
     this.projectionViewMatrix = Mat4.create();
     this.view = Mat4.create().lookAt([0, 0, 0], [0, 0, 0], [0, 1, 0]);
     this.position.x = Aurora.canvas.width / 2;
     this.position.y = Aurora.canvas.height / 2;
-    this.speed = 15;
-    this.zoom = { current: 1, max: 10, min: 0.1 };
-    window.onkeydown = (event: KeyboardEvent) => {
-      const pressedKey = event.key === " " ? "space" : event.key;
-      !event.repeat && cameraData.keyPressed.add(pressedKey);
-    };
-    window.onkeyup = (event: KeyboardEvent) => {
-      const pressedKey = event.key === " " ? "space" : event.key;
-      cameraData.keyPressed.has(pressedKey) &&
-        cameraData.keyPressed.delete(pressedKey);
-    };
+    this.speed = config.speed;
+    this.zoom = { current: 1, max: config.zoom.max, min: config.zoom.min };
+    if (config.builtInCameraInputs) {
+      window.onkeydown = (event: KeyboardEvent) => {
+        const pressedKey = event.key === " " ? "space" : event.key;
+        !event.repeat && cameraData.keyPressed.add(pressedKey);
+      };
+      window.onkeyup = (event: KeyboardEvent) => {
+        const pressedKey = event.key === " " ? "space" : event.key;
+        cameraData.keyPressed.has(pressedKey) &&
+          cameraData.keyPressed.delete(pressedKey);
+      };
+      this.useInputs = true;
+    }
 
-    this.buildInCameraBuffer = Aurora.createBuffer({
-      bufferType: "uniform",
-      dataType: "Float32Array",
-      dataLength: 16,
-      label: "CameraBuffer",
-    });
-    this.buildInCameraBoundBuffer = Aurora.createBuffer({
-      bufferType: "uniform",
-      dataType: "Float32Array",
-      dataLength: 2,
-      label: "CameraBufferBound",
-    });
-    this.buildInCameraBind = Aurora.creteBindGroup({
+    const bind = Aurora.creteBindGroup({
       layout: {
         entries: [
           {
@@ -71,26 +64,22 @@ export default class AuroraCamera {
       data: {
         label: "cameraBindData",
         entries: [
-          { binding: 0, resource: { buffer: this.buildInCameraBuffer } },
-          { binding: 1, resource: { buffer: this.buildInCameraBoundBuffer } },
+          {
+            binding: 0,
+            resource: { buffer: Aurora2DRenderer.getBuffer("cameraMatrix") },
+          },
+          {
+            binding: 1,
+            resource: { buffer: Aurora2DRenderer.getBuffer("cameraBounds") },
+          },
         ],
       },
     });
-    this.update();
+    return bind;
     //===========================================
   }
-  public static update() {
-    if (cameraData.keyPressed.has("d")) this.position.x += this.speed;
-    else if (cameraData.keyPressed.has("a")) this.position.x -= this.speed;
-    if (cameraData.keyPressed.has("w")) this.position.y -= this.speed;
-    else if (cameraData.keyPressed.has("s")) this.position.y += this.speed;
-    if (cameraData.keyPressed.has("ArrowUp"))
-      this.zoom.current > this.zoom.min &&
-        (this.zoom.current -= 0.01 * Math.log(this.zoom.current + 1));
-    else if (cameraData.keyPressed.has("ArrowDown"))
-      this.zoom.current < this.zoom.max &&
-        (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
-
+  public static update(buffer: GPUBuffer) {
+    if (this.useInputs) this.updateControls();
     this.projectionViewMatrix = Mat4.create()
       .ortho(
         this.position.x - (Aurora.canvas.width / 2) * this.zoom.current,
@@ -101,19 +90,28 @@ export default class AuroraCamera {
         1
       )
       .multiply(this.view);
+
     Aurora.device.queue.writeBuffer(
-      this.buildInCameraBuffer,
+      buffer,
       0,
       AuroraCamera.getProjectionViewMatrix.getMatrix
     );
   }
 
-  public static updateCameraBound() {
-    Aurora.device.queue.writeBuffer(
-      this.buildInCameraBoundBuffer,
-      0,
-      this.cameraBounds
-    );
+  private static updateControls() {
+    if (cameraData.keyPressed.has("d")) this.position.x += this.speed;
+    else if (cameraData.keyPressed.has("a")) this.position.x -= this.speed;
+    if (cameraData.keyPressed.has("w")) this.position.y -= this.speed;
+    else if (cameraData.keyPressed.has("s")) this.position.y += this.speed;
+    if (cameraData.keyPressed.has("ArrowUp"))
+      this.zoom.current > this.zoom.min &&
+        (this.zoom.current -= 0.01 * Math.log(this.zoom.current + 1));
+    else if (cameraData.keyPressed.has("ArrowDown"))
+      this.zoom.current < this.zoom.max &&
+        (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
+  }
+  public static updateCameraBound(buffer: GPUBuffer) {
+    Aurora.device.queue.writeBuffer(buffer, 0, this.cameraBounds);
   }
   public static setCameraBounds(y: number, h: number) {
     const top = y;

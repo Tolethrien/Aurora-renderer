@@ -1,15 +1,16 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
+import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import presentationShader from "../shaders/presentation.wgsl?raw";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
-export default class PresentationPipe {
+export default class PresentationPipeline {
   private static pipeline: GPURenderPipeline;
   private static presentationBind: PipelineBind;
+  public static clearPipeline() {}
   public static async createPipeline() {
     const shader = Aurora.createShader(
       "presentationShader",
@@ -40,14 +41,14 @@ export default class PresentationPipe {
       data: {
         label: "PresentationBindData",
         entries: [
-          { binding: 0, resource: Batcher.getSampler("universal") },
+          { binding: 0, resource: Renderer.getSampler("universal") },
           {
             binding: 1,
-            resource: Batcher.getTextureView("offscreenCanvas"),
+            resource: Renderer.getTextureView("offscreenCanvas"),
           },
           {
             binding: 2,
-            resource: Batcher.getTextureView("lightMap"),
+            resource: Renderer.getTextureView("lightMap"),
           },
         ],
       },
@@ -65,8 +66,8 @@ export default class PresentationPipe {
   }
 
   public static usePipeline(): void {
-    const indexBuffer = Batcher.getIndexBuffer;
-    const commandEncoder = Batcher.getEncoder;
+    const indexBuffer = Renderer.getBuffer("index");
+    const commandEncoder = Renderer.getEncoder;
     const passEncoder = commandEncoder.beginRenderPass({
       label: "presentationRenderPass",
       colorAttachments: [

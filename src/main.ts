@@ -1,6 +1,5 @@
 import Aurora from "./aurora/core";
 import "./style.css";
-import Batcher from "./aurora/urp/batcher/batcher";
 import Draw from "./aurora/urp/draw";
 import char from "./assets/char.png";
 import spritesheet from "./assets/radial.png";
@@ -8,20 +7,7 @@ import ftex from "./assets/ya-hei-ascii.png";
 import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/batcher/config";
-
-const yaFont = { fontName: "ya", img: ftex, json: fjson };
-const texA = { name: "main", url: spritesheet };
-const texB = { name: "char", url: char };
-const config = auroraConfig({
-  userFonts: [yaFont],
-  userTextures: [texA, texB],
-  HDR: { toneMapping: "aces" },
-});
-async function preload() {
-  await Aurora.init();
-  await create();
-  start(0);
-}
+import Renderer from "./aurora/urp/batcher/renderer";
 interface t {
   lightcolor: [number, number, number];
   intence: number;
@@ -29,42 +15,44 @@ interface t {
   size: [number, number];
   emis: number;
 }
-function makeLight({ intence, lightcolor, pos, size, emis }: t) {
-  Draw.rect({
-    position: { x: pos[0], y: pos[1] },
-    size: { height: size[0], width: size[1] },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
-    emissive: emis,
-  });
-  Draw.pointLight({
-    position: { x: pos[0], y: pos[1] },
-    size: { height: size[0] + 300, width: size[1] + 300 },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
-    intensity: intence,
-  });
-}
-async function create() {
-  await Batcher.Initialize(config);
-
-  const l = 25;
-  Batcher.setColorCorrection([l, l, l]);
-}
-const arr = Array(1000)
+const arr = Array(100)
   .fill(0)
   .map(() => [Math.random() * 600, Math.random() * 600]);
 
+const yaFont = { fontName: "ya", img: ftex, json: fjson };
+const texA = { name: "main", url: spritesheet };
+const texB = { name: "char", url: char };
+
+const config = auroraConfig({
+  userFonts: [yaFont],
+  userTextures: [texA, texB],
+  HDR: { toneMapping: "aces" },
+  camera: { builtInCameraInputs: false },
+});
+
+async function preload() {
+  await Aurora.init();
+  await create();
+  start(0);
+}
+
+async function create() {
+  await Renderer.initialize(config);
+  const l = 25;
+  Renderer.setGlobalIllumination([l, l, l]);
+}
+
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
-  Batcher.beginBatch();
+  Renderer.beginBatch();
   showLights();
-  showSprites();
-  showOrderOFDraw();
-
   // showText();
+  showSprites();
+  // showOrderOFDraw();
 
-  Batcher.endBatch();
+  Renderer.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(60, true);
+  // AuroraDebugInfo.displayEveryFrame(60, true);
   // x++;
   requestAnimationFrame(start);
 }
@@ -82,7 +70,7 @@ function showText() {
     font: "lato",
     fontSize: 62,
     text: "Scalable big text!",
-    fontColor: [255, 255, 0, 255],
+    fontColor: [255, 0, 0, 255],
   });
   Draw.text({
     position: { x: 150, y: 480 },
@@ -164,4 +152,20 @@ function showLights() {
     emis: 6,
   });
 }
+
+function makeLight({ intence, lightcolor, pos, size, emis }: t) {
+  Draw.rect({
+    position: { x: pos[0], y: pos[1] },
+    size: { height: size[0], width: size[1] },
+    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
+    emissive: emis,
+  });
+  Draw.pointLight({
+    position: { x: pos[0], y: pos[1] },
+    size: { height: size[0] + 300, width: size[1] + 300 },
+    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
+    intensity: intence,
+  });
+}
+
 await preload();

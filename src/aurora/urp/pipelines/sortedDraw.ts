@@ -1,6 +1,5 @@
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
-import AuroraCamera from "../camera";
+import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 //POPRAWKI POTEM:
 // trzymac gdzies generalnie shadery bo po co generowac takie same
@@ -8,8 +7,10 @@ import AuroraDebugInfo from "../debugger/debugInfo";
 const BATCH_INIT_SIZE = {
   quad: 100,
   circle: 50,
+  text: 100,
   quadTransparent: 20,
   circleTransparent: 20,
+  textTransparent: 50,
 };
 interface BatchNode {
   initBatchSize: number;
@@ -22,13 +23,51 @@ interface PipelineDescriptor {
   name: keyof typeof BATCH_INIT_SIZE;
   depthWrite: boolean;
   shader: string;
+  binds: string[];
 }
-
+interface RenderPipelineData {
+  pipeline: GPURenderPipeline;
+  bindList: GPUBindGroup[];
+}
+const SHAPE_BINDS = ["camera", "userTextures"];
+const TEXT_BINDS = ["camera", "fonts"];
 const PIPELINES_DATA: PipelineDescriptor[] = [
-  { depthWrite: true, name: "quad", shader: "quadShader" },
-  { depthWrite: true, name: "circle", shader: "circleShader" },
-  { depthWrite: false, name: "quadTransparent", shader: "quadShader" },
-  { depthWrite: false, name: "circleTransparent", shader: "circleShader" },
+  {
+    depthWrite: true,
+    name: "quad",
+    shader: "quadShader",
+    binds: SHAPE_BINDS,
+  },
+  {
+    depthWrite: true,
+    name: "circle",
+    shader: "circleShader",
+    binds: SHAPE_BINDS,
+  },
+  {
+    depthWrite: true,
+    name: "text",
+    shader: "textShader",
+    binds: TEXT_BINDS,
+  },
+  {
+    depthWrite: false,
+    name: "quadTransparent",
+    shader: "quadShader",
+    binds: SHAPE_BINDS,
+  },
+  {
+    depthWrite: false,
+    name: "circleTransparent",
+    shader: "circleShader",
+    binds: SHAPE_BINDS,
+  },
+  {
+    depthWrite: false,
+    name: "textTransparent",
+    shader: "textShader",
+    binds: TEXT_BINDS,
+  },
 ];
 export default class SortedDrawPipeline {
   private static VERTEX_STRIDE = 14;
@@ -36,25 +75,22 @@ export default class SortedDrawPipeline {
 
   private static vertexBuffer: GPUBuffer;
   public static batchList: Map<string, BatchNode> = new Map();
-  private static pipelines: Map<string, GPURenderPipeline> = new Map();
+  private static pipelines: Map<string, RenderPipelineData> = new Map();
   public static async createPipeline() {
     this.generateBatchData();
     this.generateGPUBuffer();
     for (const descriptor of PIPELINES_DATA) {
       const name = descriptor.name;
-      const pipeline = await this.generatePipeline(descriptor);
-      this.pipelines.set(name, pipeline);
+      const [pipeline, binds] = await this.generatePipeline(descriptor);
+      this.pipelines.set(name, { pipeline, bindList: binds });
     }
   }
   public static usePipeline() {
     if (this.bufferNeedResize) this.generateGPUBuffer();
-    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
-    const zBufferTexture = Batcher.getTextureView("zBufferDump");
-    const userTextureBind = Batcher.getUserTextureBindGroup;
-    const indexBuffer = Batcher.getIndexBuffer;
-    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
-    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
-    const commandEncoder = Batcher.getEncoder;
+    const offscreenTexture = Renderer.getTextureView("offscreenCanvas");
+    const zBufferTexture = Renderer.getTextureView("zBufferDump");
+    const indexBuffer = Renderer.getBuffer("index");
+    const commandEncoder = Renderer.getEncoder;
     let byteOffset = 0;
 
     this.batchList.forEach((batch) => {
@@ -67,7 +103,7 @@ export default class SortedDrawPipeline {
       //use zbuffer dump when debug mode
       const loadOperation = byteOffset === 0 ? "clear" : "load";
       const zDumpTarget = this.getZDump(zBufferTexture, loadOperation);
-      const pipeline = this.getPipeline(batch.shader);
+      const { pipeline, bindList } = this.getPipeline(batch.shader);
       const timestamp = this.getFrameQuery(byteOffset === 0);
       const passEncoder = commandEncoder.beginRenderPass({
         label: `SortedDrawShapeRenderPass:${batch.shader}`,
@@ -81,7 +117,7 @@ export default class SortedDrawPipeline {
           zDumpTarget,
         ],
         depthStencilAttachment: {
-          view: Batcher.getTextureView("depthTexture"),
+          view: Renderer.getTextureView("depthTexture"),
           depthLoadOp: loadOperation,
           depthClearValue: 0.0,
           depthStoreOp: "store",
@@ -90,16 +126,15 @@ export default class SortedDrawPipeline {
       });
       passEncoder.setPipeline(pipeline);
       passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffset);
-      passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, userTextureBind);
-      passEncoder.setBindGroup(2, batcherOptionsBind);
+      bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.counter);
       passEncoder.end();
       byteOffset += list.byteLength;
       AuroraDebugInfo.accumulate("drawCalls", 1);
+      AuroraDebugInfo.accumulate("drawnQuads", batch.counter);
     });
-    Batcher.pipelinesUsedInFrame.add("SortedDrawPipeline");
+    Renderer.pipelinesUsedInFrame.add("SortedDrawPipeline");
     AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
   }
   public static clearPipeline() {
@@ -197,17 +232,20 @@ export default class SortedDrawPipeline {
     depthWrite,
     name,
     shader,
-  }: PipelineDescriptor) {
+    binds,
+  }: PipelineDescriptor): Promise<[GPURenderPipeline, GPUBindGroup[]]> {
     const vertexLayout = this.generateVertexLayout();
-    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
-    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
-    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
-    const shapePipelineLayout = Aurora.createPipelineLayout([
-      cameraBindLayout,
-      userTextureLayout,
-      batcherOptionsLayout,
-    ]);
-    const gpuShader = Batcher.getShader(shader);
+    const bindLayoutList = binds.map(
+      (bindName) => Renderer.getBind(bindName)[1]
+    );
+    const bindsDataList = binds.map(
+      (bindName) => Renderer.getBind(bindName)[0]
+    );
+    const shapePipelineLayout = Aurora.createPipelineLayout(bindLayoutList);
+    const gpuShader = Renderer.getShader(shader);
+    const renderOption = Renderer.getConfigGroup("rendering");
+    const drawOrigin = renderOption.drawOrigin === "center" ? 0 : 1;
+    const zSort = renderOption.sortOrder === "none" ? 0 : 1;
     const targets = AuroraDebugInfo.isWorking
       ? [
           Aurora.getColorTargetTemplate("HDR"),
@@ -226,8 +264,12 @@ export default class SortedDrawPipeline {
         depthWriteEnabled: depthWrite,
         depthCompare: "greater-equal",
       },
+      consts: {
+        zSortType: zSort,
+        originType: drawOrigin,
+      },
     });
-    return pipe;
+    return [pipe, bindsDataList];
   }
   private static getFrameQuery(write: boolean) {
     if (!AuroraDebugInfo.isWorking || write === false) return undefined;

@@ -1,7 +1,7 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
 import { AuroraConfig } from "../batcher/config";
+import Renderer from "../batcher/renderer";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
@@ -24,7 +24,7 @@ interface DebugData {
   drawnLights: number;
   drawnTriangles: number;
   drawnVertices: number;
-  colorCorrection: RGB;
+  globalIllumination: RGB;
   usedPostProcessing: string[];
   sortOrder: AuroraConfig["rendering"]["sortOrder"];
   drawOrigin: AuroraConfig["rendering"]["drawOrigin"];
@@ -43,7 +43,7 @@ const DATA_INIT: DebugData = {
   drawnLights: 0,
   drawnTriangles: 0,
   drawnVertices: 0,
-  colorCorrection: [0, 0, 0],
+  globalIllumination: [0, 0, 0],
   usedPostProcessing: [],
   sortOrder: "none",
   drawOrigin: "center",
@@ -82,7 +82,7 @@ export default class AuroraDebugInfo {
     window.debugTextureNext = () => this.nextTexture();
   }
 
-  public static update<T extends keyof DebugData>(
+  public static setParam<T extends keyof DebugData>(
     data: T,
     value: DebugData[T]
   ) {
@@ -110,7 +110,7 @@ export default class AuroraDebugInfo {
   public static nextTexture() {
     this.debugVisibleTextureIndex[0] =
       (this.debugVisibleTextureIndex[0] + 1) % TEXTURES_TO_SHOW.length;
-    this.update(
+    this.setParam(
       "displayedTexture",
       TEXTURES_TO_SHOW[this.debugVisibleTextureIndex[0]]
     );
@@ -128,11 +128,10 @@ export default class AuroraDebugInfo {
     this.data = structuredClone(DATA_INIT);
     this.data.GPUTime = gpuTime;
     this.data.displayedTexture = texture;
-    const renderOptions = Batcher.getConfigGroup("rendering");
+    const renderOptions = Renderer.getConfigGroup("rendering");
     this.data.sortOrder = renderOptions.sortOrder;
     this.data.drawOrigin = renderOptions.drawOrigin;
-    this.data.colorCorrection =
-      Batcher.getConfigGroup("screen").colorCorrection;
+    this.data.globalIllumination = Renderer.getGlobalIllumination("fullRange");
   }
   public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;

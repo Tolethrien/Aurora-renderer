@@ -15,9 +15,9 @@ export function loadImg(src: string) {
     image.onerror = () => rej(`image with src: ${src} couldn't be loaded`);
   });
 }
-export function hsla(h, s, l, a) {
-  return [h, s, l, a];
-}
+// export function hsla(h, s, l, a) {
+//   return [h, s, l, a];
+// }
 export function hslaToRgba(h: number, s: number, l: number, a: number): RGBA {
   h = h % 360;
   if (h < 0) h += 360;

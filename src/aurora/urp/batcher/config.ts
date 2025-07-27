@@ -9,7 +9,7 @@ type RenderRes = "1900x1080" | "1600x900" | "800x600";
 type SortOrder = "none" | "y" | "y+x";
 type Profiler = "none" | "minimal" | "normal" | "extended";
 type UserTexture = { name: string; url: string };
-type CameraProjection = "ortho" | "perspective" | "isometric";
+// type CameraProjection = "ortho" | "perspective" | "isometric";
 type ToneMaps = "rainhard" | "aces" | "filmic" | "none";
 export interface AuroraConfig {
   HDR: {
@@ -32,9 +32,9 @@ export interface AuroraConfig {
     transparentCanvas: boolean;
   };
   camera: {
-    customCamera: boolean;
-    builtInCameraProjection: CameraProjection;
     builtInCameraInputs: boolean;
+    zoom: { min: number; max: number };
+    speed: number;
   };
   screen: {
     colorCorrection: RGB;
@@ -64,16 +64,16 @@ const INIT_OPTIONS: AuroraConfig = {
     saturation: 1,
   },
   camera: {
-    customCamera: false,
-    builtInCameraProjection: "ortho",
-    builtInCameraInputs: false,
+    builtInCameraInputs: true,
+    speed: 15,
+    zoom: { min: 0.1, max: 10 },
   },
   debugger: "normal",
   userTextures: [],
   userFonts: [],
 };
 export default function auroraConfig(props: DeepPartial<AuroraConfig>) {
-  const config = structuredClone({ ...INIT_OPTIONS, ...props }) as AuroraConfig;
+  const config = deepMerge(structuredClone(INIT_OPTIONS), props);
   config.userTextures.unshift({ name: "colorRect", url: dummyTexture });
   config.userFonts.push({
     fontName: "lato",
@@ -86,4 +86,41 @@ export default function auroraConfig(props: DeepPartial<AuroraConfig>) {
     json: jerseyJson,
   });
   return config;
+}
+
+function deepMerge<T extends object>(target: T, source: DeepPartial<T>): T {
+  const output = { ...target } as T;
+
+  if (
+    target &&
+    typeof target === "object" &&
+    source &&
+    typeof source === "object"
+  ) {
+    for (const key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const sourceValue = source[key as keyof DeepPartial<T>];
+        const targetValue = target[key as keyof T];
+
+        if (
+          sourceValue &&
+          typeof sourceValue === "object" &&
+          !Array.isArray(sourceValue) &&
+          targetValue &&
+          typeof targetValue === "object" &&
+          !Array.isArray(targetValue)
+        ) {
+          (output as any)[key] = deepMerge(
+            targetValue as object,
+            sourceValue as object
+          );
+        } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+          (output as any)[key] = sourceValue;
+        } else {
+          (output as any)[key] = sourceValue;
+        }
+      }
+    }
+  }
+  return output;
 }

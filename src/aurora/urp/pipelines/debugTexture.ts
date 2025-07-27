@@ -1,18 +1,19 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
+import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
-export default class DebugTexturePipe {
+export default class DebugTexturePipeline {
   private static pipeline: GPURenderPipeline;
   private static dataBind: PipelineBind;
   private static texturesBind: PipelineBind;
   private static uniformTexturePicker: GPUBuffer;
+  public static clearPipeline() {}
   public static async createPipeline() {
-    const textureArrayShader = Batcher.getShader("textureFromArray");
+    const debugShader = Renderer.getShader("debugShader");
     this.uniformTexturePicker = Aurora.createBuffer({
       bufferType: "uniform",
       dataLength: 1,
@@ -38,7 +39,7 @@ export default class DebugTexturePipe {
       data: {
         label: "DebugTextureSamplersBindLayout",
         entries: [
-          { binding: 0, resource: Batcher.getSampler("universal") },
+          { binding: 0, resource: Renderer.getSampler("universal") },
 
           {
             binding: 1,
@@ -76,24 +77,25 @@ export default class DebugTexturePipe {
       data: {
         label: "DebugTextureTexturesBindData",
         entries: [
-          { binding: 0, resource: Batcher.getTextureView("offscreenCanvas") },
+          { binding: 0, resource: Renderer.getTextureView("offscreenCanvas") },
           {
             binding: 1,
-            resource: Batcher.getTextureView("zBufferDump"),
+            resource: Renderer.getTextureView("zBufferDump"),
           },
-          { binding: 2, resource: Batcher.getTextureView("lightMap") },
-          { binding: 3, resource: Batcher.getTextureView("bloomXPass", 0) },
+          { binding: 2, resource: Renderer.getTextureView("lightMap") },
+          { binding: 3, resource: Renderer.getTextureView("bloomXPass", 0) },
         ],
       },
     });
+    const [_, bloomParamsLayout] = Renderer.getBind("bloomParams");
 
     const pipelineLayout = Aurora.createPipelineLayout([
       this.dataBind[1],
       this.texturesBind[1],
-      Batcher.getBloomParamUniformLayout,
+      bloomParamsLayout,
     ]);
     this.pipeline = await Aurora.createRenderPipeline({
-      shader: textureArrayShader,
+      shader: debugShader,
       pipelineName: "DebugTexturePipeline",
       buffers: [],
       pipelineLayout: pipelineLayout,
@@ -108,9 +110,9 @@ export default class DebugTexturePipe {
   }
 
   public static usePipeline(): void {
-    const indexBuffer = Batcher.getIndexBuffer;
-    const commandEncoder = Batcher.getEncoder;
-    const bloomParams = Batcher.getBloomParamUniform;
+    const indexBuffer = Renderer.getBuffer("index");
+    const commandEncoder = Renderer.getEncoder;
+    const [bloomParams] = Renderer.getBind("bloomParams");
     Aurora.device.queue.writeBuffer(
       this.uniformTexturePicker,
       0,

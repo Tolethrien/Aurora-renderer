@@ -2,8 +2,9 @@
 @group(0) @binding(1) var<uniform> cameraBound: vec2<f32>;
 @group(1) @binding(0) var universalSampler: sampler;
 @group(1) @binding(1) var userTextures: texture_2d_array<f32>;
-@group(2) @binding(0) var<uniform> batcherOption: vec2<u32>;
 
+override zSortType: u32 = 0;
+override originType: u32 = 0;
 
 struct VertexInput {
     @builtin(vertex_index) vi: u32,
@@ -32,6 +33,7 @@ struct FragmentOutput {
 };
 
 
+
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
 
@@ -39,16 +41,14 @@ const textureQuad = array(vec2f(0,0), vec2f(1,0), vec2f(0,1), vec2f(1, 1));
 fn vertexMain(props: VertexInput) -> VertexOutput {
     let centerSize = quad[props.vi] * (props.size * 0.5);
     let fullSize = ((quad[props.vi] + vec2f(1.0)) * 0.5) * props.size;
-    let drawOrigin = batcherOption.x;
-    let localPos = select(centerSize,fullSize, drawOrigin == 1u);
+    let localPos = select(centerSize,fullSize, originType == 1u);
     let worldPos = props.pos + localPos;
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
     
     
-    let useSort = batcherOption.y; 
-    let quadSize = select(props.size.y * 0.5,props.size.y,drawOrigin == 1u);
+    let quadSize = select(props.size.y * 0.5,props.size.y,originType == 1u);
     let z = (props.pos.y + quadSize - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
-    let zValue = select(1.0,z,useSort == 1u); 
+    let zValue = select(1.0,z,zSortType == 1u); 
     let textureSize = textureDimensions(userTextures, 0);
     let textureSizeFloat = vec2<f32>(f32(textureSize.x), f32(textureSize.y));
     let normalizeCrop = vec4<f32>(props.crop.xy / textureSizeFloat, props.crop.zw / textureSizeFloat);

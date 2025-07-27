@@ -1,13 +1,24 @@
 import Aurora from "../../core";
-import Batcher from "../batcher/batcher";
-import AuroraCamera from "../camera";
+import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 
-const USED_SHADERS = ["quad", "circle"] as const;
+const USED_SHADERS = ["quad", "circle", "text"] as const;
+const SHAPE_BINDS = ["camera", "userTextures"];
+const TEXT_BINDS = ["camera", "fonts"];
+const BIND_DESC = {
+  quad: SHAPE_BINDS,
+  circle: SHAPE_BINDS,
+  text: TEXT_BINDS,
+};
 type ShaderType = (typeof USED_SHADERS)[number];
 interface PipelineDescriptor {
   name: ShaderType;
   shader: string;
+  binds: string[];
+}
+interface RenderPipelineData {
+  pipeline: GPURenderPipeline;
+  bindList: GPUBindGroup[];
 }
 interface BatchNode {
   vertices: number[];
@@ -18,7 +29,8 @@ export default class SequentialDrawPipeline {
   private static INIT_SIZE = 50;
   private static currentBufferSize = this.INIT_SIZE;
   private static VERTEX_STRIDE = 14;
-  private static pipelines: Map<string, GPURenderPipeline> = new Map();
+  private static pipelines: Map<string, RenderPipelineData> = new Map();
+
   private static vertexBuffer: GPUBuffer;
 
   private static verticesList = new Float32Array(
@@ -38,21 +50,20 @@ export default class SequentialDrawPipeline {
     });
     for (const shaderType of USED_SHADERS) {
       const name = shaderType;
-      const pipeline = await this.generatePipeline({
+      const [pipeline, binds] = await this.generatePipeline({
         name,
         shader: `${name}Shader`,
+        binds: BIND_DESC[shaderType],
       });
-      this.pipelines.set(name, pipeline);
+
+      this.pipelines.set(name, { pipeline, bindList: binds });
     }
   }
   public static usePipeline() {
     this.validateBufferSize();
-    const offscreenTexture = Batcher.getTextureView("offscreenCanvas");
-    const userTextureBind = Batcher.getUserTextureBindGroup;
-    const indexBuffer = Batcher.getIndexBuffer;
-    const cameraBind = AuroraCamera.getBuildInCameraBindGroup;
-    const batcherOptionsBind = Batcher.getBatcherOptionsBindGroup;
-    const commandEncoder = Batcher.getEncoder;
+    const offscreenTexture = Renderer.getTextureView("offscreenCanvas");
+    const indexBuffer = Renderer.getBuffer("index");
+    const commandEncoder = Renderer.getEncoder;
     let bufferByteOffset = 0;
     let vertexListOffset = 0;
     this.batchList.forEach((batch) => {
@@ -64,7 +75,7 @@ export default class SequentialDrawPipeline {
         vertexListOffset
       );
       const loadOperation = bufferByteOffset === 0 ? "clear" : "load";
-      const pipeline = this.getPipeline(batch.shader);
+      const { bindList, pipeline } = this.getPipeline(batch.shader);
       const timestamp = this.getFrameQuery(bufferByteOffset === 0);
       const passEncoder = commandEncoder.beginRenderPass({
         label: `SortedDrawShapeRenderPass:${batch.shader}`,
@@ -80,9 +91,7 @@ export default class SequentialDrawPipeline {
       });
       passEncoder.setPipeline(pipeline);
       passEncoder.setVertexBuffer(0, this.vertexBuffer, bufferByteOffset);
-      passEncoder.setBindGroup(0, cameraBind);
-      passEncoder.setBindGroup(1, userTextureBind);
-      passEncoder.setBindGroup(2, batcherOptionsBind);
+      bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.counter);
       passEncoder.end();
@@ -92,7 +101,7 @@ export default class SequentialDrawPipeline {
 
       AuroraDebugInfo.accumulate("drawCalls", 1);
     });
-    Batcher.pipelinesUsedInFrame.add("SequentialDrawPipeline");
+    Renderer.pipelinesUsedInFrame.add("SequentialDrawPipeline");
     AuroraDebugInfo.accumulate("pipelineInUse", ["SequentialDraw"]);
   }
 
@@ -181,18 +190,25 @@ export default class SequentialDrawPipeline {
       ],
     });
   }
-  private static async generatePipeline({ name, shader }: PipelineDescriptor) {
+  private static async generatePipeline({
+    name,
+    shader,
+    binds,
+  }: PipelineDescriptor): Promise<[GPURenderPipeline, GPUBindGroup[]]> {
     const vertexLayout = this.generateVertexLayout();
-    const cameraBindLayout = AuroraCamera.getBuildInCameraBindGroupLayout;
-    const userTextureLayout = Batcher.getUserTextureBindGroupLayout;
-    const batcherOptionsLayout = Batcher.getBatcherOptionsGroupLayout;
-    const shapePipelineLayout = Aurora.createPipelineLayout([
-      cameraBindLayout,
-      userTextureLayout,
-      batcherOptionsLayout,
-    ]);
-    const gpuShader = Batcher.getShader(shader);
+
+    const bindLayoutList = binds.map(
+      (bindName) => Renderer.getBind(bindName)[1]
+    );
+    const bindsDataList = binds.map(
+      (bindName) => Renderer.getBind(bindName)[0]
+    );
+    const shapePipelineLayout = Aurora.createPipelineLayout(bindLayoutList);
+    const gpuShader = Renderer.getShader(shader);
     const targets = [Aurora.getColorTargetTemplate("HDR")];
+    const renderOption = Renderer.getConfigGroup("rendering");
+    const drawOrigin = renderOption.drawOrigin === "center" ? 0 : 1;
+    const zSort = renderOption.sortOrder === "none" ? 0 : 1;
     const pipe = await Aurora.createRenderPipeline({
       shader: gpuShader,
       pipelineName: `${name}Pipeline`,
@@ -200,7 +216,11 @@ export default class SequentialDrawPipeline {
       pipelineLayout: shapePipelineLayout,
       primitive: { topology: "triangle-list" },
       colorTargets: targets,
+      consts: {
+        zSortType: zSort,
+        originType: drawOrigin,
+      },
     });
-    return pipe;
+    return [pipe, bindsDataList];
   }
 }

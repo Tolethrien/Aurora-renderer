@@ -1,5 +1,5 @@
 import { DeepOmit } from "../../aurora";
-import Batcher from "./batcher";
+import Renderer from "./renderer";
 // chars: QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890[];',./ -=_+{}:"<>?!@#$%^&*()|\żźćŻŹĆęĘóÓłŁńŃąĄ`~
 export interface MsdfChar {
   id: number;
@@ -97,7 +97,7 @@ export default class FontGen {
     return this.meta.chars[code];
   }
   public static measureText({ fontName, fontSize, text }: Messure) {
-    const fontMeta = Batcher.getUserFontData(fontName).getMeta;
+    const fontMeta = Renderer.getUserFontData(fontName).getMeta;
     const { chars, kernings, lineHeight } = fontMeta;
     const scale = fontSize / lineHeight;
     let width = 0;

@@ -58,6 +58,12 @@
 
 - ddac moziwosc customowej kamery
 
+- przeniesc accu couunt quadow circlow itp do pipelinu z draw (suma counterow to ilosc quadow)
+
+- w batcherze odddzielic w sumie uniform z toneMapem d uniformu bloomu bo one nie sa ze soba w ogole powiazane(bloom osobno, tonemap dodac do generalnego uniformu)
+
+- po co mi w generatorach kompilacja shaderow jak np bloom sam sobie to i tak robi, po co kompilowac shadery ktore nie sa uzywane w kilku miejscach(przeniesc debug do pipu?)
+
 # Done
 
 - zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
