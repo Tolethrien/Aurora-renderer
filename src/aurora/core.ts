@@ -5,9 +5,11 @@ import type {
   BufferOptions,
   ColorAttachments,
   CreateBindGroup,
+  CreateBindGroupA,
   GenerateGPUTextureProps,
   GPUAuroraTexture,
   MappedBufferOptions,
+  QueryBuffer,
   TextureArrayProps,
   TextureEmptyProps,
   TextureProps,
@@ -31,6 +33,10 @@ export const USAGE_MAP = {
     index: GPUBufferUsage.INDEX,
     storage: GPUBufferUsage.STORAGE,
     uniform: GPUBufferUsage.UNIFORM,
+  },
+  query: {
+    read: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    write: GPUBufferUsage.COPY_SRC | GPUBufferUsage.QUERY_RESOLVE,
   },
 };
 export default class Aurora {
@@ -63,7 +69,6 @@ export default class Aurora {
       alphaMode: "opaque",
     });
   }
-  //TODO: co robi dokladniej dynamiczny opisz
   public static createBuffer(settings: BufferOptions) {
     const buffer = this.device.createBuffer({
       label: settings.label ?? "generic vertex buffer",
@@ -71,9 +76,16 @@ export default class Aurora {
         TYPED_MAP[settings.dataType].BYTES_PER_ELEMENT * settings.dataLength,
       usage: USAGE_MAP.dynamic[settings.bufferType],
     });
+
     return buffer;
   }
-  //TODO: co robi dokladniej Mapowany opisz
+  public static createQueryBuffer({ count, mode }: QueryBuffer) {
+    const buffer = this.device.createBuffer({
+      size: count * Float64Array.BYTES_PER_ELEMENT,
+      usage: USAGE_MAP.query[mode],
+    });
+    return buffer;
+  }
   public static createMappedBuffer(settings: MappedBufferOptions) {
     const buffer = this.device.createBuffer({
       label: settings.label ?? "generic vertex buffer",
@@ -136,19 +148,34 @@ export default class Aurora {
   public static createVertexBufferLayout(layout: GPUVertexBufferLayout) {
     return layout;
   }
-  public static creteBindGroup({
-    layout,
-    data,
-  }: CreateBindGroup): [GPUBindGroup, GPUBindGroupLayout] {
-    const bindLayout = this.device.createBindGroupLayout(layout);
+  public static createQuerySet(descriptor: GPUQuerySetDescriptor) {
+    return Aurora.device.createQuerySet(descriptor);
+  }
+
+  public static createBindGroup({
+    entries,
+    label,
+  }: CreateBindGroupA): [GPUBindGroup, GPUBindGroupLayout] {
+    const layoutEntries = entries.map((entry) => {
+      const { layout, binding, visibility } = entry;
+      return { visibility, binding, ...layout };
+    });
+    const bindLayout = this.device.createBindGroupLayout({
+      label: `${label}Layout`,
+      entries: layoutEntries,
+    });
+    const dataEntries = entries.map((entry) => {
+      const { visibility, layout, ...dataEntry } = entry;
+      return { ...dataEntry };
+    });
     const bindGroup = this.device.createBindGroup({
-      entries: data.entries,
+      entries: dataEntries,
       layout: bindLayout,
-      label: data.label,
+      label: `${label}Data`,
     });
     return [bindGroup, bindLayout];
   }
-  public static creteBindLayout(
+  public static createBindLayout(
     layout: CreateBindGroup["layout"]
   ): GPUBindGroupLayout {
     return this.device.createBindGroupLayout(layout);

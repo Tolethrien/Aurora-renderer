@@ -1,14 +1,16 @@
 @group(0) @binding(0) var textureSampler: sampler;
 @group(0) @binding(1) var<uniform> index: u32;
-@group(1) @binding(0) var offscreen: texture_2d<f32>;
-@group(1) @binding(1) var depth: texture_2d<f32>;
-@group(1) @binding(2) var lightMap: texture_2d<f32>;
+@group(1) @binding(0) var offscreenTexture: texture_2d<f32>;
+@group(1) @binding(1) var depthTexture: texture_2d<f32>;
+@group(1) @binding(2) var lightMapTexture: texture_2d<f32>;
 @group(1) @binding(3) var bloomTexture: texture_2d<f32>;
 @group(2) @binding(0) var<uniform> bloomParams: BloomParams;
 
 
+override toneMapping: u32 = 1;
+
+
 struct BloomParams{
-    toneMapping:f32,
     threshold:f32,
     thresholdSoftness:f32,
     bloomIntense:f32
@@ -24,7 +26,7 @@ struct VertexOutput {
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));
 const textureQuad = array(vec2f(0,1), vec2f(1,1), vec2f(0,0), vec2f(1,0));
-  const exposure = 0.8;
+const exposure = 0.8;
 
 
 @vertex
@@ -41,29 +43,32 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   var out: vec4<f32>;
-  let offscreen = textureSampleLevel(offscreen,textureSampler,props.coords,0);
-  let lightMap = textureSampleLevel(lightMap,textureSampler,props.coords,0);
+  let offscreen = textureSampleLevel(offscreenTexture,textureSampler,props.coords,0);
+  let lightMap = textureSampleLevel(lightMapTexture,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
-  let finalColor = (offscreen.rgb * exposure + bloom.rgb) * lightMap.rgb;
+  let finalColor = (offscreen.rgb + bloom.rgb) * lightMap.rgb;
   
   var toneMapped: vec3f;
   var bloomToned: vec3f;
-  
-    if (bloomParams.toneMapping == 0.0) {
+    if(toneMapping == 0){
+        toneMapped = finalColor;
+        bloomToned = bloom.rgb;
+    }
+    else if (toneMapping == 1) {
         toneMapped = reinhard_tone_map(finalColor);
         bloomToned = reinhard_tone_map(bloom.rgb);
 
-    } else if (bloomParams.toneMapping == 1.0) {
+    } else if (toneMapping == 2) {
         toneMapped = aces_tone_map(finalColor);
         bloomToned = aces_tone_map(bloom.rgb);
 
-    } else if (bloomParams.toneMapping == 2.0) {
+    } else if (toneMapping == 3) {
         toneMapped = filmic_tone_map(finalColor);
         bloomToned = filmic_tone_map(bloom.rgb);
 
     }
   if(index == 3) {
-    let depthValue = textureSampleLevel(depth,textureSampler,props.coords,0).r;
+    let depthValue = textureSampleLevel(depthTexture,textureSampler,props.coords,0).r;
     let objectDepth = select(depthValue*10,0,depthValue == 0);
     out = vec4<f32>(objectDepth,objectDepth,objectDepth,1);
   }

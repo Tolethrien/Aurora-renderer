@@ -45,7 +45,14 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     let worldPos = props.pos + localPos;
     let translatePosition = camera * vec4<f32>(worldPos.x, worldPos.y, 0.0, 1.0);
     
-    
+    // let visibleYMin = cameraBound.x;
+    // let visibleYMax = cameraBound.y;
+    // let rangeY = visibleYMax - visibleYMin;
+    // var z: f32;
+    // z = (worldPos.y - visibleYMin) / rangeY;
+    // z = 1.0 - ((worldPos.y - visibleYMin) / rangeY);
+   
+   
     let quadSize = select(props.size.y * 0.5,props.size.y,originType == 1u);
     let z = (props.pos.y + quadSize - cameraBound.x) / (cameraBound.y - cameraBound.x); //z-buffer compare to sort    
     let zValue = select(1.0,z,zSortType == 1u); 

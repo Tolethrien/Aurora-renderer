@@ -1,45 +1,44 @@
-import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
 import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import lightsShader from "../shaders/light.wgsl?raw";
 
+interface BatchNode {
+  currentBatchSize: number;
+  vertices: Float32Array;
+  counter: number;
+}
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
+
 export default class LightsPipeline {
-  private static BATCH_SIZE = 1000; //assumption is - will never hit this amount xD maybe change later
-  private static VERTEX_STRIDE = 4;
-  private static ADD_STRIDE = 5;
+  private static INIT_BATCH_SIZE = 20;
+  private static VERTEX_STRIDE = 8;
   private static pipeline: GPURenderPipeline;
-  private static lightBind: PipelineBind;
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
-  private static frameCount: number = 0;
-  private static vertexArray: Float32Array = new Float32Array(
-    this.BATCH_SIZE * this.VERTEX_STRIDE
-  );
-  private static addDataArray: Uint32Array = new Uint32Array(
-    this.BATCH_SIZE * this.ADD_STRIDE
-  );
+  private static bufferNeedResize = false;
+
+  private static batch: BatchNode = {
+    vertices: new Float32Array(this.INIT_BATCH_SIZE * this.VERTEX_STRIDE),
+    counter: 0,
+    currentBatchSize: this.INIT_BATCH_SIZE,
+  };
+
   public static get getStride() {
-    return {
-      vertexStride: this.VERTEX_STRIDE,
-      addStride: this.ADD_STRIDE,
-    };
+    return this.VERTEX_STRIDE;
   }
-  public static get getDataArrays() {
-    return {
-      vertexArray: this.vertexArray,
-      addArray: this.addDataArray,
-    };
-  }
-  public static get getCount() {
-    return this.frameCount;
-  }
-  public static addCount() {
-    this.frameCount++;
-    // Batcher.pipelinesUsedInFrame.add("lights");
+  public static getBatch() {
+    if (this.batch.counter === this.batch.currentBatchSize) {
+      const newSize = Math.ceil(this.batch.currentBatchSize * 1.5);
+      this.batch.currentBatchSize = newSize;
+      const batchVerticesCopy = this.batch.vertices;
+      this.batch.vertices = new Float32Array(newSize * this.VERTEX_STRIDE);
+      this.batch.vertices.set(batchVerticesCopy, 0);
+      this.bufferNeedResize = true;
+    }
+    return this.batch;
   }
   public static async createPipeline() {
     const shader = Aurora.createShader("lightsShader", lightsShader);
@@ -47,43 +46,10 @@ export default class LightsPipeline {
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
       label: "lightVertexBuffer",
-      dataLength: this.BATCH_SIZE * this.VERTEX_STRIDE,
+      dataLength: this.INIT_BATCH_SIZE * this.VERTEX_STRIDE,
       dataType: "Float32Array",
     });
-    this.addBuffer = Aurora.createBuffer({
-      bufferType: "vertex",
-      label: "lightsAddBuffer",
-      dataLength: this.BATCH_SIZE * this.ADD_STRIDE,
-      dataType: "Uint32Array",
-    });
-    this.lightBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-        ],
-        label: "lightsBindLayout",
-      },
-      data: {
-        label: "lightsBindData",
-        entries: [
-          { binding: 0, resource: Renderer.getSampler("universal") },
 
-          {
-            binding: 1,
-            resource: Renderer.getTextureView("offscreenCanvas"),
-          },
-        ],
-      },
-    });
     const vertBuffLay = Aurora.createVertexBufferLayout({
       arrayStride: this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT,
       stepMode: "instance",
@@ -98,54 +64,56 @@ export default class LightsPipeline {
           offset: 2 * Float32Array.BYTES_PER_ELEMENT,
           shaderLocation: 1, // Size
         },
-      ],
-    });
-    const AddDataBuffLay = Aurora.createVertexBufferLayout({
-      arrayStride: this.ADD_STRIDE * Uint32Array.BYTES_PER_ELEMENT,
-      stepMode: "instance",
-      attributes: [
         {
-          format: "uint32",
-          offset: 0,
-          shaderLocation: 2, //intensity
-        },
-        {
-          format: "uint32x4",
-          offset: 1 * Uint32Array.BYTES_PER_ELEMENT,
+          format: "float32x4",
+          offset: 4 * Float32Array.BYTES_PER_ELEMENT,
           shaderLocation: 3, //tint
         },
       ],
     });
-
-    const pipelineLayout = Aurora.createPipelineLayout([
-      cameraBindLayout,
-      this.lightBind[1],
-    ]);
+    const pipelineLayout = Aurora.createPipelineLayout([cameraBindLayout]);
     this.pipeline = await Aurora.createRenderPipeline({
       shader: shader,
       pipelineName: "lightsPipeline",
-      buffers: [vertBuffLay, AddDataBuffLay],
+      buffers: [vertBuffLay],
       pipelineLayout: pipelineLayout,
       colorTargets: [Aurora.getColorTargetTemplate("additiveHDR")],
     });
   }
   public static clearPipeline() {
-    this.frameCount = 0;
+    this.batch.counter = 0;
+    this.bufferNeedResize = false;
+  }
+  private static resizeBuffer() {
+    this.batch.currentBatchSize;
+
+    this.vertexBuffer = Aurora.createBuffer({
+      bufferType: "vertex",
+      label: "lightVertexBuffer",
+      dataLength: this.batch.currentBatchSize * this.VERTEX_STRIDE,
+      dataType: "Float32Array",
+    });
   }
   public static usePipeline(): void {
+    if (this.bufferNeedResize) this.resizeBuffer();
+
     const [cameraBind] = Renderer.getBind("camera");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
     const correction = Renderer.getGlobalIllumination("normalized");
-    Aurora.device.queue.writeBuffer(this.vertexBuffer, 0, this.vertexArray, 0);
-    Aurora.device.queue.writeBuffer(this.addBuffer, 0, this.addDataArray, 0);
+    Aurora.device.queue.writeBuffer(
+      this.vertexBuffer,
+      0,
+      this.batch.vertices,
+      0
+    );
 
     const passEncoder = commandEncoder.beginRenderPass({
       label: "lightsRenderPass",
       colorAttachments: [
         {
           view: Renderer.getTextureView("lightMap"),
-          clearValue: [...correction, 1],
+          clearValue: [...correction, 0],
           loadOp: "clear",
           storeOp: "store",
         },
@@ -153,14 +121,13 @@ export default class LightsPipeline {
     });
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, cameraBind);
-    passEncoder.setBindGroup(1, this.lightBind[0]);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setVertexBuffer(1, this.addBuffer);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
-    passEncoder.drawIndexed(6, this.frameCount);
+    passEncoder.drawIndexed(6, this.batch.counter);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
-    AuroraDebugInfo.setParam("drawnLights", this.frameCount);
+    AuroraDebugInfo.setParam("drawnLights", this.batch.counter);
 
     AuroraDebugInfo.accumulate("pipelineInUse", ["lights"]);
   }

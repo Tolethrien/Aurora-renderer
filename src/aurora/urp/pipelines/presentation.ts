@@ -17,41 +17,28 @@ export default class PresentationPipeline {
       presentationShader
     );
 
-    this.presentationBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-        ],
-        label: "PresentationBindLayout",
-      },
-      data: {
-        label: "PresentationBindData",
-        entries: [
-          { binding: 0, resource: Renderer.getSampler("universal") },
-          {
-            binding: 1,
-            resource: Renderer.getTextureView("offscreenCanvas"),
-          },
-          {
-            binding: 2,
-            resource: Renderer.getTextureView("lightMap"),
-          },
-        ],
-      },
+    this.presentationBind = Aurora.createBindGroup({
+      label: "PresentationBind",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { sampler: {} },
+          resource: Renderer.getSampler("universal"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("offscreenCanvas"),
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("lightMap"),
+        },
+      ],
     });
 
     const pipelineLayout = Aurora.createPipelineLayout([

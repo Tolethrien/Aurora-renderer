@@ -8,6 +8,7 @@ import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/batcher/config";
 import Renderer from "./aurora/urp/batcher/renderer";
+import AuroraCamera from "./aurora/urp/camera";
 interface t {
   lightcolor: [number, number, number];
   intence: number;
@@ -27,7 +28,14 @@ const config = auroraConfig({
   userFonts: [yaFont],
   userTextures: [texA, texB],
   HDR: { toneMapping: "aces" },
-  camera: { builtInCameraInputs: false },
+  camera: { builtInCameraInputs: true },
+  feature: {
+    bloom: true,
+    lighting: true,
+  },
+  rendering: {
+    sortOrder: "none",
+  },
 });
 
 async function preload() {
@@ -124,28 +132,28 @@ function showLights() {
     emis: 5,
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [255, 50, 255],
     pos: [50, 50],
     size: [50, 50],
     emis: 5,
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
     emis: 4,
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
     emis: 5,
   });
   makeLight({
-    intence: 255,
+    intence: 200,
     lightcolor: [70, 70, 255],
     pos: [550, 50],
     size: [50, 50],
@@ -163,7 +171,7 @@ function makeLight({ intence, lightcolor, pos, size, emis }: t) {
   Draw.pointLight({
     position: { x: pos[0], y: pos[1] },
     size: { height: size[0] + 300, width: size[1] + 300 },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
+    tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
     intensity: intence,
   });
 }

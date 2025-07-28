@@ -25,7 +25,6 @@ type PassOrderList = [
   MipMapLevelToUse
 ];
 enum BloomParamsEnum {
-  toneMapping = 0, // 0 - rainhard, 1-ACES, 2- Filmic
   threshold = 1,
   thresholdSoftness = 2,
   bloomIntense = 3,
@@ -47,10 +46,7 @@ export default class BloomPipeline {
   private static bloomDownscaleBindLayout: PipelineBind["1"];
   private static bindList: GPUBindGroup[] = [];
   private static currentMipLevel = 0;
-  public static bloomInFrame: boolean = false;
-  public static bloomParams = new Float32Array([1, 1, 0.1, 0.7]); // see enum
-  private static baseThreshold = 1;
-  private static thresholdBoostFactor = 1.4;
+  public static bloomParams = new Float32Array([1, 0.1, 0.7]); // see enum
   private static bindListOrder: PassOrderList[] = [
     ["x", "bloomThreshold", "bloomXPass", 0],
     ["y", "bloomXPass", "bloomYPass", 0],
@@ -79,7 +75,7 @@ export default class BloomPipeline {
     const upscaleShader = Aurora.createShader("upscale", upscale);
     const thresholdShader = Aurora.createShader("threshold", threshold);
 
-    this.bloomBlurBindLayout = Aurora.creteBindLayout({
+    this.bloomBlurBindLayout = Aurora.createBindLayout({
       entries: [
         {
           binding: 0,
@@ -98,7 +94,7 @@ export default class BloomPipeline {
       ],
       label: "bloomPassBindLayout",
     });
-    this.bloomDownscaleBindLayout = Aurora.creteBindLayout({
+    this.bloomDownscaleBindLayout = Aurora.createBindLayout({
       entries: [
         {
           binding: 0,
@@ -122,7 +118,7 @@ export default class BloomPipeline {
       ],
       label: "bloomPassBindLayout",
     });
-    this.bloomUpscaleBindLayout = Aurora.creteBindLayout({
+    this.bloomUpscaleBindLayout = Aurora.createBindLayout({
       entries: [
         {
           binding: 0,
@@ -151,51 +147,39 @@ export default class BloomPipeline {
       ],
       label: "bloomPassDownscaleBindLayout",
     });
-    this.bloomThresholdBind = Aurora.creteBindGroup({
-      layout: {
-        label: "bloomThreshBindLayout",
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.COMPUTE,
+    this.bloomThresholdBind = Aurora.createBindGroup({
+      label: "bloomThreshBind",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          layout: {
             texture: {
               sampleType: "float",
               viewDimension: "2d",
             },
           },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.COMPUTE,
+          resource: Renderer.getTextureView("offscreenCanvas"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.COMPUTE,
+          layout: {
             storageTexture: {
               access: "write-only",
               format: "rgba16float",
               viewDimension: "2d",
             },
           },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.COMPUTE,
-            sampler: { type: "filtering" },
-          },
-        ],
-      },
-      data: {
-        label: "bloomThreshBindData",
-        entries: [
-          {
-            binding: 0,
-            resource: Renderer.getTextureView("offscreenCanvas"),
-          },
-          {
-            binding: 1,
-            resource: Renderer.getTextureView("bloomThreshold"),
-          },
-          {
-            binding: 2,
-            resource: Renderer.getSampler("linear"),
-          },
-        ],
-      },
+          resource: Renderer.getTextureView("bloomThreshold"),
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.COMPUTE,
+          layout: { sampler: { type: "filtering" } },
+          resource: Renderer.getSampler("linear"),
+        },
+      ],
     });
     const [_, bloomLayout] = Renderer.getBind("bloomParams");
 
@@ -258,14 +242,8 @@ export default class BloomPipeline {
 
   public static usePipeline(): void {
     const bloomParamBuffer = Renderer.getBuffer("bloomParams");
-    const globalIllumination = this.normalizeColorToLuminance(
-      Renderer.getGlobalIllumination("normalized")
-    );
-    const newThreshold =
-      this.baseThreshold + globalIllumination * this.thresholdBoostFactor;
-    // this.setBloomParam("threshold", newThreshold);
+
     Aurora.device.queue.writeBuffer(bloomParamBuffer, 0, this.bloomParams, 0);
-    if (!this.bloomInFrame) return;
     this.currentMipLevel = 0;
     this.thresholdPass();
     this.bindListOrder.forEach((instruction, index) => {
@@ -282,9 +260,7 @@ export default class BloomPipeline {
     });
     AuroraDebugInfo.accumulate("pipelineInUse", ["bloom"]);
   }
-  public static clearPipeline() {
-    this.bloomInFrame = false;
-  }
+  public static clearPipeline() {}
   public static setBloomParam(
     param: keyof typeof BloomParamsEnum,
     value: number

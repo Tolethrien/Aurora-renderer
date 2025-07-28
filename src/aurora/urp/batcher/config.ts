@@ -1,4 +1,4 @@
-import { DeepPartial, RGB } from "../../aurora";
+import { DeepPartial, RGB, RGBA } from "../../aurora";
 import { FontGenProps } from "./fontGen";
 import dummyTexture from "../assets/dummy.png";
 import jerseyImg from "../assets/Jersey25-Regular.png";
@@ -11,6 +11,12 @@ type Profiler = "none" | "minimal" | "normal" | "extended";
 type UserTexture = { name: string; url: string };
 // type CameraProjection = "ortho" | "perspective" | "isometric";
 type ToneMaps = "rainhard" | "aces" | "filmic" | "none";
+export enum ToneMapList {
+  none,
+  rainhard,
+  aces,
+  filmic,
+}
 export interface AuroraConfig {
   HDR: {
     toneMapping: ToneMaps;
@@ -30,6 +36,7 @@ export interface AuroraConfig {
     drawOrigin: "center" | "topLeft";
     sortOrder: SortOrder;
     transparentCanvas: boolean;
+    canvasColor: RGBA;
   };
   camera: {
     builtInCameraInputs: boolean;
@@ -57,6 +64,7 @@ const INIT_OPTIONS: AuroraConfig = {
     renderRes: "800x600",
     sortOrder: "y",
     transparentCanvas: false,
+    canvasColor: [255, 255, 255, 255],
   },
   screen: {
     colorCorrection: [255, 255, 255],

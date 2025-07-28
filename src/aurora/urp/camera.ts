@@ -11,8 +11,7 @@ const cameraData = {
 };
 
 export default class AuroraCamera {
-  private static view: Mat4;
-  private static projectionViewMatrix: Mat4;
+  // private static view: Mat4;
   private static position: CameraPosition = { x: 0, y: 0 };
   private static speed: number;
   private static zoom: CameraZoom = {
@@ -23,13 +22,26 @@ export default class AuroraCamera {
   private static buildInCameraBind: PipelineBind | undefined;
   private static cameraBounds = new Float32Array([Infinity, -Infinity]);
   private static useInputs: boolean = false;
+  private static projectionMatrix: Mat4;
+  private static viewMatrix: Mat4;
+  private static projectionViewMatrix: Mat4;
 
   public static initialize(config: AuroraConfig["camera"]) {
-    console.log(config);
     this.projectionViewMatrix = Mat4.create();
-    this.view = Mat4.create().lookAt([0, 0, 0], [0, 0, 0], [0, 1, 0]);
+    // this.view = Mat4.create().lookAt([0, 0, 0], [0, 0, 0], [0, 1, 0]);
+    this.projectionMatrix = Mat4.create();
+    this.viewMatrix = Mat4.create();
+    this.projectionViewMatrix = Mat4.create().ortho(
+      0,
+      Aurora.canvas.width,
+      Aurora.canvas.height,
+      0,
+      0,
+      1
+    );
     this.position.x = Aurora.canvas.width / 2;
     this.position.y = Aurora.canvas.height / 2;
+
     this.speed = config.speed;
     this.zoom = { current: 1, max: config.zoom.max, min: config.zoom.min };
     if (config.builtInCameraInputs) {
@@ -44,52 +56,44 @@ export default class AuroraCamera {
       };
       this.useInputs = true;
     }
-
-    const bind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: { type: "uniform" },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-            buffer: { type: "uniform" },
-          },
-        ],
-        label: "cameraBindLayout",
-      },
-      data: {
-        label: "cameraBindData",
-        entries: [
-          {
-            binding: 0,
-            resource: { buffer: Aurora2DRenderer.getBuffer("cameraMatrix") },
-          },
-          {
-            binding: 1,
-            resource: { buffer: Aurora2DRenderer.getBuffer("cameraBounds") },
-          },
-        ],
-      },
+    const bind = Aurora.createBindGroup({
+      label: "cameraBind",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          layout: { buffer: { type: "uniform" } },
+          resource: { buffer: Aurora2DRenderer.getBuffer("cameraMatrix") },
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+          layout: { buffer: { type: "uniform" } },
+          resource: { buffer: Aurora2DRenderer.getBuffer("cameraBounds") },
+        },
+      ],
     });
+
     return bind;
     //===========================================
   }
   public static update(buffer: GPUBuffer) {
     if (this.useInputs) this.updateControls();
-    this.projectionViewMatrix = Mat4.create()
-      .ortho(
-        this.position.x - (Aurora.canvas.width / 2) * this.zoom.current,
-        this.position.x + (Aurora.canvas.width / 2) * this.zoom.current,
-        this.position.y + (Aurora.canvas.height / 2) * this.zoom.current,
-        this.position.y - (Aurora.canvas.height / 2) * this.zoom.current,
-        -1,
-        1
-      )
-      .multiply(this.view);
+    const roundedX = Math.round(this.position.x);
+    const roundedY = Math.round(this.position.y);
+    const centerX = Aurora.canvas.width / 2;
+    const centerY = Aurora.canvas.height / 2;
+    const { width, height } = Aurora.canvas;
+    this.projectionMatrix.ortho(0, width, height, 0, 0, 1);
+    this.viewMatrix
+      .identity()
+      .translate([centerX, centerY, 0])
+      .scale([this.zoom.current, this.zoom.current, 1])
+      .translate([-roundedX, -roundedY, 0]);
+
+    this.projectionViewMatrix = this.projectionMatrix
+      .clone()
+      .multiply(this.viewMatrix);
 
     Aurora.device.queue.writeBuffer(
       buffer,
@@ -122,19 +126,5 @@ export default class AuroraCamera {
 
   public static get getProjectionViewMatrix() {
     return this.projectionViewMatrix;
-  }
-  public static get getBuildInCameraBindGroup() {
-    assert(
-      this.buildInCameraBind !== undefined,
-      "trying to get buildIn camera binds but batcher is set to custom camera"
-    );
-    return this.buildInCameraBind[0];
-  }
-  public static get getBuildInCameraBindGroupLayout() {
-    assert(
-      this.buildInCameraBind !== undefined,
-      "trying to get buildIn camera binds but batcher is set to custom camera"
-    );
-    return this.buildInCameraBind[1];
   }
 }

@@ -1,4 +1,4 @@
-import { RGBA, Position2D, Size2D } from "../aurora";
+import { RGBA, Position2D, Size2D, RGB } from "../aurora";
 import FontGen, { MsdfChar } from "./batcher/fontGen";
 import AuroraCamera from "./camera";
 import LightsPipe from "./pipelines/lights";
@@ -29,8 +29,9 @@ interface DrawText {
   fontColor?: RGBA;
   emissive?: number;
 }
-interface DrawPointLight extends BaseDraw {
+interface DrawPointLight extends Omit<BaseDraw, "tint"> {
   intensity: number;
+  tint?: RGB;
 }
 export type BatchType = "text" | "shape";
 export interface GetBatch {
@@ -67,7 +68,6 @@ export default class Draw {
     batch.vertices[batch.counter * vertexStride + 13] = emissive;
 
     batch.counter++;
-    if (emissive > 1) BloomPipeline.bloomInFrame = true;
   }
 
   public static circle({ position, size, tint, emissive = 1 }: DrawCircle) {
@@ -207,20 +207,17 @@ export default class Draw {
     size,
     tint,
   }: DrawPointLight) {
-    const color: RGBA = tint ? tint : [255, 255, 255, 255];
-    const { addStride, vertexStride } = LightsPipe.getStride;
-    const { addArray, vertexArray } = LightsPipe.getDataArrays;
-    const count = LightsPipe.getCount;
-    vertexArray[count * vertexStride] = position.x;
-    vertexArray[count * vertexStride + 1] = position.y;
-    vertexArray[count * vertexStride + 2] = size.width;
-    vertexArray[count * vertexStride + 3] = size.height;
-
-    addArray[count * addStride] = intensity; // intens
-    addArray[count * addStride + 1] = color[0];
-    addArray[count * addStride + 2] = color[1];
-    addArray[count * addStride + 3] = color[2];
-    addArray[count * addStride + 4] = color[3];
-    LightsPipe.addCount();
+    const color: RGB = tint ? tint : [255, 255, 255];
+    const stride = LightsPipe.getStride;
+    const batch = LightsPipe.getBatch();
+    batch.vertices[batch.counter * stride] = position.x;
+    batch.vertices[batch.counter * stride + 1] = position.y;
+    batch.vertices[batch.counter * stride + 2] = size.width;
+    batch.vertices[batch.counter * stride + 3] = size.height;
+    batch.vertices[batch.counter * stride + 4] = color[0];
+    batch.vertices[batch.counter * stride + 5] = color[1];
+    batch.vertices[batch.counter * stride + 6] = color[2];
+    batch.vertices[batch.counter * stride + 7] = intensity;
+    batch.counter++;
   }
 }

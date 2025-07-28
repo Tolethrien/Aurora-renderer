@@ -11,6 +11,10 @@ interface BufferOptions extends SharedBufferOptions {
 interface MappedBufferOptions extends SharedBufferOptions {
   data: number[];
 }
+interface QueryBuffer {
+  count: number;
+  mode: "read" | "write";
+}
 interface AuroraRenderPipeline {
   pipelineName: string;
   pipelineLayout: GPUPipelineLayout;
@@ -37,6 +41,22 @@ type ColorAttachments =
 interface CreateBindGroup {
   layout: GPUBindGroupLayoutDescriptor;
   data: { entries: Iterable<GPUBindGroupEntry>; label?: string };
+}
+interface CreateBindGroupA {
+  label: string;
+  entries: {
+    binding: number;
+    visibility: GPUBindGroupLayoutEntry.visibility;
+    layout: {
+      texture?: GPUTextureBindingLayout | undefined;
+      buffer?: GPUBufferBindingLayout | undefined;
+      sampler?: GPUSamplerBindingLayout | undefined;
+      storageTexture?: GPUStorageTextureBindingLayout | undefined;
+      externalTexture?: GPUExternalTextureBindingLayout | undefined;
+    };
+    resource: GPUBindingResource;
+  }[];
+  // data: { entries: Iterable<GPUBindGroupEntry>; label?: string };
 }
 interface BaseTextureProps {
   format?: GPUTextureFormat;

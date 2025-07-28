@@ -151,7 +151,7 @@ export default class SortedDrawPipeline {
         `no Draw Batch with name ${key} in sortedDraw, should be imposable`
       );
     if (batch.counter === batch.batchSize) {
-      const newSize = Math.floor(batch.batchSize * 1.5);
+      const newSize = Math.ceil(batch.batchSize * 1.5);
       batch.batchSize = newSize;
       const batchVerticesCopy = batch.vertices;
       batch.vertices = new Float32Array(newSize * this.VERTEX_STRIDE);

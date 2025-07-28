@@ -14,7 +14,7 @@ import SequentialDrawPipeline from "../pipelines/sequentialDraw";
 import SortedDrawPipeline from "../pipelines/sortedDraw";
 import LightsPipeline from "../pipelines/lights";
 import BloomPipeline from "../pipelines/bloom";
-import DebugTexturePipeline from "../pipelines/debugTexture";
+import DebuggerPipeline from "../pipelines/debug";
 import PresentationPipeline from "../pipelines/presentation";
 import AuroraDebugInfo from "../debugger/debugInfo";
 
@@ -85,7 +85,7 @@ export default class Renderer {
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
     if (config.feature.bloom) this.pipelineOrder.push(BloomPipeline);
 
-    if (config.debugger) this.pipelineOrder.push(DebugTexturePipeline);
+    if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);
     else this.pipelineOrder.push(PresentationPipeline);
   }
 
@@ -114,29 +114,22 @@ export default class Renderer {
       textures: this.auroraConfig.userTextures,
     });
     this.textures.set("userTexture", userTexture);
-    const userTextureBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-            sampler: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
-            texture: { viewDimension: "2d-array" },
-          },
-        ],
-        label: "userTextureBindLayout",
-      },
-      data: {
-        label: "userTextureBindData",
-        entries: [
-          { binding: 0, resource: this.getSampler("universal") },
-          { binding: 1, resource: userTexture.texture.createView() },
-        ],
-      },
+    const userTextureBind = Aurora.createBindGroup({
+      label: "userTextureBind",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          layout: { sampler: {} },
+          resource: this.getSampler("universal"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT | GPUShaderStage.VERTEX,
+          layout: { texture: { viewDimension: "2d-array" } },
+          resource: userTexture.texture.createView(),
+        },
+      ],
     });
     this.globalBindGroups.set("userTextures", userTextureBind);
   }
@@ -164,25 +157,22 @@ export default class Renderer {
       format: "rgba8unorm",
       textures: textures,
     });
-    const FontBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          { binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler: {} },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d-array" },
-          },
-        ],
-        label: `font-array BindLayout`,
-      },
-      data: {
-        entries: [
-          { binding: 0, resource: this.getSampler("fontGen") },
-          { binding: 1, resource: texture.texture.createView() },
-        ],
-        label: `font-array BindData`,
-      },
+    const FontBind = Aurora.createBindGroup({
+      label: `fontArrayBind`,
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { sampler: {} },
+          resource: this.getSampler("fontGen"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d-array" } },
+          resource: texture.texture.createView(),
+        },
+      ],
     });
     this.globalBindGroups.set("fonts", FontBind);
   }
@@ -219,26 +209,16 @@ export default class Renderer {
   }
   private static generateGlobalBindGroups() {
     //TODO: to przerobic, dodac tonemap do uniwersalnego i usunac ta funkcje
-    const bloomParamsUniform = Aurora.creteBindGroup({
-      layout: {
-        label: "BloomParamsBindLayout",
-        entries: [
-          {
-            binding: 0,
-            buffer: { type: "uniform" },
-            visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
-          },
-        ],
-      },
-      data: {
-        label: "BloomParamsBindData",
-        entries: [
-          {
-            binding: 0,
-            resource: { buffer: this.getBuffer("bloomParams") },
-          },
-        ],
-      },
+    const bloomParamsUniform = Aurora.createBindGroup({
+      label: "BloomParamsBind",
+      entries: [
+        {
+          binding: 0,
+          layout: { buffer: { type: "uniform" } },
+          visibility: GPUShaderStage.COMPUTE | GPUShaderStage.FRAGMENT,
+          resource: { buffer: this.getBuffer("bloomParams") },
+        },
+      ],
     });
     this.globalBindGroups.set("bloomParams", bloomParamsUniform);
   }

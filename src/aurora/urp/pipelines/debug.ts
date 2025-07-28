@@ -1,91 +1,73 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
+import { ToneMapList } from "../batcher/config";
 import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
+import debugTextureShader from "../shaders/debugTexture.wgsl?raw";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
  */
-export default class DebugTexturePipeline {
+export default class DebuggerPipeline {
   private static pipeline: GPURenderPipeline;
   private static dataBind: PipelineBind;
   private static texturesBind: PipelineBind;
   private static uniformTexturePicker: GPUBuffer;
   public static clearPipeline() {}
   public static async createPipeline() {
-    const debugShader = Renderer.getShader("debugShader");
+    const debugShader = Aurora.createShader("debugShader", debugTextureShader);
+
     this.uniformTexturePicker = Aurora.createBuffer({
       bufferType: "uniform",
       dataLength: 1,
       dataType: "Uint32Array",
       label: "DebugTextureIndex",
     });
-    this.dataBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT,
-            sampler: {},
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            buffer: { type: "uniform" },
-          },
-        ],
-        label: "DebugTextureSamplersBindLayout",
-      },
-      data: {
-        label: "DebugTextureSamplersBindLayout",
-        entries: [
-          { binding: 0, resource: Renderer.getSampler("universal") },
-
-          {
-            binding: 1,
-            resource: { buffer: this.uniformTexturePicker },
-          },
-        ],
-      },
+    this.dataBind = Aurora.createBindGroup({
+      label: "DebugTextureBindA",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { sampler: {} },
+          resource: Renderer.getSampler("universal"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { buffer: { type: "uniform" } },
+          resource: { buffer: this.uniformTexturePicker },
+        },
+      ],
     });
-    this.texturesBind = Aurora.creteBindGroup({
-      layout: {
-        entries: [
-          {
-            binding: 0,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-          {
-            binding: 1,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-          {
-            binding: 2,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-          {
-            binding: 3,
-            visibility: GPUShaderStage.FRAGMENT,
-            texture: { viewDimension: "2d" },
-          },
-        ],
-        label: "DebugTextureTexturesBindLayout",
-      },
-      data: {
-        label: "DebugTextureTexturesBindData",
-        entries: [
-          { binding: 0, resource: Renderer.getTextureView("offscreenCanvas") },
-          {
-            binding: 1,
-            resource: Renderer.getTextureView("zBufferDump"),
-          },
-          { binding: 2, resource: Renderer.getTextureView("lightMap") },
-          { binding: 3, resource: Renderer.getTextureView("bloomXPass", 0) },
-        ],
-      },
+    this.texturesBind = Aurora.createBindGroup({
+      label: "DebugTextureTexturesBind",
+      entries: [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("offscreenCanvas"),
+        },
+        {
+          binding: 1,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("zBufferDump"),
+        },
+        {
+          binding: 2,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("lightMap"),
+        },
+        {
+          binding: 3,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("bloomXPass", 0),
+        },
+      ],
     });
     const [_, bloomParamsLayout] = Renderer.getBind("bloomParams");
 
@@ -101,11 +83,14 @@ export default class DebugTexturePipeline {
       pipelineLayout: pipelineLayout,
       colorTargets: [
         {
-          format: "bgra8unorm",
+          format: navigator.gpu.getPreferredCanvasFormat(),
           blend: undefined,
           writeMask: GPUColorWrite.ALL,
         },
       ],
+      consts: {
+        toneMapping: ToneMapList[Renderer.getAllConfig.HDR.toneMapping],
+      },
     });
   }
 

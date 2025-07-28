@@ -8,16 +8,14 @@ struct VertexInput {
     @builtin(vertex_index) vi: u32,
     @location(0) pos: vec2<f32>, // x,y
     @location(1) size: vec2<f32>, // w,h
-    @location(2) intensity: u32,  
-    @location(3) color: vec4<u32>,    // rgba
+    @location(3) color: vec4<f32>,    // rgba
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(1) size: vec2<f32>,
     @location(2) centerPos: vec2<f32>,
-    @location(3) @interpolate(flat) intensity: u32,
-    @location(5) @interpolate(flat) color: vec4<u32>,
+    @location(5) @interpolate(flat) color: vec4<f32>,
 
 };
 
@@ -36,7 +34,6 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
     out.centerPos = centerPos;
     out.size = props.size;
     out.color = props.color;
-    out.intensity = props.intensity;
     out.position = vec4<f32>(translatePosition.xy, 0.0, 1.0);
     
     return out;
@@ -48,7 +45,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     const FALLOFF_EXPONENT: f32 = 2.0;
     let color = convertColor(props.color);
-    let baseIntensity = f32(props.intensity) / 255.0;
+    let intensity = color.a;
 
     let radius = props.size.x * 0.5;
     let dist_pixels = length(props.centerPos);
@@ -59,13 +56,12 @@ fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     let attenuation = pow(max(0.0, 1.0 - dist_norm * dist_norm), FALLOFF_EXPONENT);
-    let final_rgb = color.rgb * baseIntensity * attenuation;
-    let final_alpha = color.a * attenuation;
+    let final_rgb = color.rgb * intensity * attenuation;
 
-    return vec4<f32>(final_rgb, final_alpha);
+    return vec4<f32>(final_rgb, 0);
 }
 
-fn convertColor(color: vec4u) -> vec4f {
-  return vec4f(color)/255;
+fn convertColor(color: vec4f) -> vec4f {
+  return color/255;
 }
 

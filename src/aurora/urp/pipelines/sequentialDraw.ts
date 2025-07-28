@@ -128,7 +128,7 @@ export default class SequentialDrawPipeline {
       0
     );
     if (this.currentBufferSize >= drawSize) return;
-    const newSize = drawSize * 1.5;
+    const newSize = Math.ceil(drawSize * 1.5);
     this.verticesList = new Float32Array(newSize * this.VERTEX_STRIDE);
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",

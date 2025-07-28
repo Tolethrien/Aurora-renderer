@@ -6,7 +6,6 @@ override workgroupSize: u32 = 8;
 @group(1) @binding(0) var<uniform> bloomParams: BloomParams;
 
 struct BloomParams{
-    toneMapping:f32,
     threshold:f32,
     thresholdSoftness:f32,
     bloomIntense:f32

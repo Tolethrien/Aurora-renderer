@@ -1,71 +1,33 @@
 # Think
 
 - przeleciec wszystko w config i sprawic by tam dzialalo, by wszystkie te rzeczy tam byly zaimpementowane itp
-
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
-
-- zamiast miec buffer z opcjami batchera mozesz miec fragment constants
-
-- w debugerInfo zacznij uzywac aurory buffer
-
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
-
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
-
-- zrobic zamiast bufferu z opcjami overridy
-
-- jakis system ustawiania kolejnosci pipelinow bo teraz sie ustawia wedle kolejnosci Draw
-
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
-
-- posprzatac drawPipeliny bo za duzo tam pracy przy jakichkolwiek zmianach
-
-- zrobic zwyczajnie need Clean w pipelinie i na 1 batchu czyscic teksture a potem loadowac(1 render pass mniej)
-
-- czyszczenie tekstur powinno byc w pipelinach a nie jak teraz jako wielki pass pierwszy batcheru
-
-- moze by zrobic tylko sprite/circle i oba one moga byc texturowane po prostu
-
-- jak nie masz zadnego point lightu to nie masz swiatla w ogole
-
 - zrobic debuuger na process.env by dzialal tree-shaking
-
 - mniej compute passow na bloomie (polacz downscale z xpassem)
-
 - dodac wagi do upscale blendowania
-
-- przebudowac sposob tworzenia pipelinow zamiast klas na jakis system(render graph)
-
-- przemyslec jak Draw dostaje dane bo moglby wysylac sygnaly do pipelinow lepiej na bazie swoich zmiennych
-
 - parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
-
-- Zbuffer prepass, okresla co jest widoczne na ekranie by potem dzialalo renderowanie front-to-back
-
 - poprawic faktyczny shader a nie debug by mial tonemap itp
-
-- przebudowac corowe funkcje np bindgroup na cos takiego: {
-  label: "batcherOptionsBind",
-  entries: [
-  {
-  binding: 0,
-  visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
-  layout:{ buffer:{ type: "uniform" }},
-  data: {resource: { buffer: optionsBindBuffer },}
-  },
-  ]
-  } by mniej zajmowalo - funkcja sama bedzie dodawala layut i data do stringu
-
-- ddac moziwosc customowej kamery
-
-- przeniesc accu couunt quadow circlow itp do pipelinu z draw (suma counterow to ilosc quadow)
-
-- w batcherze odddzielic w sumie uniform z toneMapem d uniformu bloomu bo one nie sa ze soba w ogole powiazane(bloom osobno, tonemap dodac do generalnego uniformu)
-
-- po co mi w generatorach kompilacja shaderow jak np bloom sam sobie to i tak robi, po co kompilowac shadery ktore nie sa uzywane w kilku miejscach(przeniesc debug do pipu?)
 
 # Done
 
+- przemyslec jak Draw dostaje dane bo moglby wysylac sygnaly do pipelinow lepiej na bazie swoich zmiennych
+- po co mi w generatorach kompilacja shaderow jak np bloom sam sobie to i tak robi, po co kompilowac shadery ktore nie sa uzywane w kilku miejscach(przeniesc debug do pipu?)
+- przebudowac createBindGroup na mniej zajmujace miejsce
+- w batcherze odddzielic w sumie uniform z toneMapem d uniformu bloomu bo one nie sa ze soba w ogole powiazane(bloom osobno, tonemap dodac do generalnego uniformu)
+- brak lightu w configu mnozy scene przez pusta texture(0)
+- brak bloomu w configu nie ustawia tonemapu na aces
+- w debugerInfo zacznij uzywac aurory buffer
+- jak nie masz zadnego point lightu to nie masz swiatla w ogole
+- przeniesc accu couunt quadow circlow itp do pipelinu z draw (suma counterow to ilosc quadow)
+- moze by zrobic tylko sprite/circle i oba one moga byc texturowane po prostu
+- zrobic zwyczajnie need Clean w pipelinie i na 1 batchu czyscic teksture a potem loadowac(1 render pass mniej)
+- czyszczenie tekstur powinno byc w pipelinach a nie jak teraz jako wielki pass pierwszy batcheru
+- posprzatac drawPipeliny bo za duzo tam pracy przy jakichkolwiek zmianach
+- jakis system ustawiania kolejnosci pipelinow bo teraz sie ustawia wedle kolejnosci Draw
+- zrobic zamiast bufferu z opcjami overridy
 - zmieniles na 1 encoder wiec upewnij sie ze obiekty nie przekrocza bufferSize(flush przekraczajac)
 - czy text moze potencjalnie przekroczyc wielkosc vertexa bo przeciez dajesz kilkanascie znakow a nie jeden jak w shape
 - jednak musi miec osobny caly pipeline dla unsorted
@@ -108,6 +70,7 @@
 [x] bloom
 [ ] Draw.video
 [ ] Draw.gif
+[ ] Draw.line
 [ ] cieniowanie?
 [ ] normal mapy?
 [ ] sposoby renderowania - ortho/izo

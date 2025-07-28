@@ -66,17 +66,18 @@ export default class AuroraDebugInfo {
   public static setWorking(val: boolean) {
     this.isGathering = val;
 
-    this.query = Aurora.device.createQuerySet({
+    this.query = Aurora.createQuerySet({
       type: "timestamp",
       count: 2,
     });
-    this.writeBuffer = Aurora.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.QUERY_RESOLVE,
+
+    this.writeBuffer = Aurora.createQueryBuffer({
+      count: 2,
+      mode: "write",
     });
-    this.readBuffer = Aurora.device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    this.readBuffer = Aurora.createQueryBuffer({
+      count: 2,
+      mode: "read",
     });
     //@ts-ignore
     window.debugTextureNext = () => this.nextTexture();

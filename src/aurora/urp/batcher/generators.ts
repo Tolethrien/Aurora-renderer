@@ -1,7 +1,6 @@
 import Aurora from "../../core";
 import quad from "../shaders/drawQuad.wgsl?raw";
 import circle from "../shaders/drawCircle.wgsl?raw";
-import debugTextureShader from "../shaders/debugTexture.wgsl?raw";
 import textShader from "../shaders/drawText.wgsl?raw";
 export function generateInternalBuffers() {
   //main indexBuffer
@@ -84,6 +83,25 @@ export function generateInternalTextures() {
     format: "rgba16float",
     label: "lightMap",
   });
+  //pre fill with "byte white" if there is no lighting pipeline use, so that shader can just multiply everything by 1 (empty would be 0)
+  // there is no float16Array so i used uint16 and fill with "white half float" and then multiply by 2 for full float
+  const pixels = new Uint16Array(
+    Aurora.canvas.width * Aurora.canvas.height * 4
+  ).fill(0x3c00);
+  Aurora.device.queue.writeTexture(
+    {
+      texture: light.texture,
+    },
+    pixels,
+    {
+      bytesPerRow: Aurora.canvas.width * 4 * 2,
+      rowsPerImage: Aurora.canvas.height,
+    },
+    {
+      width: Aurora.canvas.width,
+      height: Aurora.canvas.height,
+    }
+  );
 
   const bloomThreshold = Aurora.createTextureEmpty({
     size: {
@@ -154,12 +172,10 @@ export function compileShaders() {
   const quadShader = Aurora.createShader("quadShader", quad);
   const circleShader = Aurora.createShader("circleShader", circle);
   const text = Aurora.createShader("textShader", textShader);
-  const debugShader = Aurora.createShader("debugShader", debugTextureShader);
 
   return new Map([
     ["quadShader", quadShader],
     ["circleShader", circleShader],
     ["textShader", text],
-    ["debugShader", debugShader],
   ]);
 }
