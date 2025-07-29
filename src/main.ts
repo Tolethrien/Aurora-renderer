@@ -34,7 +34,7 @@ const config = auroraConfig({
     lighting: true,
   },
   rendering: {
-    sortOrder: "none",
+    sortOrder: "y",
   },
 });
 
@@ -60,7 +60,7 @@ function start(timestamp: number) {
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
-  // AuroraDebugInfo.displayEveryFrame(60, true);
+  AuroraDebugInfo.displayEveryFrame(60, true);
   // x++;
   requestAnimationFrame(start);
 }
@@ -129,35 +129,35 @@ function showLights() {
     lightcolor: [255, 70, 70],
     pos: [300, 300],
     size: [100, 100],
-    emis: 5,
+    emis: 3,
   });
   makeLight({
     intence: 200,
     lightcolor: [255, 50, 255],
     pos: [50, 50],
     size: [50, 50],
-    emis: 5,
+    emis: 3,
   });
   makeLight({
     intence: 200,
     lightcolor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
-    emis: 4,
+    emis: 3,
   });
   makeLight({
     intence: 200,
     lightcolor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
-    emis: 5,
+    emis: 3,
   });
   makeLight({
     intence: 200,
     lightcolor: [70, 70, 255],
     pos: [550, 50],
     size: [50, 50],
-    emis: 6,
+    emis: 5,
   });
 }
 
@@ -168,12 +168,12 @@ function makeLight({ intence, lightcolor, pos, size, emis }: t) {
     tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
     emissive: emis,
   });
-  Draw.pointLight({
-    position: { x: pos[0], y: pos[1] },
-    size: { height: size[0] + 300, width: size[1] + 300 },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
-    intensity: intence,
-  });
+  // Draw.pointLight({
+  //   position: { x: pos[0], y: pos[1] },
+  //   size: { height: size[0] + 300, width: size[1] + 300 },
+  //   tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
+  //   intensity: intence,
+  // });
 }
 
 await preload();

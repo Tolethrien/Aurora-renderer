@@ -57,7 +57,7 @@ export default class AuroraDebugInfo {
   private static readBuffer: GPUBuffer;
   private static lastFrameTime = 0;
   private static frameTimeStart = 0;
-  public static debugVisibleTextureIndex = new Uint32Array([0]);
+  public static debugVisibleTextureIndex = new Uint32Array([2]);
   //0 offscreen/1 depth
 
   public static get isWorking() {

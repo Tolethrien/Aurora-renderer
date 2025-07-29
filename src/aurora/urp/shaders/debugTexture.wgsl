@@ -46,7 +46,7 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   let offscreen = textureSampleLevel(offscreenTexture,textureSampler,props.coords,0);
   let lightMap = textureSampleLevel(lightMapTexture,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
-  let finalColor = (offscreen.rgb + bloom.rgb) * lightMap.rgb;
+  let finalColor = (offscreen.rgb * lightMap.rgb) + bloom.rgb;
   
   var toneMapped: vec3f;
   var bloomToned: vec3f;

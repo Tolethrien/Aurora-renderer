@@ -17,6 +17,7 @@ import BloomPipeline from "../pipelines/bloom";
 import DebuggerPipeline from "../pipelines/debug";
 import PresentationPipeline from "../pipelines/presentation";
 import AuroraDebugInfo from "../debugger/debugInfo";
+import ColorCorrection from "../pipelines/colorCorrection";
 
 interface PipelineStaticClass {
   usePipeline(): void;
@@ -83,6 +84,7 @@ export default class Renderer {
         : SortedDrawPipeline;
     this.pipelineOrder.push(drawPipeline);
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
+    this.pipelineOrder.push(ColorCorrection);
     if (config.feature.bloom) this.pipelineOrder.push(BloomPipeline);
 
     if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);

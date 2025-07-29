@@ -49,6 +49,30 @@ export function generateInternalBuffers() {
   ]);
 }
 export function generateInternalTextures() {
+  //offscreen - init texture
+  // lights - all light baking
+  // depth - zbuffer
+  // zdump - debug dumping
+  // bloom Threshold - like in name
+  // bloomX - 4 mips
+  // bloomY - 4 mips
+  // pingpongA - texture to pingpong
+  // pingpongB - texture to pingpong
+  //finalDraw - combined offscreen and lights
+  // ui
+  // final (canvas)
+
+  /**
+   * draw na offscreen
+   * draw swiatla na lights
+   * if(debug) draw na zDump
+   * draw offscreen + lights na finalDraw
+   * finalDraw -> correction -> finalCorrectedDraw
+   * finalCorrectedDraw -> threshold
+   * postprocess pingpong
+   * lastPing + ui -> screen
+   *
+   */
   const offscreen = Aurora.createTextureEmpty({
     size: {
       width: Aurora.canvas.width,
@@ -82,6 +106,7 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "lightMap",
+    isStorage: true,
   });
   //pre fill with "byte white" if there is no lighting pipeline use, so that shader can just multiply everything by 1 (empty would be 0)
   // there is no float16Array so i used uint16 and fill with "white half float" and then multiply by 2 for full float

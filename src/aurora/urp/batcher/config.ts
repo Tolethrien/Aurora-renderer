@@ -37,6 +37,7 @@ export interface AuroraConfig {
     sortOrder: SortOrder;
     transparentCanvas: boolean;
     canvasColor: RGBA;
+    computeGroupSize: 8 | 16 | 32;
   };
   camera: {
     builtInCameraInputs: boolean;
@@ -65,6 +66,7 @@ const INIT_OPTIONS: AuroraConfig = {
     sortOrder: "y",
     transparentCanvas: false,
     canvasColor: [255, 255, 255, 255],
+    computeGroupSize: 8,
   },
   screen: {
     colorCorrection: [255, 255, 255],

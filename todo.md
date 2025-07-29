@@ -2,17 +2,17 @@
 
 - przeleciec wszystko w config i sprawic by tam dzialalo, by wszystkie te rzeczy tam byly zaimpementowane itp
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
-- debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
 - zrobic debuuger na process.env by dzialal tree-shaking
 - mniej compute passow na bloomie (polacz downscale z xpassem)
 - dodac wagi do upscale blendowania
-- parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
 - poprawic faktyczny shader a nie debug by mial tonemap itp
 
 # Done
 
+- parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
+- debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
 - przemyslec jak Draw dostaje dane bo moglby wysylac sygnaly do pipelinow lepiej na bazie swoich zmiennych
 - po co mi w generatorach kompilacja shaderow jak np bloom sam sobie to i tak robi, po co kompilowac shadery ktore nie sa uzywane w kilku miejscach(przeniesc debug do pipu?)
 - przebudowac createBindGroup na mniej zajmujace miejsce
