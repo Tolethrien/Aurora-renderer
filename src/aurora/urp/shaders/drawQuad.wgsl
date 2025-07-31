@@ -80,20 +80,15 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     var out:FragmentOutput;
     out.depth = vec4<f32>(props.z,0,0,0);
-    let color = convertColor(props.color,props.emissive);
+    let color = props.color / 255;
     let index = u32(props.textureIndex);
     let texture = textureSampleLevel(userTextures,universalSampler, props.crop,index,0);
     
     if(texture.w < 0.001){discard;};
     
-    let finalColor = texture * color;
-    out.primary = finalColor;
+    let finalColor = (texture.rgb * color.rgb) * props.emissive;
+    out.primary = vec4<f32>(finalColor,texture.a);
     return out;
 }
 
-fn convertColor(color: vec4f,emissive:f32) -> vec4f {
-    let rgb = color.rgb / 255.0;
-    let a = color.a /255.00;
-  return vec4f(rgb * emissive ,a);
-}
 

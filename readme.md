@@ -66,6 +66,6 @@ bloom HDR + toneMapping(ACES)
 
 ![bloom State](/public/bloom-aces.png)
 
-color Correction
+color Correction Options (hueshifted oversaturated sceen with cold tones)
 
 ![colCor State](/public/colCor.png)

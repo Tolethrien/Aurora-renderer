@@ -81,6 +81,15 @@ export function generateInternalTextures() {
     format: "rgba16float",
     label: "offscreenCanvas",
   });
+  const finalDraw = Aurora.createTextureEmpty({
+    size: {
+      width: Aurora.canvas.width,
+      height: Aurora.canvas.height,
+    },
+    format: "rgba16float",
+    label: "finalDraw",
+    isStorage: true,
+  });
   const depth = Aurora.createTextureEmpty({
     size: {
       width: Aurora.canvas.width,
@@ -106,7 +115,6 @@ export function generateInternalTextures() {
     },
     format: "rgba16float",
     label: "lightMap",
-    isStorage: true,
   });
   //pre fill with "byte white" if there is no lighting pipeline use, so that shader can just multiply everything by 1 (empty would be 0)
   // there is no float16Array so i used uint16 and fill with "white half float" and then multiply by 2 for full float
@@ -160,6 +168,7 @@ export function generateInternalTextures() {
   });
   return new Map([
     ["offscreenCanvas", offscreen],
+    ["finalDraw", finalDraw],
     ["depthTexture", depth],
     ["zBufferDump", zdump],
     ["lightMap", light],

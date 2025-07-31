@@ -258,7 +258,8 @@ export default class BloomPipeline {
           `BloomPipeline: no instruction with pass type: ${passType}`
         );
     });
-    AuroraDebugInfo.accumulate("pipelineInUse", ["bloom"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["Post"]);
+    AuroraDebugInfo.accumulate("usedPostProcessing", ["Bloom"]);
   }
   public static clearPipeline() {}
   public static setBloomParam(

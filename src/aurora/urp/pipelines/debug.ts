@@ -6,7 +6,7 @@ import AuroraDebugInfo from "../debugger/debugInfo";
 import debugTextureShader from "../shaders/debugTexture.wgsl?raw";
 
 /**
- * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
+ * temporary Debug pipeline
  */
 export default class DebuggerPipeline {
   private static pipeline: GPURenderPipeline;
@@ -67,14 +67,18 @@ export default class DebuggerPipeline {
           layout: { texture: { viewDimension: "2d" } },
           resource: Renderer.getTextureView("bloomXPass", 0),
         },
+        {
+          binding: 4,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("finalDraw"),
+        },
       ],
     });
-    const [_, bloomParamsLayout] = Renderer.getBind("bloomParams");
 
     const pipelineLayout = Aurora.createPipelineLayout([
       this.dataBind[1],
       this.texturesBind[1],
-      bloomParamsLayout,
     ]);
     this.pipeline = await Aurora.createRenderPipeline({
       shader: debugShader,
@@ -97,7 +101,6 @@ export default class DebuggerPipeline {
   public static usePipeline(): void {
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
-    const [bloomParams] = Renderer.getBind("bloomParams");
     Aurora.device.queue.writeBuffer(
       this.uniformTexturePicker,
       0,
@@ -124,11 +127,10 @@ export default class DebuggerPipeline {
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.dataBind[0]);
     passEncoder.setBindGroup(1, this.texturesBind[0]);
-    passEncoder.setBindGroup(2, bloomParams);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
-    AuroraDebugInfo.accumulate("pipelineInUse", ["debugTexture"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["DebugTexture"]);
   }
 }

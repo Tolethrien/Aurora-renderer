@@ -8,7 +8,6 @@ import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/batcher/config";
 import Renderer from "./aurora/urp/batcher/renderer";
-import AuroraCamera from "./aurora/urp/camera";
 interface t {
   lightcolor: [number, number, number];
   intence: number;
@@ -48,6 +47,10 @@ async function create() {
   await Renderer.initialize(config);
   const l = 25;
   Renderer.setGlobalIllumination([l, l, l]);
+  Renderer.setScreenSettings({
+    exposure: -0.2,
+    saturation: 0.2,
+  });
 }
 
 function start(timestamp: number) {
@@ -132,28 +135,28 @@ function showLights() {
     emis: 3,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [255, 50, 255],
+    intence: 255,
+    lightcolor: [255, 70, 255],
     pos: [50, 50],
     size: [50, 50],
     emis: 3,
   });
   makeLight({
-    intence: 200,
+    intence: 255,
     lightcolor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
     emis: 3,
   });
   makeLight({
-    intence: 200,
+    intence: 255,
     lightcolor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
     emis: 3,
   });
   makeLight({
-    intence: 200,
+    intence: 255,
     lightcolor: [70, 70, 255],
     pos: [550, 50],
     size: [50, 50],
@@ -168,12 +171,12 @@ function makeLight({ intence, lightcolor, pos, size, emis }: t) {
     tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
     emissive: emis,
   });
-  // Draw.pointLight({
-  //   position: { x: pos[0], y: pos[1] },
-  //   size: { height: size[0] + 300, width: size[1] + 300 },
-  //   tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
-  //   intensity: intence,
-  // });
+  Draw.pointLight({
+    position: { x: pos[0], y: pos[1] },
+    size: { height: size[0] + 300, width: size[1] + 300 },
+    tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
+    intensity: intence,
+  });
 }
 
 await preload();

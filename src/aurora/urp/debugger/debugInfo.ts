@@ -57,7 +57,7 @@ export default class AuroraDebugInfo {
   private static readBuffer: GPUBuffer;
   private static lastFrameTime = 0;
   private static frameTimeStart = 0;
-  public static debugVisibleTextureIndex = new Uint32Array([2]);
+  public static debugVisibleTextureIndex = new Uint32Array([0]);
   //0 offscreen/1 depth
 
   public static get isWorking() {
@@ -132,7 +132,7 @@ export default class AuroraDebugInfo {
     const renderOptions = Renderer.getConfigGroup("rendering");
     this.data.sortOrder = renderOptions.sortOrder;
     this.data.drawOrigin = renderOptions.drawOrigin;
-    this.data.globalIllumination = Renderer.getGlobalIllumination("fullRange");
+    this.data.globalIllumination = Renderer.getGlobalIllumination;
   }
   public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;

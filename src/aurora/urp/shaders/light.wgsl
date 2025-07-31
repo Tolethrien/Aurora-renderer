@@ -44,7 +44,7 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     const FALLOFF_EXPONENT: f32 = 2.0;
-    let color = convertColor(props.color);
+    let color = props.color/255;
     let intensity = color.a;
 
     let radius = props.size.x * 0.5;
@@ -61,7 +61,4 @@ fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     return vec4<f32>(final_rgb, 0);
 }
 
-fn convertColor(color: vec4f) -> vec4f {
-  return color/255;
-}
 

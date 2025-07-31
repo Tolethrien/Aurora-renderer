@@ -67,7 +67,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
 fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   // pxRange (AKA distanceRange) comes from the msdfgen tool. Don McCurdy's tool
   // uses the default which is 4.
-  let color = convertColor(props.color,props.emissive);
+  let color = props.color/255;
   let index = u32(props.textureIndex);
   
   var out:FragmentOutput;
@@ -90,8 +90,9 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
   }
 
   alpha = pow(color.a * alpha, 0.4); // korekta gamma
-  let finalColor = vec4f(color.rgb, alpha);
-  out.primary = finalColor;
+
+  let finalColor = color.rgb * props.emissive;
+  out.primary = vec4<f32>(finalColor,alpha);
   return out;
 
 }
@@ -100,10 +101,4 @@ fn fragmentMain(props : VertexOutput) -> FragmentOutput {
 fn sampleMsdf(texcoord: vec2f,index:u32) -> f32 {
   let c = textureSample(fontsTexture, fontSampler, texcoord,index);
   return max(min(c.r, c.g), min(max(c.r, c.g), c.b));
-}
-
-fn convertColor(color: vec4f,emissive:f32) -> vec4f {
-    let rgb = color.rgb / 255.0;
-    let a = color.a /255.00;
-  return vec4f(rgb * emissive ,a);
 }

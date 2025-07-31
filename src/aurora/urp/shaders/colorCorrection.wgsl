@@ -1,8 +1,11 @@
-@group(0) @binding(0) var inputTexture: texture_2d<f32>;
-@group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;
+@group(0) @binding(0) var offscreenTexture: texture_2d<f32>;
+@group(0) @binding(1) var lightsTexture: texture_2d<f32>;
+@group(0) @binding(2) var bloomTexture: texture_2d<f32>;
+@group(0) @binding(3) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(1) @binding(0) var<uniform> colorCorrection: ColorCorrection;
 
 override workgroupSize: u32 = 8;
+override toneMapping: u32 = 2;
 
 struct ColorCorrection {
     exposure: f32,
@@ -14,17 +17,19 @@ struct ColorCorrection {
     invert: f32,
     tint: vec4<f32>,
 }
-@compute @workgroup_size(workgroupSize,workgroupSize) // Define workgroup size (e.g., 16x16 threads per workgroup)
+@compute @workgroup_size(workgroupSize,workgroupSize) 
 fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
-    let dims = textureDimensions(inputTexture);
+    let dims = textureDimensions(offscreenTexture);
     if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
         return; 
     }
     let tex_coords = vec2<i32>(global_id.xy);
-    var pixel = textureLoad(inputTexture, tex_coords,0);
-    var color = vec3<f32>(pixel.rgb);
-    // --- Color Correction Operations ---
+    let offscreenPixel = textureLoad(offscreenTexture, tex_coords,0);
+    let lightPixel = textureLoad(lightsTexture, tex_coords,0);
+     let bloomPixel = textureLoad(bloomTexture, tex_coords,0); 
+    var color = vec3<f32>((offscreenPixel.rgb * lightPixel.rgb) + bloomPixel.rgb);
+
 
     // Exposure
     color *=  exp2(colorCorrection.exposure);
@@ -34,13 +39,20 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.r += wb/10;
     color.b -= wb/10;
 
-    // Brightness
-    color += colorCorrection.brightness;
+ 
 
+    //toneMap
+    if (toneMapping == 1) {
+        color = reinhard_tone_map(color);
+    } else if (toneMapping == 2) { 
+        color = aces_tone_map(color);
+    } else if (toneMapping == 3) { 
+        color = filmic_tone_map(color);
+    }
+    
     // Contrast
-    let contrast_factor = (colorCorrection.contrast * 1) + 1.0;
-    color = ((color - 1) * contrast_factor) + 1;
-
+    let contrast_factor = (colorCorrection.contrast * 0.5) + 1.0;
+    color = ((color - 0.5) * contrast_factor) + 0.5;
     // Saturation
     let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722)); // Rec. 709 luma
     color = mix(vec3<f32>(luma), color, colorCorrection.saturation + 1.0);
@@ -57,8 +69,13 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     color = color * hue_rotation_matrix;
 
-    // Gamma correction
-    //TODO when we change color ranges to linear 
+
+   // Brightness
+    if (colorCorrection.brightness >= 0.0) {
+        color *= (1.0 + colorCorrection.brightness);
+    } else {
+        color = mix(color, vec3<f32>(0.0), abs(colorCorrection.brightness));
+    }
 
     // Tint 
     color = mix(color, colorCorrection.tint.rgb, colorCorrection.tint.a);
@@ -66,6 +83,26 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     //invert
     let inverted_color = vec3<f32>(1.0, 1.0, 1.0) - color;
     color = mix(color, inverted_color, colorCorrection.invert);
+    
     // Write the processed color to the output texture
-    textureStore(outputTexture, tex_coords, vec4<f32>(color,pixel.a));
+    textureStore(outputTexture, tex_coords, vec4<f32>(color,offscreenPixel.a));
+}
+
+fn reinhard_tone_map(x: vec3f) -> vec3f {
+    return x / (x + vec3<f32>(1.0));
+}
+
+fn aces_tone_map(x: vec3f) -> vec3f {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return (x * (a * x + b)) / (x * (c * x + d) + e);
+}
+
+fn filmic_tone_map(x: vec3f) -> vec3f {
+    let val = max(vec3<f32>(0.0), x - 0.004);
+    let result = (val * (6.2 * x + 0.5)) / (val * (6.2 * x + 1.7) + 0.06);
+    return result;
 }

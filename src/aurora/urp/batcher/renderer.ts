@@ -1,4 +1,4 @@
-import { GPUAuroraTexture, PipelineBind, RGB } from "../../aurora";
+import { GPUAuroraTexture, PipelineBind, RGB, RGBA } from "../../aurora";
 import AuroraCamera from "../camera";
 import {
   compileShaders,
@@ -17,7 +17,10 @@ import BloomPipeline from "../pipelines/bloom";
 import DebuggerPipeline from "../pipelines/debug";
 import PresentationPipeline from "../pipelines/presentation";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import ColorCorrection from "../pipelines/colorCorrection";
+import ColorCorrection, {
+  ColorCorrectionOptions,
+  ScreenSettings,
+} from "../pipelines/colorCorrection";
 
 interface PipelineStaticClass {
   usePipeline(): void;
@@ -26,7 +29,9 @@ interface PipelineStaticClass {
 }
 interface SceneData {
   globalIllumination: RGB;
+  screenSettings: Float32Array;
 }
+
 type DrawPipeline = typeof SortedDrawPipeline | typeof SequentialDrawPipeline;
 export default class Renderer {
   private static auroraConfig: AuroraConfig;
@@ -40,9 +45,8 @@ export default class Renderer {
   private static pipelineOrder: PipelineStaticClass[] = [];
   private static frameEncoder: GPUCommandEncoder;
   public static pipelinesUsedInFrame: Set<string> = new Set();
-  private static sceneData: SceneData = {
-    globalIllumination: [255, 255, 255],
-  };
+  //this object holds all data that is accessible from pipelines but need to be control by user through renderer class
+
   public static async initialize(config: AuroraConfig) {
     this.auroraConfig = config;
 
@@ -84,8 +88,8 @@ export default class Renderer {
         : SortedDrawPipeline;
     this.pipelineOrder.push(drawPipeline);
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
-    this.pipelineOrder.push(ColorCorrection);
     if (config.feature.bloom) this.pipelineOrder.push(BloomPipeline);
+    this.pipelineOrder.push(ColorCorrection);
 
     if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);
     else this.pipelineOrder.push(PresentationPipeline);
@@ -114,6 +118,7 @@ export default class Renderer {
     const userTexture = await Aurora.createTextureArray({
       label: "userTextures",
       textures: this.auroraConfig.userTextures,
+      format: "bgra8unorm",
     });
     this.textures.set("userTexture", userTexture);
     const userTextureBind = Aurora.createBindGroup({
@@ -229,6 +234,7 @@ export default class Renderer {
     assert(buffer !== undefined, this.showNotFoundInMapError(name, "buffer"));
     return buffer;
   }
+
   public static getSampler(name: string) {
     const sampler = this.samplers.get(name);
     assert(sampler !== undefined, this.showNotFoundInMapError(name, "sampler"));
@@ -258,6 +264,15 @@ export default class Renderer {
       baseMipLevel: mipLevel,
     });
   }
+  public static get getAllScreenSettings() {
+    return ColorCorrection.getAllScreenSettings;
+  }
+  public static getScreenSetting(name: keyof typeof ScreenSettings) {
+    return ColorCorrection.getScreenSetting(name);
+  }
+  public static setScreenSettings(settings: Partial<ColorCorrectionOptions>) {
+    return ColorCorrection.setScreenSettings(settings);
+  }
   public static get getEncoder() {
     return this.frameEncoder;
   }
@@ -278,15 +293,11 @@ export default class Renderer {
   public static getDrawPipeline() {
     return this.pipelineOrder[0] as DrawPipeline;
   }
-  public static getGlobalIllumination(type: "fullRange" | "normalized"): RGB {
-    const luna = this.sceneData.globalIllumination;
-    return type === "fullRange"
-      ? luna
-      : [luna[0] / 255, luna[1] / 255, luna[2] / 255];
+  public static get getGlobalIllumination(): RGB {
+    return LightsPipeline.getGlobalIllumination();
   }
-
   public static setGlobalIllumination(color: RGB) {
-    this.sceneData.globalIllumination = color;
+    LightsPipeline.setGlobalIllumination(color);
   }
   public static get getAllConfig() {
     return this.auroraConfig;

@@ -1,3 +1,4 @@
+import { RGB } from "../../aurora";
 import Aurora from "../../core";
 import Renderer from "../batcher/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
@@ -19,6 +20,7 @@ export default class LightsPipeline {
   private static vertexBuffer: GPUBuffer;
   private static addBuffer: GPUBuffer;
   private static bufferNeedResize = false;
+  private static globalIllumination: RGB = [255, 255, 255];
 
   private static batch: BatchNode = {
     vertices: new Float32Array(this.INIT_BATCH_SIZE * this.VERTEX_STRIDE),
@@ -100,7 +102,7 @@ export default class LightsPipeline {
     const [cameraBind] = Renderer.getBind("camera");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
-    const correction = Renderer.getGlobalIllumination("normalized");
+    const correction = this.getNormalizedIllumination;
     Aurora.device.queue.writeBuffer(
       this.vertexBuffer,
       0,
@@ -129,6 +131,19 @@ export default class LightsPipeline {
     AuroraDebugInfo.accumulate("drawCalls", 1);
     AuroraDebugInfo.setParam("drawnLights", this.batch.counter);
 
-    AuroraDebugInfo.accumulate("pipelineInUse", ["lights"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["Lights"]);
+  }
+  public static getGlobalIllumination(): RGB {
+    return this.globalIllumination;
+  }
+  public static setGlobalIllumination(color: RGB) {
+    this.globalIllumination = color;
+  }
+  private static get getNormalizedIllumination(): RGB {
+    return [
+      this.globalIllumination[0] / 255,
+      this.globalIllumination[1] / 255,
+      this.globalIllumination[2] / 255,
+    ];
   }
 }

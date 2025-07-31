@@ -135,7 +135,7 @@ export default class SortedDrawPipeline {
       AuroraDebugInfo.accumulate("drawnQuads", batch.counter);
     });
     Renderer.pipelinesUsedInFrame.add("SortedDrawPipeline");
-    AuroraDebugInfo.accumulate("pipelineInUse", ["sortedDraw"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["SortedDraw"]);
   }
   public static clearPipeline() {
     this.batchList.forEach((shader) => (shader.counter = 0));

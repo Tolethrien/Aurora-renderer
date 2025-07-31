@@ -63,6 +63,7 @@ export default class Aurora {
     });
 
     const format = navigator.gpu.getPreferredCanvasFormat();
+    console.log(format);
     ctx.configure({
       device: this.device,
       format: format,
