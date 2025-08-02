@@ -1,9 +1,9 @@
-override workgroupSize: u32 = 8;
-
 @group(0) @binding(0) var inputTexture: texture_2d<f32>;
 @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(0) @binding(2) var linearSampler: sampler; 
 @group(1) @binding(0) var<uniform> bloomParams: BloomParams;
+
+override workgroupSize: u32 = 8;
 
 struct BloomParams{
     threshold:f32,

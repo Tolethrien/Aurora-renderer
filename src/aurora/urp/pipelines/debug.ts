@@ -1,9 +1,9 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import { ToneMapList } from "../batcher/config";
-import Renderer from "../batcher/renderer";
+import { ToneMapList } from "../renderer/config";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import debugTextureShader from "../shaders/debugTexture.wgsl?raw";
+import debugTextureShader from "../shaders/display/debug.wgsl?raw";
 
 /**
  * temporary Debug pipeline
@@ -30,7 +30,7 @@ export default class DebuggerPipeline {
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
           layout: { sampler: {} },
-          resource: Renderer.getSampler("universal"),
+          resource: Renderer.getSampler("linear"),
         },
         {
           binding: 1,
@@ -93,7 +93,7 @@ export default class DebuggerPipeline {
         },
       ],
       consts: {
-        toneMapping: ToneMapList[Renderer.getAllConfig.HDR.toneMapping],
+        toneMapping: ToneMapList[Renderer.getAllConfig.rendering.toneMapping],
       },
     });
   }
@@ -131,6 +131,6 @@ export default class DebuggerPipeline {
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
-    AuroraDebugInfo.accumulate("pipelineInUse", ["DebugTexture"]);
+    AuroraDebugInfo.accumulate("pipelineInUse", ["Display:Debug"]);
   }
 }

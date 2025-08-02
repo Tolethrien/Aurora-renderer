@@ -1,8 +1,8 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
-import Renderer from "../batcher/renderer";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import lightsShader from "../shaders/light.wgsl?raw";
+import lightsShader from "../shaders/lights/light.wgsl?raw";
 
 interface BatchNode {
   currentBatchSize: number;

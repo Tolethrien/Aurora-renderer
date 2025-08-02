@@ -1,7 +1,10 @@
 import Aurora from "../../core";
-import quad from "../shaders/drawQuad.wgsl?raw";
-import circle from "../shaders/drawCircle.wgsl?raw";
-import textShader from "../shaders/drawText.wgsl?raw";
+import quad from "../shaders/draw/drawQuad.wgsl?raw";
+import circle from "../shaders/draw/drawCircle.wgsl?raw";
+import textShader from "../shaders/draw/drawText.wgsl?raw";
+import { AuroraConfig } from "./config";
+import { assert } from "../../../utils/utils";
+import { Size2D } from "../../aurora";
 export function generateInternalBuffers() {
   //main indexBuffer
   const index = Aurora.createMappedBuffer({
@@ -10,16 +13,6 @@ export function generateInternalBuffers() {
     dataType: "Uint32Array",
     label: "indexBuffer",
   });
-  //Buffer to clearTexture (write to texture) outside of renderTarget
-  const bytesPerRow = Math.ceil((8 * Aurora.canvas.width) / 256) * 256;
-  const bufferSize = bytesPerRow * Aurora.canvas.height;
-  const clearBuffer = Aurora.device.createBuffer({
-    size: bufferSize,
-    usage: GPUBufferUsage.COPY_SRC,
-    mappedAtCreation: true,
-  });
-  new Uint8Array(clearBuffer.getMappedRange()).fill(0);
-  clearBuffer.unmap();
 
   //bloom params buffer
   const bloomParams = Aurora.createBuffer({
@@ -42,13 +35,14 @@ export function generateInternalBuffers() {
   });
   return new Map([
     ["index", index],
-    ["clearTexture", clearBuffer],
     ["bloomParams", bloomParams],
     ["cameraMatrix", cameraMatrix],
     ["cameraBounds", cameraBounds],
   ]);
 }
-export function generateInternalTextures() {
+export function generateInternalTextures(res: Size2D, bloomMip: number) {
+  const canvasWidth = res.width;
+  const canvasHeight = res.height;
   //offscreen - init texture
   // lights - all light baking
   // depth - zbuffer
@@ -73,18 +67,19 @@ export function generateInternalTextures() {
    * lastPing + ui -> screen
    *
    */
+
   const offscreen = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "rgba16float",
     label: "offscreenCanvas",
   });
   const finalDraw = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "rgba16float",
     label: "finalDraw",
@@ -92,8 +87,8 @@ export function generateInternalTextures() {
   });
   const depth = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "depth24plus",
     label: "z-buffer Texture",
@@ -101,8 +96,8 @@ export function generateInternalTextures() {
 
   const zdump = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "r16float",
     label: "zBufferDump",
@@ -110,61 +105,68 @@ export function generateInternalTextures() {
 
   const light = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "rgba16float",
     label: "lightMap",
   });
   //pre fill with "byte white" if there is no lighting pipeline use, so that shader can just multiply everything by 1 (empty would be 0)
   // there is no float16Array so i used uint16 and fill with "white half float" and then multiply by 2 for full float
-  const pixels = new Uint16Array(
-    Aurora.canvas.width * Aurora.canvas.height * 4
-  ).fill(0x3c00);
+  const pixels = new Uint16Array(canvasWidth * canvasHeight * 4).fill(0x3c00);
   Aurora.device.queue.writeTexture(
     {
       texture: light.texture,
     },
     pixels,
     {
-      bytesPerRow: Aurora.canvas.width * 4 * 2,
-      rowsPerImage: Aurora.canvas.height,
+      bytesPerRow: canvasWidth * 4 * 2,
+      rowsPerImage: canvasHeight,
     },
     {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     }
   );
 
   const bloomThreshold = Aurora.createTextureEmpty({
     size: {
-      width: Aurora.canvas.width,
-      height: Aurora.canvas.height,
+      width: canvasWidth,
+      height: canvasHeight,
     },
     format: "rgba16float",
     label: "bloomThreshold",
     isStorage: true,
   });
+  const bloomEffect = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "rgba16float",
+    label: "bloomEffect",
+    isStorage: true,
+  });
 
   const bloomXPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width,
-      h: Aurora.canvas.height,
+      w: canvasWidth / 2,
+      h: canvasHeight / 2,
     },
     format: "rgba16float",
     label: "bloomXPass",
     isStorage: true,
-    mipCount: 4,
+    mipCount: bloomMip,
   });
   const bloomYPass = Aurora.createEmptyMipTexture({
     size: {
-      w: Aurora.canvas.width,
-      h: Aurora.canvas.height,
+      w: canvasWidth / 2,
+      h: canvasHeight / 2,
     },
     format: "rgba16float",
     label: "bloomYPass",
     isStorage: true,
-    mipCount: 4,
+    mipCount: bloomMip,
   });
   return new Map([
     ["offscreenCanvas", offscreen],
@@ -173,6 +175,7 @@ export function generateInternalTextures() {
     ["zBufferDump", zdump],
     ["lightMap", light],
     ["bloomThreshold", bloomThreshold],
+    ["bloomEffect", bloomEffect],
     ["bloomXPass", bloomXPass],
     ["bloomYPass", bloomYPass],
   ]);

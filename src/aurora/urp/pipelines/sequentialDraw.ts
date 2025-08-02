@@ -1,5 +1,5 @@
 import Aurora from "../../core";
-import Renderer from "../batcher/renderer";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 
 const USED_SHADERS = ["quad", "circle", "text"] as const;

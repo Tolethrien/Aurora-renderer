@@ -1,5 +1,5 @@
 import Aurora from "../../core";
-import Renderer from "../batcher/renderer";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 //POPRAWKI POTEM:
 // trzymac gdzies generalnie shadery bo po co generowac takie same

@@ -1,8 +1,8 @@
 import { PipelineBind } from "../../aurora";
 import Aurora from "../../core";
-import Renderer from "../batcher/renderer";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import presentationShader from "../shaders/presentation.wgsl?raw";
+import presentationShader from "../shaders/display/presentation.wgsl?raw";
 
 /**
  * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!

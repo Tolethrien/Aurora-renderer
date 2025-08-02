@@ -1,9 +1,8 @@
 import { RGBA, Position2D, Size2D, RGB } from "../aurora";
-import FontGen, { MsdfChar } from "./batcher/fontGen";
+import FontGen, { MsdfChar } from "./renderer/fontGen";
 import AuroraCamera from "./camera";
 import LightsPipe from "./pipelines/lights";
-import BloomPipeline from "./pipelines/bloom";
-import Renderer from "./batcher/renderer";
+import Renderer from "./renderer/renderer";
 
 interface BaseDraw {
   position: Position2D;

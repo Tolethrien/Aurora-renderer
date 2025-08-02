@@ -2,8 +2,8 @@ import Mat4 from "../../utils/mat4";
 import { assert } from "../../utils/utils";
 import { PipelineBind } from "../aurora";
 import Aurora from "../core";
-import Aurora2DRenderer from "./batcher/renderer";
-import { AuroraConfig } from "./batcher/config";
+import Aurora2DRenderer from "./renderer/renderer";
+import { AuroraConfig } from "./renderer/config";
 type CameraZoom = { current: number; max: number; min: number };
 type CameraPosition = { x: number; y: number };
 const cameraData = {

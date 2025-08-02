@@ -1,4 +1,4 @@
-import { GPUAuroraTexture, PipelineBind, RGB, RGBA } from "../../aurora";
+import { GPUAuroraTexture, PipelineBind, RGB, Size2D } from "../../aurora";
 import AuroraCamera from "../camera";
 import {
   compileShaders,
@@ -13,7 +13,6 @@ import FontGen from "./fontGen";
 import SequentialDrawPipeline from "../pipelines/sequentialDraw";
 import SortedDrawPipeline from "../pipelines/sortedDraw";
 import LightsPipeline from "../pipelines/lights";
-import BloomPipeline from "../pipelines/bloom";
 import DebuggerPipeline from "../pipelines/debug";
 import PresentationPipeline from "../pipelines/presentation";
 import AuroraDebugInfo from "../debugger/debugInfo";
@@ -21,15 +20,12 @@ import ColorCorrection, {
   ColorCorrectionOptions,
   ScreenSettings,
 } from "../pipelines/colorCorrection";
+import Bloom from "../pipelines/bloom";
 
 interface PipelineStaticClass {
   usePipeline(): void;
   clearPipeline(): void;
   createPipeline(): void;
-}
-interface SceneData {
-  globalIllumination: RGB;
-  screenSettings: Float32Array;
 }
 
 type DrawPipeline = typeof SortedDrawPipeline | typeof SequentialDrawPipeline;
@@ -45,7 +41,7 @@ export default class Renderer {
   private static pipelineOrder: PipelineStaticClass[] = [];
   private static frameEncoder: GPUCommandEncoder;
   public static pipelinesUsedInFrame: Set<string> = new Set();
-  //this object holds all data that is accessible from pipelines but need to be control by user through renderer class
+  private static currentRes: Size2D = { width: 800, height: 600 };
 
   public static async initialize(config: AuroraConfig) {
     this.auroraConfig = config;
@@ -54,7 +50,11 @@ export default class Renderer {
 
     this.buffers = generateInternalBuffers();
     this.generateGlobalBindGroups();
-    this.textures = generateInternalTextures();
+    this.currentRes = this.getCurrentResolution();
+    this.textures = generateInternalTextures(
+      this.currentRes,
+      this.auroraConfig.bloom.numberOfPasses
+    );
     this.samplers = generateInternalSamplers();
     this.shaders = compileShaders();
     await this.uploadUserTextures();
@@ -88,9 +88,8 @@ export default class Renderer {
         : SortedDrawPipeline;
     this.pipelineOrder.push(drawPipeline);
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
-    if (config.feature.bloom) this.pipelineOrder.push(BloomPipeline);
+    if (config.feature.bloom) this.pipelineOrder.push(Bloom);
     this.pipelineOrder.push(ColorCorrection);
-
     if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);
     else this.pipelineOrder.push(PresentationPipeline);
   }
@@ -263,6 +262,19 @@ export default class Renderer {
       mipLevelCount: 1,
       baseMipLevel: mipLevel,
     });
+  }
+  public static getCurrentResolution(): Size2D {
+    const stringRes = this.auroraConfig.rendering.renderRes;
+    const renderRes = stringRes.split("x");
+    assert(
+      renderRes.length === 2,
+      `problem with resolving resolution ${stringRes}, there are no two values split by "x"`
+    );
+    let renderWidth = Number(renderRes[0]);
+    let renderHeight = Number(renderRes[1]);
+    assert(typeof renderWidth === "number", `width:${renderWidth} is NaN`);
+    assert(typeof renderHeight === "number", `height:${renderWidth} is NaN`);
+    return { width: renderWidth, height: renderHeight };
   }
   public static get getAllScreenSettings() {
     return ColorCorrection.getAllScreenSettings;

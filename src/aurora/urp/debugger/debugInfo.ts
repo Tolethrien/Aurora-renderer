@@ -1,13 +1,13 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
-import { AuroraConfig } from "../batcher/config";
-import Renderer from "../batcher/renderer";
+import { AuroraConfig } from "../renderer/config";
+import Renderer from "../renderer/renderer";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
   "lightMap",
   "zBufferDump",
-  "HDR",
+  "Bloom",
 ] as const;
 type textures = (typeof TEXTURES_TO_SHOW)[number];
 interface DebugData {

@@ -5,12 +5,12 @@
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
 - zrobic debuuger na process.env by dzialal tree-shaking
-- mniej compute passow na bloomie (polacz downscale z xpassem)
 - dodac wagi do upscale blendowania
 - poprawic faktyczny shader a nie debug by mial tonemap itp
 
 # Done
 
+- mniej compute passow na bloomie (polacz downscale z xpassem)
 - parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
 - przemyslec jak Draw dostaje dane bo moglby wysylac sygnaly do pipelinow lepiej na bazie swoich zmiennych
@@ -64,7 +64,7 @@
 [x] debug gpu (wyciaganie timestampow itp)
 [z] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
 [ ] UI pipeline(no camera no Y sort inne text renderowanie)
-[ ] pixelDencity/deviceRatio
+[x] pixelDencity/deviceRatio
 [ ] post-processing
 [x] budowane w shaderach swiatlo
 [x] bloom
@@ -76,4 +76,3 @@
 [ ] sposoby renderowania - ortho/izo
 [ ] path2d (shape)
 [ ] lepsze budowanie shaderow z fragmentow kodu (by nie powtarzac tego samego kodu w 4 plikach shaderow tylko jakos je budowac/laczyc)
-[ ]

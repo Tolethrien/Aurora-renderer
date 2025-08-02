@@ -1,9 +1,9 @@
 import { PipelineBind, RGBA } from "../../aurora";
 import Aurora from "../../core";
-import { AuroraConfig, ToneMapList } from "../batcher/config";
-import Renderer from "../batcher/renderer";
+import { AuroraConfig, ToneMapList } from "../renderer/config";
+import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
-import colorShader from "../shaders/colorCorrection.wgsl?raw";
+import colorShader from "../shaders/display/colorCorrection.wgsl?raw";
 export interface ColorCorrectionOptions {
   exposure: number;
   saturation: number;
@@ -84,7 +84,7 @@ export default class ColorCorrection {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
           layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("bloomXPass", 0),
+          resource: Renderer.getTextureView("bloomEffect"),
         },
         {
           binding: 3,
@@ -122,7 +122,7 @@ export default class ColorCorrection {
       pipelineLayout: pipelineLayout,
       consts: {
         workgroupSize: this.groupSize,
-        toneMapping: ToneMapList[Renderer.getAllConfig.HDR.toneMapping],
+        toneMapping: ToneMapList[Renderer.getAllConfig.rendering.toneMapping],
       },
     });
   }

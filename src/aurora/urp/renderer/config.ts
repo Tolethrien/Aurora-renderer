@@ -18,9 +18,6 @@ export enum ToneMapList {
   filmic,
 }
 export interface AuroraConfig {
-  HDR: {
-    toneMapping: ToneMaps;
-  };
   feature: {
     bloom: boolean;
     lighting: boolean;
@@ -34,6 +31,7 @@ export interface AuroraConfig {
   rendering: {
     renderRes: RenderRes;
     drawOrigin: "center" | "topLeft";
+    toneMapping: ToneMaps;
     sortOrder: SortOrder;
     transparentCanvas: boolean;
     canvasColor: RGBA;
@@ -44,11 +42,6 @@ export interface AuroraConfig {
     zoom: { min: number; max: number };
     speed: number;
   };
-  screen: {
-    colorCorrection: RGB;
-    saturation: number;
-    exposure: number;
-  };
   debugger: Profiler;
   userTextures: UserTexture[];
   userFonts: FontGenProps[];
@@ -58,20 +51,15 @@ const INIT_OPTIONS: AuroraConfig = {
     bloom: true,
     lighting: true,
   },
-  bloom: { intense: 0.7, knee: 0.2, threshold: 1, numberOfPasses: 3 },
-  HDR: { toneMapping: "aces" },
+  bloom: { intense: 0.7, knee: 0.2, threshold: 1, numberOfPasses: 4 },
   rendering: {
     drawOrigin: "center",
     renderRes: "800x600",
+    toneMapping: "aces",
     sortOrder: "y",
     transparentCanvas: false,
     canvasColor: [255, 255, 255, 255],
     computeGroupSize: 8,
-  },
-  screen: {
-    colorCorrection: [255, 255, 255],
-    exposure: 1,
-    saturation: 1,
   },
   camera: {
     builtInCameraInputs: true,

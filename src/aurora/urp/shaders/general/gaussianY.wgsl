@@ -1,9 +1,8 @@
-override workgroupSize: u32 = 8;
-
 @group(0) @binding(0) var inputTexture: texture_2d<f32>;
 @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(1) @binding(0) var<uniform> mipLevel: u32; 
 
+override workgroupSize: u32 = 8;
 const weights = array<f32, 5>(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 const offsets = array<i32, 5>(0, 1, 2, 3, 4);
 
