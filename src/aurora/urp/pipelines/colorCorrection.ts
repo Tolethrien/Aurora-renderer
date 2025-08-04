@@ -111,10 +111,13 @@ export default class ColorCorrection {
         },
       ],
     });
+    const [_, bloomParamsLayout] = Renderer.getBind("bloomParams");
+
     this.groupSize = Renderer.getConfigGroup("rendering").computeGroupSize;
     const pipelineLayout = Aurora.createPipelineLayout([
       this.textureBind[1],
       this.optionBind[1],
+      bloomParamsLayout,
     ]);
     this.pipeline = await Aurora.createComputePipeline({
       shader: shader,
@@ -129,6 +132,7 @@ export default class ColorCorrection {
   public static usePipeline() {
     const commandEncoder = Renderer.getEncoder;
     const { meta } = Renderer.getTexture("finalDraw");
+    const [bloomParams] = Renderer.getBind("bloomParams");
     const size = {
       x: Math.ceil(meta.width / this.groupSize),
       y: Math.ceil(meta.height / this.groupSize),
@@ -140,6 +144,7 @@ export default class ColorCorrection {
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.textureBind[0]);
     passEncoder.setBindGroup(1, this.optionBind[0]);
+    passEncoder.setBindGroup(2, bloomParams);
     passEncoder.dispatchWorkgroups(size.x, size.y);
     passEncoder.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);

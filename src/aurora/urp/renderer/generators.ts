@@ -129,14 +129,15 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     }
   );
 
-  const bloomThreshold = Aurora.createTextureEmpty({
+  const bloomThreshold = Aurora.createEmptyMipTexture({
     size: {
-      width: canvasWidth,
-      height: canvasHeight,
+      w: canvasWidth,
+      h: canvasHeight,
     },
     format: "rgba16float",
     label: "bloomThreshold",
     isStorage: true,
+    mipCount: 2,
   });
   const bloomEffect = Aurora.createTextureEmpty({
     size: {

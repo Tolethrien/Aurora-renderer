@@ -65,7 +65,7 @@ export default class DebuggerPipeline {
           binding: 3,
           visibility: GPUShaderStage.FRAGMENT,
           layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("bloomXPass", 0),
+          resource: Renderer.getTextureView("bloomEffect", 0),
         },
         {
           binding: 4,

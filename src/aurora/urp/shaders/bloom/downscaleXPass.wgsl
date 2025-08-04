@@ -4,7 +4,7 @@
 
 override workgroupSize: u32 = 8;
 const weights = array<f32, 5>(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
-const offsets = array<f32, 5>(0, 3, 5, 7, 9); 
+const offsets = array<f32, 5>(1,1,2,4,4); 
 
 @compute @workgroup_size(workgroupSize, workgroupSize)
 fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {

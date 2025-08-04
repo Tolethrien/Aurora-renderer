@@ -34,6 +34,7 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let luminance = dot(sampledColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 
+
     if (luminance > thresholdValue) {
         let bloomFactor = max(0.0, luminance - thresholdValue); 
         let softFactor = bloomFactor / kneeValue; 

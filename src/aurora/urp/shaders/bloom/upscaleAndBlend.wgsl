@@ -3,14 +3,9 @@
 @group(0) @binding(1) var currentLevelTexture: texture_2d<f32>;
 @group(0) @binding(2) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(0) @binding(3) var linearSampler: sampler;
-@group(1) @binding(0) var<uniform> bloomParams: BloomParams;
 
 override workgroupSize: u32 = 8;
-struct BloomParams{
-    threshold:f32,
-    thresholdSoftness:f32,
-    bloomIntense:f32
-};
+
 @compute @workgroup_size(workgroupSize, workgroupSize)
 fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outputSize = vec2<f32>(textureDimensions(outputTexture));
@@ -23,7 +18,7 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let upscaledBlurColor = textureSampleLevel(lowerResBlurTexture, linearSampler, uv, 0.0);
     let currentLevelColor = textureSampleLevel(currentLevelTexture, linearSampler, uv, 0.0);
-    let blendedColor = (upscaledBlurColor * bloomParams.bloomIntense) +  currentLevelColor;
+    let blendedColor = upscaledBlurColor * 0.8 + currentLevelColor;
 
     textureStore(outputTexture, global_id.xy, blendedColor);
 }

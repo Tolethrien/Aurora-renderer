@@ -79,22 +79,17 @@ export default class AuroraCamera {
   }
   public static update(buffer: GPUBuffer) {
     if (this.useInputs) this.updateControls();
-    const roundedX = Math.round(this.position.x);
-    const roundedY = Math.round(this.position.y);
-    const centerX = Aurora.canvas.width / 2;
-    const centerY = Aurora.canvas.height / 2;
-    const { width, height } = Aurora.canvas;
-    this.projectionMatrix.ortho(0, width, height, 0, 0, 1);
-    this.viewMatrix
-      .identity()
-      .translate([centerX, centerY, 0])
-      .scale([this.zoom.current, this.zoom.current, 1])
-      .translate([-roundedX, -roundedY, 0]);
-
-    this.projectionViewMatrix = this.projectionMatrix
-      .clone()
-      .multiply(this.viewMatrix);
-
+    this.projectionViewMatrix = Mat4.create()
+      .ortho(
+        this.position.x * this.zoom.current - Aurora.canvas.width / 2,
+        this.position.x * this.zoom.current + Aurora.canvas.width / 2,
+        this.position.y * this.zoom.current + Aurora.canvas.height / 2,
+        this.position.y * this.zoom.current - Aurora.canvas.height / 2,
+        1,
+        1
+      )
+      .multiply(this.viewMatrix)
+      .scale(this.zoom.current);
     Aurora.device.queue.writeBuffer(
       buffer,
       0,

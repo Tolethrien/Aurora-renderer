@@ -31,8 +31,11 @@ const config = auroraConfig({
     bloom: true,
     lighting: true,
   },
-
-  rendering: { toneMapping: "aces", sortOrder: "y" },
+  bloom: {
+    numberOfPasses: 4,
+    intense: 1.4,
+  },
+  rendering: { toneMapping: "aces", sortOrder: "y", renderRes: "800x600" },
 });
 
 async function preload() {
@@ -43,7 +46,7 @@ async function preload() {
 
 async function create() {
   await Renderer.initialize(config);
-  const l = 25;
+  const l = 50;
   Renderer.setGlobalIllumination([l, l, l]);
   Renderer.setScreenSettings({
     exposure: -0.2,
@@ -61,7 +64,7 @@ function start(timestamp: number) {
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(60, true);
+  // AuroraDebugInfo.displayEveryFrame(60, true);
   // x++;
   requestAnimationFrame(start);
 }
@@ -144,14 +147,14 @@ function showLights() {
     lightcolor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
-    emis: 3,
+    emis: 2,
   });
   makeLight({
     intence: 200,
     lightcolor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
-    emis: 3,
+    emis: 2,
   });
   makeLight({
     intence: 200,

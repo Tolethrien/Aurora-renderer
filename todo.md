@@ -5,8 +5,8 @@
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
 - zrobic debuuger na process.env by dzialal tree-shaking
-- dodac wagi do upscale blendowania
 - poprawic faktyczny shader a nie debug by mial tonemap itp
+- po zmniejszeniu obrazu bloo nie wyglada tak ladnie jak na poczatku
 
 # Done
 

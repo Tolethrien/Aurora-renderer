@@ -20,6 +20,7 @@ export default class Bloom {
   private static pipelines: Map<string, GPUComputePipeline> = new Map();
   private static orderList: string[] = [];
   private static GROUP_SIZE = 8;
+  private static DEBUG = false;
 
   public static async createPipeline() {
     const config = Renderer.getConfigGroup("bloom");
@@ -123,11 +124,11 @@ export default class Bloom {
       );
       this.bindList.set(`x-${mipLevel}`, bind);
       this.orderList.push("x");
-      // console.log(
-      //   `PassX: input:${textureToUse}-mip:${
-      //     inputMip - 1
-      //   } => output:bloomXPass-mip:${mipLevel}`
-      // );
+      this.log(
+        `PassX: input:${textureToUse}-mip:${
+          inputMip - 1
+        } => output:bloomXPass-mip:${mipLevel}`
+      );
     } else {
       const layout = this.getLayout("y");
       input = Renderer.getTextureView("bloomXPass", pass);
@@ -151,9 +152,9 @@ export default class Bloom {
       this.bindList.set(`y-${mipLevel}`, bind);
       this.orderList.push("y");
 
-      // console.log(
-      //   `PassY: input:bloomXPass-mip:${mipLevel} => output:bloomYPass-mip:${mipLevel}`
-      // );
+      this.log(
+        `PassY: input:bloomXPass-mip:${mipLevel} => output:bloomYPass-mip:${mipLevel}`
+      );
     }
   }
   private static createUpscaleBindFromLayout(passIndex: number) {
@@ -199,13 +200,13 @@ export default class Bloom {
     );
     this.bindList.set(`upscale-${passIndex}`, bind);
     this.orderList.push("upscale");
-    // console.log(
-    //   `upscale: inputs:(bloom${
-    //     isFirstUpscale ? "Y" : "X"
-    //   }Pass-mip${passIndex},bloomYPass-mip${
-    //     passIndex - 1
-    //   } ) => output:bloomXPass-mip:${passIndex - 1}`
-    // );
+    this.log(
+      `upscale: inputs:(bloom${
+        isFirstUpscale ? "Y" : "X"
+      }Pass-mip${passIndex},bloomYPass-mip${
+        passIndex - 1
+      } ) => output:bloomXPass-mip:${passIndex - 1}`
+    );
   }
   private static createPresentationBind() {
     const bind = Aurora.createBindGroup({
@@ -245,7 +246,7 @@ export default class Bloom {
     this.bindLayouts.set("bloomPresent", bind[1]);
     this.bindList.set("bloomPresent-0", bind[0]);
     this.orderList.push("bloomPresent");
-    // console.log(`present: input:bloomX-mip:0 => finalBloom-mip:0`);
+    this.log(`present: input:bloomX-mip:0 => finalBloom-mip:0`);
   }
   private static generateLayouts() {
     const xPass = Aurora.createBindLayout({
@@ -362,7 +363,7 @@ export default class Bloom {
     this.bindLayouts.set("threshold", bind[1]);
     this.bindList.set("threshold-0", bind[0]);
     this.orderList.push("threshold");
-    // console.log(`Pass: getThreshold`);
+    this.log(`Pass: getThreshold`);
   }
   private static async createPipelines() {
     const bloomXShader = Aurora.createShader("bloomX", bloomX);
@@ -451,5 +452,8 @@ export default class Bloom {
       `bloom pipeline with name ${name} not found`
     );
     return pipeline;
+  }
+  private static log(msg: string) {
+    if (this.DEBUG) console.log(msg);
   }
 }

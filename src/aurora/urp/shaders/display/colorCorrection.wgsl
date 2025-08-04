@@ -3,9 +3,17 @@
 @group(0) @binding(2) var bloomTexture: texture_2d<f32>;
 @group(0) @binding(3) var outputTexture: texture_storage_2d<rgba16float, write>;
 @group(1) @binding(0) var<uniform> colorCorrection: ColorCorrection;
+@group(2) @binding(0) var<uniform> bloomParams: BloomParams;
+
 
 override workgroupSize: u32 = 8;
 override toneMapping: u32 = 2;
+
+struct BloomParams{
+    threshold:f32,
+    thresholdSoftness:f32,
+    bloomIntense:f32
+};
 
 struct ColorCorrection {
     exposure: f32,
@@ -28,7 +36,9 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offscreenPixel = textureLoad(offscreenTexture, tex_coords,0);
     let lightPixel = textureLoad(lightsTexture, tex_coords,0);
      let bloomPixel = textureLoad(bloomTexture, tex_coords,0); 
-    var color = vec3<f32>((offscreenPixel.rgb * lightPixel.rgb) + bloomPixel.rgb);
+    var color = vec3<f32>((offscreenPixel.rgb * lightPixel.rgb) + bloomPixel.rgb * bloomParams.bloomIntense);
+    
+    
 
 
     // Exposure
