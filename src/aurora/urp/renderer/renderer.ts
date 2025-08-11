@@ -21,6 +21,8 @@ import ColorCorrection, {
   ScreenSettings,
 } from "../pipelines/colorCorrection";
 import Bloom from "../pipelines/bloom";
+import GuiPipeline from "../pipelines/gui";
+import TempText from "../../../helps/futureTextPipe";
 
 interface PipelineStaticClass {
   usePipeline(): void;
@@ -90,6 +92,7 @@ export default class Renderer {
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
     if (config.feature.bloom) this.pipelineOrder.push(Bloom);
     this.pipelineOrder.push(ColorCorrection);
+    this.pipelineOrder.push(GuiPipeline);
     if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);
     else this.pipelineOrder.push(PresentationPipeline);
   }
@@ -305,6 +308,7 @@ export default class Renderer {
   public static getDrawPipeline() {
     return this.pipelineOrder[0] as DrawPipeline;
   }
+
   public static get getGlobalIllumination(): RGB {
     return LightsPipeline.getGlobalIllumination();
   }

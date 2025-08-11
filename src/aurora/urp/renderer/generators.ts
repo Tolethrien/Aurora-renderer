@@ -1,7 +1,8 @@
 import Aurora from "../../core";
 import quad from "../shaders/draw/drawQuad.wgsl?raw";
-import circle from "../shaders/draw/drawCircle.wgsl?raw";
 import textShader from "../shaders/draw/drawText.wgsl?raw";
+import guiTextShader from "../shaders/draw/drawGuiText.wgsl?raw";
+import guiShader from "../shaders/draw/drawGui.wgsl?raw";
 import { AuroraConfig } from "./config";
 import { assert } from "../../../utils/utils";
 import { Size2D } from "../../aurora";
@@ -76,6 +77,14 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     format: "rgba16float",
     label: "offscreenCanvas",
   });
+  const gui = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "bgra8unorm",
+    label: "GUI",
+  });
   const finalDraw = Aurora.createTextureEmpty({
     size: {
       width: canvasWidth,
@@ -92,6 +101,14 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     },
     format: "depth24plus",
     label: "z-buffer Texture",
+  });
+  const depthUi = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "depth24plus",
+    label: "z-bufferUI Texture",
   });
 
   const zdump = Aurora.createTextureEmpty({
@@ -171,8 +188,10 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
   });
   return new Map([
     ["offscreenCanvas", offscreen],
+    ["gui", gui],
     ["finalDraw", finalDraw],
     ["depthTexture", depth],
+    ["depthUI", depthUi],
     ["zBufferDump", zdump],
     ["lightMap", light],
     ["bloomThreshold", bloomThreshold],
@@ -208,12 +227,14 @@ export function generateInternalSamplers() {
 }
 export function compileShaders() {
   const quadShader = Aurora.createShader("quadShader", quad);
-  const circleShader = Aurora.createShader("circleShader", circle);
+  const gui = Aurora.createShader("guiShader", guiShader);
   const text = Aurora.createShader("textShader", textShader);
+  const guiText = Aurora.createShader("guiTextShader", guiTextShader);
 
   return new Map([
     ["quadShader", quadShader],
-    ["circleShader", circleShader],
+    ["guiShader", gui],
     ["textShader", text],
+    ["guiTextShader", guiText],
   ]);
 }

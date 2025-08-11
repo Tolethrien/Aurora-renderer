@@ -57,7 +57,8 @@ fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
 
     let attenuation = pow(max(0.0, 1.0 - dist_norm * dist_norm), FALLOFF_EXPONENT);
     let final_rgb = color.rgb * intensity * attenuation;
-
+    
+    
     return vec4<f32>(final_rgb, 0);
 }
 

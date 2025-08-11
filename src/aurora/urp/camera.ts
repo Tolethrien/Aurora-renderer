@@ -1,6 +1,5 @@
 import Mat4 from "../../utils/mat4";
-import { assert } from "../../utils/utils";
-import { PipelineBind } from "../aurora";
+import { Position2D } from "../aurora";
 import Aurora from "../core";
 import Aurora2DRenderer from "./renderer/renderer";
 import { AuroraConfig } from "./renderer/config";
@@ -11,7 +10,6 @@ const cameraData = {
 };
 
 export default class AuroraCamera {
-  // private static view: Mat4;
   private static position: CameraPosition = { x: 0, y: 0 };
   private static speed: number;
   private static zoom: CameraZoom = {
@@ -19,31 +17,20 @@ export default class AuroraCamera {
     max: 0,
     min: 0,
   };
-  private static buildInCameraBind: PipelineBind | undefined;
   private static cameraBounds = new Float32Array([Infinity, -Infinity]);
   private static useInputs: boolean = false;
-  private static projectionMatrix: Mat4;
-  private static viewMatrix: Mat4;
   private static projectionViewMatrix: Mat4;
+  private static origin: Position2D;
 
   public static initialize(config: AuroraConfig["camera"]) {
-    this.projectionViewMatrix = Mat4.create();
-    // this.view = Mat4.create().lookAt([0, 0, 0], [0, 0, 0], [0, 1, 0]);
-    this.projectionMatrix = Mat4.create();
-    this.viewMatrix = Mat4.create();
-    this.projectionViewMatrix = Mat4.create().ortho(
-      0,
-      Aurora.canvas.width,
-      Aurora.canvas.height,
-      0,
-      0,
-      1
-    );
-    this.position.x = Aurora.canvas.width / 2;
-    this.position.y = Aurora.canvas.height / 2;
-
+    const width = Aurora.canvas.width;
+    const height = Aurora.canvas.height;
+    this.projectionViewMatrix = Mat4.create().ortho(0, width, height, 0, 1, 1);
+    this.origin = { x: width / 2, y: height / 2 };
+    this.position = { x: width / 2, y: height / 2 };
     this.speed = config.speed;
     this.zoom = { current: 1, max: config.zoom.max, min: config.zoom.min };
+
     if (config.builtInCameraInputs) {
       window.onkeydown = (event: KeyboardEvent) => {
         const pressedKey = event.key === " " ? "space" : event.key;
@@ -78,18 +65,16 @@ export default class AuroraCamera {
     //===========================================
   }
   public static update(buffer: GPUBuffer) {
+    const width = Aurora.canvas.width;
+    const height = Aurora.canvas.height;
     if (this.useInputs) this.updateControls();
+
     this.projectionViewMatrix = Mat4.create()
-      .ortho(
-        this.position.x * this.zoom.current - Aurora.canvas.width / 2,
-        this.position.x * this.zoom.current + Aurora.canvas.width / 2,
-        this.position.y * this.zoom.current + Aurora.canvas.height / 2,
-        this.position.y * this.zoom.current - Aurora.canvas.height / 2,
-        1,
-        1
-      )
-      .multiply(this.viewMatrix)
-      .scale(this.zoom.current);
+      .ortho(0, width, height, 0, 0, 1)
+      .translate([this.origin.x, this.origin.y, 0])
+      .scale(this.zoom.current)
+      .translate([-this.position.x, -this.position.y, 0]);
+
     Aurora.device.queue.writeBuffer(
       buffer,
       0,
@@ -102,16 +87,26 @@ export default class AuroraCamera {
     else if (cameraData.keyPressed.has("a")) this.position.x -= this.speed;
     if (cameraData.keyPressed.has("w")) this.position.y -= this.speed;
     else if (cameraData.keyPressed.has("s")) this.position.y += this.speed;
-    if (cameraData.keyPressed.has("ArrowUp"))
+    if (cameraData.keyPressed.has("ArrowDown"))
       this.zoom.current > this.zoom.min &&
         (this.zoom.current -= 0.01 * Math.log(this.zoom.current + 1));
-    else if (cameraData.keyPressed.has("ArrowDown"))
+    else if (cameraData.keyPressed.has("ArrowUp"))
       this.zoom.current < this.zoom.max &&
         (this.zoom.current += 0.01 * Math.log(this.zoom.current + 1));
   }
   public static updateCameraBound(buffer: GPUBuffer) {
     Aurora.device.queue.writeBuffer(buffer, 0, this.cameraBounds);
   }
+  public static move(pos: Position2D) {
+    this.position = pos;
+  }
+  public static setOrigin(pos: Position2D) {
+    this.origin = pos;
+  }
+  public static scale(zoom: number) {
+    this.zoom.current = zoom;
+  }
+
   public static setCameraBounds(y: number, h: number) {
     const top = y;
     const bottom = y + h;

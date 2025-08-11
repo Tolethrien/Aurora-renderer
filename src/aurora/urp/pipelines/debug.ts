@@ -73,6 +73,12 @@ export default class DebuggerPipeline {
           layout: { texture: { viewDimension: "2d" } },
           resource: Renderer.getTextureView("finalDraw"),
         },
+        {
+          binding: 5,
+          visibility: GPUShaderStage.FRAGMENT,
+          layout: { texture: { viewDimension: "2d" } },
+          resource: Renderer.getTextureView("gui"),
+        },
       ],
     });
 

@@ -6,7 +6,7 @@ import lightsShader from "../shaders/lights/light.wgsl?raw";
 
 interface BatchNode {
   currentBatchSize: number;
-  vertices: Float32Array;
+  vertices: Float32Array<ArrayBuffer>;
   counter: number;
 }
 /**
@@ -44,6 +44,7 @@ export default class LightsPipeline {
   }
   public static async createPipeline() {
     const shader = Aurora.createShader("lightsShader", lightsShader);
+
     const [_, cameraBindLayout] = Renderer.getBind("camera");
     this.vertexBuffer = Aurora.createBuffer({
       bufferType: "vertex",
@@ -79,6 +80,7 @@ export default class LightsPipeline {
       pipelineName: "lightsPipeline",
       buffers: [vertBuffLay],
       pipelineLayout: pipelineLayout,
+
       colorTargets: [Aurora.getColorTargetTemplate("additiveHDR")],
     });
   }
@@ -98,7 +100,6 @@ export default class LightsPipeline {
   }
   public static usePipeline(): void {
     if (this.bufferNeedResize) this.resizeBuffer();
-
     const [cameraBind] = Renderer.getBind("camera");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;

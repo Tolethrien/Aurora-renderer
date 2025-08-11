@@ -8,6 +8,7 @@ const TEXTURES_TO_SHOW = [
   "lightMap",
   "zBufferDump",
   "Bloom",
+  "gui",
 ] as const;
 type textures = (typeof TEXTURES_TO_SHOW)[number];
 interface DebugData {

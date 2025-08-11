@@ -48,7 +48,17 @@ export default class Mat4 {
     ];
     return new Mat4(out);
   }
-
+  public translate(vec: [number, number, number]) {
+    const m = Array.from(this.matrix);
+    const x = vec[0],
+      y = vec[1],
+      z = vec[2];
+    m[12] = m[0] * x + m[4] * y + m[8] * z + m[12];
+    m[13] = m[1] * x + m[5] * y + m[9] * z + m[13];
+    m[14] = m[2] * x + m[6] * y + m[10] * z + m[14];
+    m[15] = m[3] * x + m[7] * y + m[11] * z + m[15];
+    return new Mat4(m);
+  }
   lookAt(eye: lookType, center: lookType, up: lookType) {
     if (
       Math.abs(eye[0] - center[0]) < Mat4.EPSILON &&

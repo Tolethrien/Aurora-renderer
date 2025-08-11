@@ -125,6 +125,7 @@ export default class Aurora {
   }
   public static createRenderPipeline(props: AuroraRenderPipeline) {
     return this.device.createRenderPipelineAsync({
+
       label: props.pipelineName,
       layout: props.pipelineLayout,
       vertex: {
@@ -135,6 +136,7 @@ export default class Aurora {
       },
       primitive: props.primitive,
       fragment: {
+        
         module: props.shader,
         entryPoint: "fragmentMain",
         targets: props.colorTargets ?? [

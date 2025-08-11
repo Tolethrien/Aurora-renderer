@@ -2,7 +2,7 @@ import Aurora from "../../core";
 import Renderer from "../renderer/renderer";
 import AuroraDebugInfo from "../debugger/debugInfo";
 
-const USED_SHADERS = ["quad", "circle", "text"] as const;
+const USED_SHADERS = ["quad", "text"] as const;
 const SHAPE_BINDS = ["camera", "userTextures"];
 const TEXT_BINDS = ["camera", "fonts"];
 const BIND_DESC = {
@@ -28,7 +28,7 @@ interface BatchNode {
 export default class SequentialDrawPipeline {
   private static INIT_SIZE = 50;
   private static currentBufferSize = this.INIT_SIZE;
-  private static VERTEX_STRIDE = 14;
+  private static VERTEX_STRIDE = 15;
   private static pipelines: Map<string, RenderPipelineData> = new Map();
 
   private static vertexBuffer: GPUBuffer;
@@ -186,6 +186,11 @@ export default class SequentialDrawPipeline {
           format: "float32",
           offset: 13 * Float32Array.BYTES_PER_ELEMENT,
           shaderLocation: 5, // emissive
+        },
+        {
+          format: "float32",
+          offset: 14 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 6, // round
         },
       ],
     });

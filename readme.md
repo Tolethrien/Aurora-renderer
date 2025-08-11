@@ -10,7 +10,7 @@ based of new knowledge time for some rework!
 
 ## Changes!
 
-[] multiShader draw
+[x] multiShader draw
 
 [x] zBuffer with depth(set to Y)
 
@@ -69,3 +69,7 @@ bloom HDR + toneMapping(ACES)
 color Correction Options (hueshifted oversaturated sceen with cold tones)
 
 ![colCor State](/public/colCor.png)
+
+UI element with MSDF font
+
+![UI State](/public/ui.png)

@@ -7,6 +7,10 @@
 - zrobic debuuger na process.env by dzialal tree-shaking
 - poprawic faktyczny shader a nie debug by mial tonemap itp
 - po zmniejszeniu obrazu bloo nie wyglada tak ladnie jak na poczatku
+- jeden render/compute pass dla pipelinu jak nie zmienias targetow
+- depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass
+- zmienic debugInfo by zawieral teraz passy oraz calle
+- nie dziala sortowanie przezroczystych w sortedDraw
 
 # Done
 

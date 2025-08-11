@@ -5,6 +5,7 @@
 @group(1) @binding(2) var lightMapTexture: texture_2d<f32>;
 @group(1) @binding(3) var bloomTexture: texture_2d<f32>;
 @group(1) @binding(4) var finalDraw: texture_2d<f32>;
+@group(1) @binding(5) var guiDraw: texture_2d<f32>;
 
 
 override toneMapping: u32 = 2;
@@ -41,6 +42,7 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
   let lightMap = textureSampleLevel(lightMapTexture,textureSampler,props.coords,0);
   let bloom = textureSampleLevel(bloomTexture,textureSampler,props.coords,0);
   let finalDraw = textureSampleLevel(finalDraw,textureSampler,props.coords,0);
+  let gui = textureSampleLevel(guiDraw,textureSampler,props.coords,0);
 
   var bloomToned: vec3f;
     if(toneMapping == 0){
@@ -59,10 +61,11 @@ fn fragmentMain(props:VertexOutput) -> @location(0) vec4f{
     let depthValue = textureSampleLevel(depthTexture,textureSampler,props.coords,0).r;
     out = vec4<f32>(depthValue,depthValue,depthValue,1);
   }
-  else if(index == 0) {out = finalDraw;}
+  else if(index == 0) {out = vec4<f32>(mix(finalDraw.rgb,gui.rgb,gui.a),1);}
   else if(index == 1) {out = offscreen;}
   else if(index == 2) {out = lightMap;}
   else if(index == 4) {out = vec4<f32>(bloomToned,1.0);}
+  else if(index == 5) {out = gui;}
    return out;
 }
 

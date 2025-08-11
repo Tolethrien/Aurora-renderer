@@ -6,16 +6,14 @@ import AuroraDebugInfo from "../debugger/debugInfo";
 // przebudowac shadery na vert i frag bo sporo vertow tych samych uzywam
 const BATCH_INIT_SIZE = {
   quad: 100,
-  circle: 50,
   text: 100,
   quadTransparent: 20,
-  circleTransparent: 20,
   textTransparent: 50,
 };
 interface BatchNode {
   initBatchSize: number;
   batchSize: number;
-  vertices: Float32Array;
+  vertices: Float32Array<ArrayBuffer>;
   counter: number;
   shader: keyof typeof BATCH_INIT_SIZE;
 }
@@ -40,12 +38,6 @@ const PIPELINES_DATA: PipelineDescriptor[] = [
   },
   {
     depthWrite: true,
-    name: "circle",
-    shader: "circleShader",
-    binds: SHAPE_BINDS,
-  },
-  {
-    depthWrite: true,
     name: "text",
     shader: "textShader",
     binds: TEXT_BINDS,
@@ -58,19 +50,13 @@ const PIPELINES_DATA: PipelineDescriptor[] = [
   },
   {
     depthWrite: false,
-    name: "circleTransparent",
-    shader: "circleShader",
-    binds: SHAPE_BINDS,
-  },
-  {
-    depthWrite: false,
     name: "textTransparent",
     shader: "textShader",
     binds: TEXT_BINDS,
   },
 ];
 export default class SortedDrawPipeline {
-  private static VERTEX_STRIDE = 14;
+  private static VERTEX_STRIDE = 15;
   private static bufferNeedResize = false;
 
   private static vertexBuffer: GPUBuffer;
@@ -223,6 +209,11 @@ export default class SortedDrawPipeline {
           format: "float32",
           offset: 13 * Float32Array.BYTES_PER_ELEMENT,
           shaderLocation: 5, // emissive
+        },
+        {
+          format: "float32",
+          offset: 14 * Float32Array.BYTES_PER_ELEMENT,
+          shaderLocation: 6, // emissive
         },
       ],
     });

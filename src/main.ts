@@ -8,6 +8,8 @@ import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/renderer/config";
 import Renderer from "./aurora/urp/renderer/renderer";
+import AuroraCamera from "./aurora/urp/camera";
+import TempText from "./helps/futureTextPipe";
 interface t {
   lightcolor: [number, number, number];
   intence: number;
@@ -15,7 +17,7 @@ interface t {
   size: [number, number];
   emis: number;
 }
-const arr = Array(100)
+const arr = Array(50)
   .fill(0)
   .map(() => [Math.random() * 600, Math.random() * 600]);
 
@@ -35,7 +37,11 @@ const config = auroraConfig({
     numberOfPasses: 4,
     intense: 1.4,
   },
-  rendering: { toneMapping: "aces", sortOrder: "y", renderRes: "800x600" },
+  rendering: {
+    toneMapping: "aces",
+    sortOrder: "y",
+    renderRes: "800x600",
+  },
 });
 
 async function preload() {
@@ -46,26 +52,60 @@ async function preload() {
 
 async function create() {
   await Renderer.initialize(config);
-  const l = 50;
+  const l = 75;
   Renderer.setGlobalIllumination([l, l, l]);
   Renderer.setScreenSettings({
     exposure: -0.2,
     saturation: 0.2,
   });
+  // await TempText.createPipeline();
+  // TempText.draw({
+  //   position: [0, 0],
+  //   color: [10, 101, 10, 10],
+  //   scale: 32,
+  //   text: "twoja stara",
+  // });
 }
-
+let h = 0;
+let centX = 82;
+let centY = 1;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
+  Renderer.setScreenSettings({
+    hueShift: h,
+  });
+  h += 2;
   Renderer.beginBatch();
   showLights();
   // showText();
   showSprites();
   // showOrderOFDraw();
+  Draw.guiText({
+    position: { x: centX + 2.5, y: centY + 2.5, mode: "percent" },
+    font: "lato",
+    fontSize: 12,
+    text: `hueShfft: ${(h + 2) % 360}'`,
+    fontColor: [0, 0, 0, 255],
+    layer: 4,
+  });
+  Draw.guiRect({
+    position: { x: centX + 1, y: centY + 1, mode: "percent" },
+    size: { width: 123, height: 37, mode: "pixel" },
+    rounded: 0,
+    tint: [255, 0, 0, 255],
+    layer: 4,
+  });
+  Draw.guiRect({
+    position: { x: centX, y: centY, mode: "percent" },
+    size: { width: 140, height: 49, mode: "pixel" },
+    rounded: 0,
+    tint: [0, 0, 0, 255],
+    layer: 2,
+  });
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
   // AuroraDebugInfo.displayEveryFrame(60, true);
-  // x++;
   requestAnimationFrame(start);
 }
 function showText() {
@@ -107,8 +147,8 @@ function showOrderOFDraw() {
   let w = 135;
   let h = 114;
   Draw.rect({
-    position: { x: 250, y: 250 },
-    size: { height: h, width: w },
+    position: { x: 550, y: 250 },
+    size: { height: 100, width: 100 },
     tint: [255, 255, 255, 255],
   });
   Draw.rect({
@@ -116,23 +156,37 @@ function showOrderOFDraw() {
     size: { height: h, width: w },
     tint: [0, 0, 0, 150],
   });
+  Draw.circle({
+    position: { x: 340, y: 350 },
+    size: { height: 80, width: 80 },
+    tint: [255, 0, 0, 230],
+  });
   Draw.rect({
     position: { x: 300, y: 300 },
     size: { height: h, width: w },
     tint: [0, 255, 0, 150],
   });
-  Draw.circle({
-    position: { x: 340, y: 340 },
-    size: { height: 80, width: 80 },
-    tint: [255, 0, 0, 150],
-  });
 }
 function showLights() {
   makeLight({
-    intence: 200,
-    lightcolor: [255, 70, 70],
+    intence: 0,
+    lightcolor: [255, 60, 60],
     pos: [300, 300],
-    size: [100, 100],
+    size: [5, 600],
+    emis: 3,
+  });
+  makeLight({
+    intence: 0,
+    lightcolor: [255, 255, 60],
+    pos: [300, 350],
+    size: [5, 600],
+    emis: 3,
+  });
+  makeLight({
+    intence: 0,
+    lightcolor: [60, 255, 60],
+    pos: [300, 400],
+    size: [5, 600],
     emis: 3,
   });
   makeLight({

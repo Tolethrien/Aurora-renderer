@@ -60,6 +60,7 @@ export default class Bloom {
       if (passName === "y" && this.orderList[index + 1] === "x") currentMip++;
       if (passName === "upscale") currentMip--;
     });
+    AuroraDebugInfo.accumulate("usedPostProcessing", ["bloom"]);
   }
   public static clearPipeline() {}
   private static getGroupSize(passName: string, mip: number) {
