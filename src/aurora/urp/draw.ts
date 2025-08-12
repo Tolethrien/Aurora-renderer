@@ -3,10 +3,10 @@ import FontGen, { MsdfChar } from "./renderer/fontGen";
 import AuroraCamera from "./camera";
 import LightsPipe from "./pipelines/lights";
 import Renderer from "./renderer/renderer";
-import GuiPipeline from "./pipelines/gui";
+import GuiPipeline, { Clip } from "./pipelines/gui";
 import Aurora from "../core";
 
-type UiDrawMode = "pixel" | "percent";
+export type UiDrawMode = "pixel" | "percent";
 type UIPosition2D = Position2D & { mode: UiDrawMode };
 type UISize2D = Size2D & { mode: UiDrawMode };
 interface BaseDraw {
@@ -20,7 +20,6 @@ interface BaseUiDraw {
   size: UISize2D;
   tint?: RGBA;
   rounded?: number;
-  layer: number;
 }
 interface DrawUiNodeWithBackground extends BaseUiDraw {
   background: string;
@@ -62,23 +61,16 @@ interface DrawGuiText {
   font: string;
   fontSize: number;
   fontColor?: RGBA;
-  layer: number;
+}
+interface DrawClip {
+  position: UIPosition2D;
+  size: UISize2D;
 }
 interface DrawPointLight extends Omit<BaseDraw, "tint"> {
   intensity: number;
   tint?: RGB;
 }
-export type BatchType = "text" | "shape";
-export interface GetBatch {
-  type: BatchType;
-  alpha?: number;
-}
-export interface BatchAccumulator {
-  verticesData: number[];
-  vertices: number[];
-  count: number;
-  type: GetBatch["type"];
-}
+
 export default class Draw {
   public static rect({
     position,
@@ -173,44 +165,6 @@ export default class Draw {
 
     batch.counter++;
   }
-  public static guiRect({
-    position,
-    size,
-    tint,
-    rounded = 0,
-    background,
-    crop = { x: 0, y: 0, width: 1, height: 1 },
-    layer,
-  }: DrawUiNode) {
-    const Pipeline = GuiPipeline;
-
-    const color: RGBA = tint ? tint : [255, 255, 255, 255];
-    const batchType = color[3] === 255 ? "quad" : "quadTransparent";
-    const batch = Pipeline.getBatch(batchType);
-    const vertexStride = Pipeline.getStride;
-    const convertedPos = this.convertPosition(position);
-    const convertedSize = this.convertSize(size);
-    let textureIndex = 0;
-    if (background) textureIndex = Renderer.getTextureIndex(background);
-    batch.vertices[batch.counter * vertexStride] = convertedPos.x;
-    batch.vertices[batch.counter * vertexStride + 1] = convertedPos.y;
-    batch.vertices[batch.counter * vertexStride + 2] = convertedSize.width;
-    batch.vertices[batch.counter * vertexStride + 3] = convertedSize.height;
-    batch.vertices[batch.counter * vertexStride + 4] = crop.x;
-    batch.vertices[batch.counter * vertexStride + 5] = crop.y;
-    batch.vertices[batch.counter * vertexStride + 6] = crop.width;
-    batch.vertices[batch.counter * vertexStride + 7] = crop.height;
-    batch.vertices[batch.counter * vertexStride + 8] = textureIndex;
-    batch.vertices[batch.counter * vertexStride + 9] = layer / 100;
-    batch.vertices[batch.counter * vertexStride + 10] = rounded;
-    batch.vertices[batch.counter * vertexStride + 11] = color[0];
-    batch.vertices[batch.counter * vertexStride + 12] = color[1];
-    batch.vertices[batch.counter * vertexStride + 13] = color[2];
-    batch.vertices[batch.counter * vertexStride + 14] = color[3];
-
-    batch.counter++;
-  }
-
   public static text({
     position,
     font,
@@ -286,13 +240,75 @@ export default class Draw {
       prevCharCode = code;
     }
   }
+  public static clip(clip: DrawClip) {
+    const setClip = {
+      x: clip.position.x,
+      y: clip.position.y,
+      w: clip.size.width,
+      h: clip.size.height,
+    };
+    if (clip.position.mode === "percent") {
+      const [x, y] = this.convertPercentVectorToPixel({
+        x: clip.position.x,
+        y: clip.position.y,
+      });
+      setClip.x = x;
+      setClip.y = y;
+    }
+    if (clip.size.mode === "percent") {
+      const [w, h] = this.convertPercentVectorToPixel({
+        x: clip.size.width,
+        y: clip.size.height,
+      });
+      setClip.w = w;
+      setClip.h = h;
+    }
+    GuiPipeline.setClip(setClip);
+  }
+  public static popClip() {
+    GuiPipeline.setClip(undefined);
+  }
+  public static guiRect({
+    position,
+    size,
+    tint,
+    rounded = 0,
+    background,
+    crop = { x: 0, y: 0, width: 1, height: 1 },
+  }: DrawUiNode) {
+    const Pipeline = GuiPipeline;
+
+    const color: RGBA = tint ? tint : [255, 255, 255, 255];
+    const batch = Pipeline.getBatch("guiShader");
+    const vertexStride = Pipeline.getStride;
+    const convertedPos = this.convertPositionToScreen(position);
+    const convertedSize = this.convertSizeToScreen(size);
+    let textureIndex = 0;
+    if (background) textureIndex = Renderer.getTextureIndex(background);
+    batch.vertices[batch.counter * vertexStride] = convertedPos.x;
+    batch.vertices[batch.counter * vertexStride + 1] = convertedPos.y;
+    batch.vertices[batch.counter * vertexStride + 2] = convertedSize.width;
+    batch.vertices[batch.counter * vertexStride + 3] = convertedSize.height;
+    batch.vertices[batch.counter * vertexStride + 4] = crop.x;
+    batch.vertices[batch.counter * vertexStride + 5] = crop.y;
+    batch.vertices[batch.counter * vertexStride + 6] = crop.width;
+    batch.vertices[batch.counter * vertexStride + 7] = crop.height;
+    batch.vertices[batch.counter * vertexStride + 8] = textureIndex;
+    batch.vertices[batch.counter * vertexStride + 9] = rounded;
+    batch.vertices[batch.counter * vertexStride + 10] = color[0];
+    batch.vertices[batch.counter * vertexStride + 11] = color[1];
+    batch.vertices[batch.counter * vertexStride + 12] = color[2];
+    batch.vertices[batch.counter * vertexStride + 13] = color[3];
+
+    batch.counter++;
+  }
+
   public static guiText({
     position,
     font,
     fontColor,
     fontSize,
     text,
-    layer,
   }: DrawGuiText) {
     const Pipeline = GuiPipeline;
     const stride = Pipeline.getStride;
@@ -318,7 +334,7 @@ export default class Draw {
     let prevCharCode: number | null = null;
 
     for (const char of text) {
-      const batch = Pipeline.getBatch("text");
+      const batch = Pipeline.getBatch("guiTextShader");
       const code = char.charCodeAt(0);
       const charData: MsdfChar = chars[code] ?? fontData.defaultChar;
 
@@ -351,12 +367,11 @@ export default class Draw {
       batch.vertices[batch.counter * stride + 6] = uWidth;
       batch.vertices[batch.counter * stride + 7] = vHeight;
       batch.vertices[batch.counter * stride + 8] = fontIndex;
-      batch.vertices[batch.counter * stride + 9] = layer / 100;
-      batch.vertices[batch.counter * stride + 10] = 0;
-      batch.vertices[batch.counter * stride + 11] = color[0];
-      batch.vertices[batch.counter * stride + 12] = color[1];
-      batch.vertices[batch.counter * stride + 13] = color[2];
-      batch.vertices[batch.counter * stride + 14] = color[3];
+      batch.vertices[batch.counter * stride + 9] = 0;
+      batch.vertices[batch.counter * stride + 10] = color[0];
+      batch.vertices[batch.counter * stride + 11] = color[1];
+      batch.vertices[batch.counter * stride + 12] = color[2];
+      batch.vertices[batch.counter * stride + 13] = color[3];
 
       batch.counter++;
       xCursorPixel += charData.xadvance * scale;
@@ -382,7 +397,7 @@ export default class Draw {
     batch.vertices[batch.counter * stride + 7] = intensity;
     batch.counter++;
   }
-  private static convertPosition(position: DrawUiNode["position"]) {
+  private static convertPositionToScreen(position: DrawUiNode["position"]) {
     const canvasSize = { w: Aurora.canvas.width, h: Aurora.canvas.height };
     let newPos = { x: position.x, y: position.y };
     if (position.mode === "percent") {
@@ -394,7 +409,7 @@ export default class Draw {
       y: 1 - (newPos.y / canvasSize.h) * 2,
     };
   }
-  private static convertSize(size: DrawUiNode["size"]) {
+  private static convertSizeToScreen(size: DrawUiNode["size"]) {
     const canvasSize = { w: Aurora.canvas.width, h: Aurora.canvas.height };
     let newSize = { width: size.width, height: size.height };
     if (size.mode === "percent") {
@@ -405,5 +420,13 @@ export default class Draw {
       width: (newSize.width / canvasSize.w) * 2,
       height: (newSize.height / canvasSize.h) * 2,
     };
+  }
+  private static convertPercentVectorToPixel(
+    size: Position2D
+  ): [number, number] {
+    const canvasSize = { w: Aurora.canvas.width, h: Aurora.canvas.height };
+    let x = (canvasSize.w * size.x) / 100;
+    let y = (canvasSize.h * size.y) / 100;
+    return [x, y];
   }
 }

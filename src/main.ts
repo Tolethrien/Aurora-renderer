@@ -52,7 +52,7 @@ async function preload() {
 
 async function create() {
   await Renderer.initialize(config);
-  const l = 75;
+  const l = 25;
   Renderer.setGlobalIllumination([l, l, l]);
   Renderer.setScreenSettings({
     exposure: -0.2,
@@ -74,39 +74,93 @@ function start(timestamp: number) {
   Renderer.setScreenSettings({
     hueShift: h,
   });
-  h += 2;
+  // h += 2;
   Renderer.beginBatch();
   showLights();
   // showText();
   showSprites();
+  showUI();
   // showOrderOFDraw();
-  Draw.guiText({
-    position: { x: centX + 2.5, y: centY + 2.5, mode: "percent" },
-    font: "lato",
-    fontSize: 12,
-    text: `hueShfft: ${(h + 2) % 360}'`,
-    fontColor: [0, 0, 0, 255],
-    layer: 4,
-  });
-  Draw.guiRect({
-    position: { x: centX + 1, y: centY + 1, mode: "percent" },
-    size: { width: 123, height: 37, mode: "pixel" },
-    rounded: 0,
-    tint: [255, 0, 0, 255],
-    layer: 4,
-  });
-  Draw.guiRect({
-    position: { x: centX, y: centY, mode: "percent" },
-    size: { width: 140, height: 49, mode: "pixel" },
-    rounded: 0,
-    tint: [0, 0, 0, 255],
-    layer: 2,
-  });
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
   // AuroraDebugInfo.displayEveryFrame(60, true);
   requestAnimationFrame(start);
+}
+function showUI() {
+  Draw.guiRect({
+    position: { x: centX, y: centY, mode: "percent" },
+    size: { width: 140, height: 49, mode: "pixel" },
+    rounded: 0.2,
+    tint: [255, 255, 255, 255],
+  });
+  Draw.guiRect({
+    position: { x: centX + 0.5, y: centY + 0.5, mode: "percent" },
+    size: { width: 132, height: 43, mode: "pixel" },
+    rounded: 0,
+    tint: [200, 0, 0, 255],
+  });
+  Draw.guiRect({
+    position: { x: centX + 0.5, y: centY + 5.5, mode: "percent" },
+    size: { width: 132, height: 7, mode: "pixel" },
+    rounded: 0,
+    tint: [150, 0, 0, 255],
+  });
+  Draw.guiRect({
+    position: { x: centX + 0.5, y: centY + 6.5, mode: "percent" },
+    size: { width: 132, height: 7, mode: "pixel" },
+    rounded: 0,
+    tint: [100, 0, 0, 255],
+  });
+
+  let clipX = 75;
+  let clipY = 82;
+  Draw.guiText({
+    position: { x: centX + 7.5, y: centY + 2.5, mode: "percent" },
+    font: "lato",
+    fontSize: 12,
+    text: `999999`,
+    fontColor: [0, 0, 0, 255],
+  });
+  Draw.clip({
+    position: { x: clipX, y: clipY, mode: "percent" },
+    size: { width: 195, height: 100, mode: "pixel" },
+  });
+  Draw.guiRect({
+    position: { x: clipX, y: clipY, mode: "percent" },
+    size: { width: 195, height: 100, mode: "pixel" },
+    rounded: 0,
+    tint: [0, 0, 0, 130],
+  });
+  Draw.guiText({
+    position: { x: clipX + 1, y: clipY, mode: "percent" },
+    font: "lato",
+    fontSize: 12,
+    text: "this is NOT! clipped text",
+    fontColor: [100, 255, 100, 255],
+  });
+  Draw.guiText({
+    position: { x: clipX + 1, y: clipY + 5, mode: "percent" },
+    font: "lato",
+    fontSize: 12,
+    text: "this IS! definitely clipped text after",
+    fontColor: [255, 100, 100, 255],
+  });
+  Draw.guiText({
+    position: { x: clipX + 1, y: clipY + 9, mode: "percent" },
+    font: "jersey",
+    fontSize: 15,
+    text: "other font?! whoa!",
+    fontColor: [0, 255, 0, 255],
+  });
+  Draw.guiText({
+    position: { x: clipX + 1, y: clipY + 14.5, mode: "percent" },
+    font: "lato",
+    fontSize: 12,
+    text: "And this is clipped too!",
+    fontColor: [255, 100, 100, 255],
+  });
+  Draw.popClip();
 }
 function showText() {
   Draw.text({

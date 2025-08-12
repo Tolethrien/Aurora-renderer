@@ -8,9 +8,8 @@ struct VertexInput {
     @location(1) size: vec2<f32>, // w,h
     @location(2) crop: vec4<f32>,    // crop
     @location(3) textureIndex: f32,    //texture index
-    @location(4) layer: f32,    // layer
-    @location(5) rounder: f32,    // round
-    @location(6) color: vec4<f32>,    // rgba
+    @location(4) rounder: f32,    // round
+    @location(5) color: vec4<f32>,    // rgba
 }
 
 struct VertexOutput {
@@ -43,7 +42,7 @@ fn vertexMain(props : VertexInput) -> VertexOutput {
     out.crop = uv;
     out.color = props.color;
     out.textureIndex = props.textureIndex;
-    out.position = vec4<f32>(worldPos, props.layer, 1.0);
+    out.position = vec4<f32>(worldPos, 1, 1);
 
     
     return out;

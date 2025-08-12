@@ -3,8 +3,6 @@ import quad from "../shaders/draw/drawQuad.wgsl?raw";
 import textShader from "../shaders/draw/drawText.wgsl?raw";
 import guiTextShader from "../shaders/draw/drawGuiText.wgsl?raw";
 import guiShader from "../shaders/draw/drawGui.wgsl?raw";
-import { AuroraConfig } from "./config";
-import { assert } from "../../../utils/utils";
 import { Size2D } from "../../aurora";
 export function generateInternalBuffers() {
   //main indexBuffer
@@ -44,30 +42,6 @@ export function generateInternalBuffers() {
 export function generateInternalTextures(res: Size2D, bloomMip: number) {
   const canvasWidth = res.width;
   const canvasHeight = res.height;
-  //offscreen - init texture
-  // lights - all light baking
-  // depth - zbuffer
-  // zdump - debug dumping
-  // bloom Threshold - like in name
-  // bloomX - 4 mips
-  // bloomY - 4 mips
-  // pingpongA - texture to pingpong
-  // pingpongB - texture to pingpong
-  //finalDraw - combined offscreen and lights
-  // ui
-  // final (canvas)
-
-  /**
-   * draw na offscreen
-   * draw swiatla na lights
-   * if(debug) draw na zDump
-   * draw offscreen + lights na finalDraw
-   * finalDraw -> correction -> finalCorrectedDraw
-   * finalCorrectedDraw -> threshold
-   * postprocess pingpong
-   * lastPing + ui -> screen
-   *
-   */
 
   const offscreen = Aurora.createTextureEmpty({
     size: {
@@ -233,8 +207,8 @@ export function compileShaders() {
 
   return new Map([
     ["quadShader", quadShader],
-    ["guiShader", gui],
     ["textShader", text],
+    ["guiShader", gui],
     ["guiTextShader", guiText],
   ]);
 }

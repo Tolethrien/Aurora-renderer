@@ -11,6 +11,7 @@
 - depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass
 - zmienic debugInfo by zawieral teraz passy oraz calle
 - nie dziala sortowanie przezroczystych w sortedDraw
+- poprawic sequentialDraw bo widze ze uzywa transparent w getBatch a przeciez nie ma transparent tam xD
 
 # Done
 
