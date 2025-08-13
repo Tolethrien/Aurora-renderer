@@ -55,41 +55,34 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 
 @fragment
 fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
-
     let index = u32(props.textureIndex);
     let texture = textureSampleLevel(userTextures, universalSampler, props.crop, index, 0);
-    if (texture.a < 0.001) {
-        discard;
-    };
+    if (texture.a < 0.001) { discard; }
 
     let half_size = props.size * 0.5;
-
-    // zamiana: używamy skalara r, tak aby round==1 dawał koło (r = min(half_size.x, half_size.y))
     let round_clamped = clamp(props.round, 0.0, 1.0);
-    let r_scalar = round_clamped * min(half_size.x, half_size.y);
 
-    let sdf = sdRoundBox(props.centerSize, half_size, r_scalar);
+    let maxCorner = min(half_size.x, half_size.y);
+    let cornerRadius = maxCorner * round_clamped;
+    let radii = vec2<f32>(cornerRadius, cornerRadius);
 
+    let sdf = sdRoundBox(props.centerSize, half_size, radii);
     let antialias_width = fwidth(sdf);
     let sharp_aa = antialias_width * 0.5;
     let alpha = smoothstep(sharp_aa, -sharp_aa, sdf);
 
-    if (alpha < 0.001) {
-        discard;
-    }
+    if (alpha < 0.001) { discard; }
 
     let color = props.color / 255.0;
     let final_rgb = texture.rgb * color.rgb;
-
     return vec4<f32>(final_rgb, texture.a * color.a * alpha);
 }
-fn sdRoundBox(p: vec2<f32>, s: vec2<f32>, r: f32) -> f32 {
-    // q = abs(p) - s + r
-    let q = abs(p) - s + vec2<f32>(r);
 
-    // dystans od zaokrąglonego prostokąta
-    let q_max = max(q, vec2<f32>(0.0));
-    return length(q_max) - r + min(max(q.x, q.y), 0.0);
+fn sdRoundBox(p: vec2<f32>, b: vec2<f32>, r: vec2<f32>) -> f32 {
+    let r_clamped = min(r, b);
+    let q = abs(p) - b + r_clamped;
+    let outside = max(q, vec2<f32>(0.0));
+    return length(outside) - r_clamped.x + min(max(q.x, q.y), 0.0);
 }
 
 

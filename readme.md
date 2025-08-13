@@ -1,52 +1,69 @@
-## Aurora 2.0!
+Aurora 1.0
 
-Aurora is webGPU based 2D renderer written in TS.
+Aurora is a 2D rendering engine built on top of the WebGPU and written entirely in TypeScript.
+It was originally developed as the rendering backend for the Misa game engine, but it is designed to work equally well as a standalone library for any chromium-based project that requires small and fast 2D graphics.
 
-"This is part of the Misa game engine, but it can also be used as a standalone lib."
+Core Capabilities
 
-based of new knowledge time for some rework!
+Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
+
+- Multi-shader 2d rendering based on sprites and shapes.
+
+- Depth sorting with Z-buffer.
+
+- High-quality text rendering — with MSDF (Multi-channel Signed Distance Field).
+
+- Fully GPU-driven lighting.
+
+- HDR color,bloom effects with color correction and toneMapping.
+
+- GPU stats.
+
+- UI rendering
 
 ![Current State](/public/current.png)
 
-## Changes!
+### Note!
 
-[x] multiShader draw
+    WebGPU is in experimental state, it may not work on every devices and show weird behavior. It is recommended to use it on chromium-based browsers or projects like electron
 
-[x] zBuffer with depth(set to Y)
+## Features!
 
-[x] better font rendering with MSDF
+- [x] Multi-shader rendering
 
-[] more shapes then quad
+- [x] Z-buffer with sorting
 
-[] Path2D to render polygons
+- [x] MSDF font rendering
 
-[] draw video
+- [x] GPU diagnostics
 
-[] draw Gif
+- [x] Asynchronous pipelines
 
-[] gpu rotation
+- [x] GPU driven lighting (no texture-based)
 
-[x] proper GPU diagnostics
+- [x] HDR color support
 
-[x] async pipelines and shaders
+- [x] HDR bloom with tone mapping
 
-[x] lights drawn on gpu and not from texture
+- [] Additional primitive shapes beyond quads
 
-[] normal and shadow maps
+- [] Polygon rendering via Path2D
 
-[] renderResolution and resize
+- [] Video rendering
 
-[x] HDR colors
+- [] GIF rendering
 
-[x] HDR bloom with toneMapping
+- [] GPU-side rotation
 
-[] other camera views (isometric, ortho,perspective etc...)
+- [] Normal and shadow maps
 
-[] custom pipelines/shaders/materials
+- [x] Adjustable render resolution and resize support
 
-## Future changes!
+- [] Multiple camera views (orthographic, perspective)
 
-total shift to render graph with resource manager
+## Roadmap
+
+- Full migration to a render graph architecture with a resource manager
 
 ## Screenshots from current State
 

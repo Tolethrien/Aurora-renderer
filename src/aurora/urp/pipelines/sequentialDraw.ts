@@ -110,7 +110,6 @@ export default class SequentialDrawPipeline {
   }
   public static getBatch(shader: string) {
     let cutShaderName = shader;
-    if (shader.includes("Transparent")) cutShaderName = shader.slice(0, -11);
     const batchNode = this.batchList.at(-1);
     if (batchNode === undefined || batchNode.shader !== cutShaderName) {
       const newBatch = this.newBatchNode(cutShaderName as ShaderType);

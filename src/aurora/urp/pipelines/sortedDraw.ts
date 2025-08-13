@@ -82,9 +82,9 @@ export default class SortedDrawPipeline {
     this.batchList.forEach((batch) => {
       //let first pass go even when empty to clear canvas, no need for other empty passes
       if (byteOffset !== 0 && batch.counter === 0) return;
-      const list = batch.vertices;
       if (batch.shader.includes("Transparent"))
         this.sortTransparentBatch(batch);
+      const list = batch.vertices;
       Aurora.device.queue.writeBuffer(this.vertexBuffer, byteOffset, list, 0);
       //use zbuffer dump when debug mode
       const loadOperation = byteOffset === 0 ? "clear" : "load";

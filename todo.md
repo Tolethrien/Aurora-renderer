@@ -3,18 +3,20 @@
 - przeleciec wszystko w config i sprawic by tam dzialalo, by wszystkie te rzeczy tam byly zaimpementowane itp
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
-- zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jes za kamera)
 - zrobic debuuger na process.env by dzialal tree-shaking
 - poprawic faktyczny shader a nie debug by mial tonemap itp
-- po zmniejszeniu obrazu bloo nie wyglada tak ladnie jak na poczatku
 - jeden render/compute pass dla pipelinu jak nie zmienias targetow
 - depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass
 - zmienic debugInfo by zawieral teraz passy oraz calle
-- nie dziala sortowanie przezroczystych w sortedDraw
-- poprawic sequentialDraw bo widze ze uzywa transparent w getBatch a przeciez nie ma transparent tam xD
+- jesli nie ma emisyjnych obiektow w scenie to po co robic caly bloom Pass
+- roundness nie dziala jak powinno, powinno miec 4 wartosci dla bokow i miec bardziej zaawansowany algo jak CSS
 
 # Done
 
+- poprawic sequentialDraw bo widze ze uzywa transparent w getBatch a przeciez nie ma transparent tam xD
+- nie dziala sortowanie przezroczystych w sortedDraw
+- zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jest za kamera)
+- po zmniejszeniu obrazu bloo nie wyglada tak ladnie jak na poczatku
 - mniej compute passow na bloomie (polacz downscale z xpassem)
 - parametry renderera trzeba stworzyc, bo np tonemapping musi byc uzywany, a nie dziala jak nie masz pipelinu bloom bo tam go writuje, w nich beda wszystkie bloomu rzeczy plus exposure, saturation, itp, treshold oswietlenia globalnego
 - debugerze nie lepiej swapowac textureBind caly zamiast miec liste tekstur?
@@ -67,8 +69,8 @@
 [x] batcher option - kolejnosc renderowania (kolejnosc wywolywania, zbuffer na Y)
 [x] batcher option - add fonts
 [x] debug gpu (wyciaganie timestampow itp)
-[z] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
-[ ] UI pipeline(no camera no Y sort inne text renderowanie)
+[x] debug mode - zmiana wyswietlanej tekstury na ekranie (renderuj depth itp)
+[x] UI pipeline(no camera no Y sort inne text renderowanie)
 [x] pixelDencity/deviceRatio
 [ ] post-processing
 [x] budowane w shaderach swiatlo

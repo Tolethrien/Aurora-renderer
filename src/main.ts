@@ -8,8 +8,6 @@ import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/renderer/config";
 import Renderer from "./aurora/urp/renderer/renderer";
-import AuroraCamera from "./aurora/urp/camera";
-import TempText from "./helps/futureTextPipe";
 interface t {
   lightcolor: [number, number, number];
   intence: number;
@@ -58,17 +56,9 @@ async function create() {
     exposure: -0.2,
     saturation: 0.2,
   });
-  // await TempText.createPipeline();
-  // TempText.draw({
-  //   position: [0, 0],
-  //   color: [10, 101, 10, 10],
-  //   scale: 32,
-  //   text: "twoja stara",
-  // });
 }
 let h = 0;
-let centX = 82;
-let centY = 1;
+
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Renderer.setScreenSettings({
@@ -84,37 +74,46 @@ function start(timestamp: number) {
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
-  // AuroraDebugInfo.displayEveryFrame(60, true);
+  AuroraDebugInfo.displayEveryFrame(60, true);
   requestAnimationFrame(start);
 }
 function showUI() {
+  let clipX = 75;
+  let clipY = 82;
+  let centX = 82;
+  let centY = 1;
   Draw.guiRect({
     position: { x: centX, y: centY, mode: "percent" },
     size: { width: 140, height: 49, mode: "pixel" },
     rounded: 0.2,
     tint: [255, 255, 255, 255],
   });
+  // Draw.guiRect({
+  //   position: { x: clipX, y: clipY - 20, mode: "percent" },
+  //   size: { width: 80, height: 60, mode: "pixel" },
+  //   rounded: 1,
+  //   tint: [0, 0, 0, 130],
+  // });
   Draw.guiRect({
     position: { x: centX + 0.5, y: centY + 0.5, mode: "percent" },
     size: { width: 132, height: 43, mode: "pixel" },
-    rounded: 0,
+    rounded: 0.2,
     tint: [200, 0, 0, 255],
   });
+
   Draw.guiRect({
     position: { x: centX + 0.5, y: centY + 5.5, mode: "percent" },
     size: { width: 132, height: 7, mode: "pixel" },
-    rounded: 0,
+    rounded: 0.2,
     tint: [150, 0, 0, 255],
   });
   Draw.guiRect({
     position: { x: centX + 0.5, y: centY + 6.5, mode: "percent" },
     size: { width: 132, height: 7, mode: "pixel" },
-    rounded: 0,
+    rounded: 0.2,
     tint: [100, 0, 0, 255],
   });
 
-  let clipX = 75;
-  let clipY = 82;
   Draw.guiText({
     position: { x: centX + 7.5, y: centY + 2.5, mode: "percent" },
     font: "lato",
