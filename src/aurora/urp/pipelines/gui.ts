@@ -109,6 +109,7 @@ export default class SequentialDrawPipeline {
       AuroraDebugInfo.accumulate("drawCalls", 1);
     });
     Renderer.pipelinesUsedInFrame.add("GUIDrawPipeline");
+    AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", ["GUI"]);
   }
 

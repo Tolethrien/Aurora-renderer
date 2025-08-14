@@ -64,9 +64,21 @@ export default class SequentialDrawPipeline {
     const offscreenTexture = Renderer.getTextureView("offscreenCanvas");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
+    const timestamp = this.getFrameQuery();
+
+    const canvasColor = Renderer.getConfigGroup("rendering").canvasColor;
+    const normalizedColor = [
+      canvasColor[0] / 255,
+      canvasColor[1] / 255,
+      canvasColor[2] / 255,
+      canvasColor[3] / 255,
+    ];
+
+    const offsets: number[] = [];
     let bufferByteOffset = 0;
     let vertexListOffset = 0;
     this.batchList.forEach((batch) => {
+      offsets.push(bufferByteOffset);
       this.verticesList.set(batch.vertices, vertexListOffset);
       Aurora.device.queue.writeBuffer(
         this.vertexBuffer,
@@ -74,34 +86,41 @@ export default class SequentialDrawPipeline {
         this.verticesList,
         vertexListOffset
       );
-      const loadOperation = bufferByteOffset === 0 ? "clear" : "load";
-      const { bindList, pipeline } = this.getPipeline(batch.shader);
-      const timestamp = this.getFrameQuery(bufferByteOffset === 0);
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `SortedDrawShapeRenderPass:${batch.shader}`,
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: loadOperation,
-            clearValue: [0.5, 0.5, 0.5, 1],
-            storeOp: "store",
-          },
-        ],
-        timestampWrites: timestamp,
-      });
-      passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, bufferByteOffset);
-      bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
-      passEncoder.setIndexBuffer(indexBuffer, "uint32");
-      passEncoder.drawIndexed(6, batch.counter);
-      passEncoder.end();
       bufferByteOffset +=
         batch.counter * this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT;
       vertexListOffset += batch.vertices.length;
-
-      AuroraDebugInfo.accumulate("drawCalls", 1);
     });
+
+    const passEncoder = commandEncoder.beginRenderPass({
+      label: `SortedDrawShapeRenderPass`,
+      colorAttachments: [
+        {
+          view: offscreenTexture,
+          loadOp: "clear",
+          clearValue: normalizedColor,
+          storeOp: "store",
+        },
+      ],
+      timestampWrites: timestamp,
+    });
+
+    let drawOffset = 0;
+    this.batchList.forEach((batch) => {
+      const offset = offsets[drawOffset];
+      const { bindList, pipeline } = this.getPipeline(batch.shader);
+      passEncoder.setPipeline(pipeline);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, offset);
+      bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
+      passEncoder.setIndexBuffer(indexBuffer, "uint32");
+      passEncoder.drawIndexed(6, batch.counter);
+      AuroraDebugInfo.accumulate("drawCalls", 1);
+      AuroraDebugInfo.accumulate("drawnQuads", batch.counter);
+
+      drawOffset++;
+    });
+    passEncoder.end();
     Renderer.pipelinesUsedInFrame.add("SequentialDrawPipeline");
+    AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", ["SequentialDraw"]);
   }
 
@@ -110,6 +129,8 @@ export default class SequentialDrawPipeline {
   }
   public static getBatch(shader: string) {
     let cutShaderName = shader;
+    if (shader.includes("Transparent"))
+      cutShaderName = cutShaderName.slice(0, -11);
     const batchNode = this.batchList.at(-1);
     if (batchNode === undefined || batchNode.shader !== cutShaderName) {
       const newBatch = this.newBatchNode(cutShaderName as ShaderType);
@@ -137,8 +158,8 @@ export default class SequentialDrawPipeline {
     });
     this.currentBufferSize = newSize;
   }
-  private static getFrameQuery(write: boolean) {
-    if (!AuroraDebugInfo.isWorking || write === false) return undefined;
+  private static getFrameQuery() {
+    if (!AuroraDebugInfo.isWorking) return undefined;
     return {
       querySet: AuroraDebugInfo.getQuery().qSet,
       beginningOfPassWriteIndex: 0,

@@ -73,54 +73,71 @@ export default class SortedDrawPipeline {
   }
   public static usePipeline() {
     if (this.bufferNeedResize) this.generateGPUBuffer();
+
     const offscreenTexture = Renderer.getTextureView("offscreenCanvas");
     const zBufferTexture = Renderer.getTextureView("zBufferDump");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
-    let byteOffset = 0;
+    const timestamp = this.getFrameQuery();
+    const zDumpTarget = this.getZDump(zBufferTexture);
 
+    const canvasColor = Renderer.getConfigGroup("rendering").canvasColor;
+    const normalizedColor = [
+      canvasColor[0] / 255,
+      canvasColor[1] / 255,
+      canvasColor[2] / 255,
+      canvasColor[3] / 255,
+    ];
+    const offsets: number[] = [];
+    let drawOffset = 0;
     this.batchList.forEach((batch) => {
-      //let first pass go even when empty to clear canvas, no need for other empty passes
-      if (byteOffset !== 0 && batch.counter === 0) return;
+      if (batch.counter === 0) return;
+      offsets.push(drawOffset);
       if (batch.shader.includes("Transparent"))
         this.sortTransparentBatch(batch);
       const list = batch.vertices;
-      Aurora.device.queue.writeBuffer(this.vertexBuffer, byteOffset, list, 0);
-      //use zbuffer dump when debug mode
-      const loadOperation = byteOffset === 0 ? "clear" : "load";
-      const zDumpTarget = this.getZDump(zBufferTexture, loadOperation);
-      const { pipeline, bindList } = this.getPipeline(batch.shader);
-      const timestamp = this.getFrameQuery(byteOffset === 0);
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `SortedDrawShapeRenderPass:${batch.shader}`,
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: loadOperation,
-            clearValue: [0.5, 0.5, 0.5, 1],
-            storeOp: "store",
-          },
-          zDumpTarget,
-        ],
-        depthStencilAttachment: {
-          view: Renderer.getTextureView("depthTexture"),
-          depthLoadOp: loadOperation,
-          depthClearValue: 0.0,
-          depthStoreOp: "store",
+      Aurora.device.queue.writeBuffer(this.vertexBuffer, drawOffset, list, 0);
+      drawOffset += list.byteLength;
+    });
+
+    const passEncoder = commandEncoder.beginRenderPass({
+      label: "SortedDrawShapeRenderPass",
+      colorAttachments: [
+        {
+          view: offscreenTexture,
+          loadOp: "clear",
+          clearValue: normalizedColor,
+          storeOp: "store",
         },
-        timestampWrites: timestamp,
-      });
+        zDumpTarget,
+      ],
+      depthStencilAttachment: {
+        view: Renderer.getTextureView("depthTexture"),
+        depthLoadOp: "clear",
+        depthClearValue: 0.0,
+        depthStoreOp: "discard",
+      },
+      timestampWrites: timestamp,
+    });
+
+    drawOffset = 0;
+    this.batchList.forEach((batch) => {
+      if (batch.counter === 0) return;
+      const offset = offsets[drawOffset];
+      const { pipeline, bindList } = this.getPipeline(batch.shader);
       passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, byteOffset);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, offset);
       bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.counter);
-      passEncoder.end();
-      byteOffset += list.byteLength;
+      drawOffset++;
       AuroraDebugInfo.accumulate("drawCalls", 1);
       AuroraDebugInfo.accumulate("drawnQuads", batch.counter);
     });
+
+    passEncoder.end();
     Renderer.pipelinesUsedInFrame.add("SortedDrawPipeline");
+    AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", ["SortedDraw"]);
   }
   public static clearPipeline() {
@@ -262,18 +279,18 @@ export default class SortedDrawPipeline {
     });
     return [pipe, bindsDataList];
   }
-  private static getFrameQuery(write: boolean) {
-    if (!AuroraDebugInfo.isWorking || write === false) return undefined;
+  private static getFrameQuery() {
+    if (!AuroraDebugInfo.isWorking) return undefined;
     return {
       querySet: AuroraDebugInfo.getQuery().qSet,
       beginningOfPassWriteIndex: 0,
     };
   }
-  private static getZDump(texture: GPUTextureView, loadOp: "clear" | "load") {
+  private static getZDump(texture: GPUTextureView) {
     if (!AuroraDebugInfo.isWorking) return undefined;
     return {
       view: texture,
-      loadOp: loadOp,
+      loadOp: "clear",
       storeOp: "store",
     } as GPURenderPassColorAttachment;
   }

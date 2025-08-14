@@ -21,7 +21,7 @@ Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
 
 - UI rendering
 
-![Current State](/public/current.png)
+![showOff](/public/current.png)
 
 ### Note!
 
@@ -66,6 +66,10 @@ Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
 - Full migration to a render graph architecture with a resource manager
 
 ## Screenshots from current State
+
+Current State:
+
+![current State](/public/main.png)
 
 debug info:
 

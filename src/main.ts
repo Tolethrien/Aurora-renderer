@@ -39,6 +39,7 @@ const config = auroraConfig({
     toneMapping: "aces",
     sortOrder: "y",
     renderRes: "800x600",
+    canvasColor: [125, 125, 125, 255],
   },
 });
 
@@ -50,7 +51,7 @@ async function preload() {
 
 async function create() {
   await Renderer.initialize(config);
-  const l = 25;
+  const l = 50;
   Renderer.setGlobalIllumination([l, l, l]);
   Renderer.setScreenSettings({
     exposure: -0.2,

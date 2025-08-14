@@ -44,22 +44,23 @@ export default class Bloom {
     const [bloomParams] = Renderer.getBind("bloomParams");
     let currentMip = 0;
 
+    const passEncoder = commandEncoder.beginComputePass({
+      label: `bloomPass`,
+    });
     this.orderList.forEach((passName, index) => {
       const size = this.getGroupSize(passName, currentMip);
-      const passEncoder = commandEncoder.beginComputePass({
-        label: `bloom${passName}Pass`,
-      });
       const pipeline = this.getPipeline(passName);
       const bindData = this.getBind(`${passName}-${currentMip}`);
       passEncoder.setPipeline(pipeline);
       passEncoder.setBindGroup(0, bindData);
       passEncoder.setBindGroup(1, bloomParams);
       passEncoder.dispatchWorkgroups(size.x, size.y);
-      passEncoder.end();
       AuroraDebugInfo.accumulate("computeCalls", 1);
       if (passName === "y" && this.orderList[index + 1] === "x") currentMip++;
       if (passName === "upscale") currentMip--;
     });
+    passEncoder.end();
+    AuroraDebugInfo.accumulate("computePasses", 1);
     AuroraDebugInfo.accumulate("usedPostProcessing", ["bloom"]);
   }
   public static clearPipeline() {}

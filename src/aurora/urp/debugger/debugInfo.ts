@@ -24,6 +24,8 @@ interface DebugData {
   drawCalls: number;
   computeCalls: number;
   totalCalls: number;
+  renderPasses: number;
+  computePasses: number;
   drawnQuads: number;
   drawnLights: number;
   drawnTriangles: number;
@@ -43,6 +45,8 @@ const DATA_INIT: DebugData = {
   drawCalls: 0,
   computeCalls: 0,
   totalCalls: 0,
+  renderPasses: 0,
+  computePasses: 0,
   drawnQuads: 0,
   drawnLights: 0,
   drawnTriangles: 0,
@@ -149,8 +153,13 @@ export default class AuroraDebugInfo {
   public static displayEveryFrame(frame: number, clear: boolean = false) {
     this.tick++;
     if (this.tick % frame !== 0) return;
+
     if (clear) console.clear();
     console.group("Debug Data");
+    console.log(
+      "adapter:",
+      `${Aurora.device.adapterInfo.vendor}:${Aurora.device.adapterInfo.architecture}`
+    );
     console.log("FPS:", this.data.fps);
     if (this.isGathering) {
       console.log("CPU Time:", `${this.data.CPUTime} ms`);

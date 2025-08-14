@@ -148,6 +148,7 @@ export default class ColorCorrection {
     passEncoder.dispatchWorkgroups(size.x, size.y);
     passEncoder.end();
     AuroraDebugInfo.accumulate("computeCalls", 1);
+    AuroraDebugInfo.accumulate("computePasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", ["ColorCorr"]);
   }
   public static clearPipeline() {}

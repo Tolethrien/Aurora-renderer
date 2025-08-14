@@ -4,15 +4,15 @@
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
 - jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - zrobic debuuger na process.env by dzialal tree-shaking
-- poprawic faktyczny shader a nie debug by mial tonemap itp
-- jeden render/compute pass dla pipelinu jak nie zmienias targetow
-- depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass
-- zmienic debugInfo by zawieral teraz passy oraz calle
-- jesli nie ma emisyjnych obiektow w scenie to po co robic caly bloom Pass
 - roundness nie dziala jak powinno, powinno miec 4 wartosci dla bokow i miec bardziej zaawansowany algo jak CSS
+- bloom powiniene miec passy dostosowywane do wielkosci tekstury bo teraz 6-7 passow robi artefakty
 
 # Done
 
+- zmienic debugInfo by zawieral teraz passy oraz calle
+- jeden render/compute pass dla pipelinu jak nie zmienias targetow
+- depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass
+- poprawic faktyczny shader a nie debug by mial tonemap itp
 - poprawic sequentialDraw bo widze ze uzywa transparent w getBatch a przeciez nie ma transparent tam xD
 - nie dziala sortowanie przezroczystych w sortedDraw
 - zmienic zbuffer granice z faktycznych obiektow Y na view camery(po co rysowac cos co jest za kamera)
@@ -80,6 +80,5 @@
 [ ] Draw.line
 [ ] cieniowanie?
 [ ] normal mapy?
-[ ] sposoby renderowania - ortho/izo
 [ ] path2d (shape)
 [ ] lepsze budowanie shaderow z fragmentow kodu (by nie powtarzac tego samego kodu w 4 plikach shaderow tylko jakos je budowac/laczyc)

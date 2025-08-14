@@ -130,8 +130,8 @@ export default class LightsPipeline {
     passEncoder.drawIndexed(6, this.batch.counter);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
+    AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.setParam("drawnLights", this.batch.counter);
-
     AuroraDebugInfo.accumulate("pipelineInUse", ["Lights"]);
   }
   public static getGlobalIllumination(): RGB {

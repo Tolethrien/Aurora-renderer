@@ -132,6 +132,7 @@ export default class ScreenPipeline {
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();
     AuroraDebugInfo.accumulate("drawCalls", 1);
+    AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", [
       `display:${this.displayMode}`,
     ]);

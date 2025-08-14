@@ -55,6 +55,7 @@ export default class Renderer {
       this.currentRes,
       this.auroraConfig.bloom.numberOfPasses
     );
+    // Aurora.adapter.
     this.samplers = generateInternalSamplers();
     this.shaders = compileShaders();
     await this.uploadUserTextures();
