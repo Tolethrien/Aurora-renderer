@@ -1,13 +1,16 @@
 import { RGB } from "../../aurora";
 import Aurora from "../../core";
+import ScreenPipeline from "../pipelines/screenPipeline";
 import { AuroraConfig } from "../renderer/config";
 import Renderer from "../renderer/renderer";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
   "lightMap",
+  "finalDraw",
   "zBufferDump",
-  "Bloom",
+  "bloomEffect",
+  "bloomThreshold",
   "gui",
 ] as const;
 type textures = (typeof TEXTURES_TO_SHOW)[number];
@@ -114,6 +117,14 @@ export default class AuroraDebugInfo {
       (this.debugVisibleTextureIndex[0] + 1) % TEXTURES_TO_SHOW.length;
     this.setParam(
       "displayedTexture",
+      TEXTURES_TO_SHOW[this.debugVisibleTextureIndex[0]]
+    );
+    const mode =
+      TEXTURES_TO_SHOW[this.debugVisibleTextureIndex[0]] === "canvas"
+        ? "screen"
+        : "debug";
+    ScreenPipeline.setDisplayMode(
+      mode,
       TEXTURES_TO_SHOW[this.debugVisibleTextureIndex[0]]
     );
   }

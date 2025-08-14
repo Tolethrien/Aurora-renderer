@@ -10,7 +10,7 @@ interface BatchNode {
   counter: number;
 }
 /**
- * Used to draw final offscreen onto canvas, possible post-proccesing like grayscale goes here too!
+ * Used to draw final offscreen onto canvas, possible post-processing like grayscale goes here too!
  */
 
 export default class LightsPipeline {

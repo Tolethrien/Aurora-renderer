@@ -76,14 +76,6 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     format: "depth24plus",
     label: "z-buffer Texture",
   });
-  const depthUi = Aurora.createTextureEmpty({
-    size: {
-      width: canvasWidth,
-      height: canvasHeight,
-    },
-    format: "depth24plus",
-    label: "z-bufferUI Texture",
-  });
 
   const zdump = Aurora.createTextureEmpty({
     size: {
@@ -165,7 +157,6 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     ["gui", gui],
     ["finalDraw", finalDraw],
     ["depthTexture", depth],
-    ["depthUI", depthUi],
     ["zBufferDump", zdump],
     ["lightMap", light],
     ["bloomThreshold", bloomThreshold],

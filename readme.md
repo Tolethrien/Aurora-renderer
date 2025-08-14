@@ -45,21 +45,21 @@ Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
 
 - [x] HDR bloom with tone mapping
 
-- [] Additional primitive shapes beyond quads
+- [ ] Additional primitive shapes beyond quads
 
-- [] Polygon rendering via Path2D
+- [ ] Polygon rendering via Path2D
 
-- [] Video rendering
+- [ ] Video rendering
 
-- [] GIF rendering
+- [ ] GIF rendering
 
-- [] GPU-side rotation
+- [ ] GPU-side rotation
 
-- [] Normal and shadow maps
+- [ ] Normal and shadow maps
 
 - [x] Adjustable render resolution and resize support
 
-- [] Multiple camera views (orthographic, perspective)
+- [ ] Multiple camera views (orthographic, perspective)
 
 ## Roadmap
 

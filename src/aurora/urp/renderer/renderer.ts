@@ -13,8 +13,6 @@ import FontGen from "./fontGen";
 import SequentialDrawPipeline from "../pipelines/sequentialDraw";
 import SortedDrawPipeline from "../pipelines/sortedDraw";
 import LightsPipeline from "../pipelines/lights";
-import DebuggerPipeline from "../pipelines/debug";
-import PresentationPipeline from "../pipelines/presentation";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import ColorCorrection, {
   ColorCorrectionOptions,
@@ -22,7 +20,7 @@ import ColorCorrection, {
 } from "../pipelines/colorCorrection";
 import Bloom from "../pipelines/bloom";
 import GuiPipeline from "../pipelines/gui";
-import TempText from "../../../helps/futureTextPipe";
+import ScreenPipeline from "../pipelines/screenPipeline";
 
 interface PipelineStaticClass {
   usePipeline(): void;
@@ -93,8 +91,7 @@ export default class Renderer {
     if (config.feature.bloom) this.pipelineOrder.push(Bloom);
     this.pipelineOrder.push(ColorCorrection);
     this.pipelineOrder.push(GuiPipeline);
-    if (config.debugger) this.pipelineOrder.push(DebuggerPipeline);
-    else this.pipelineOrder.push(PresentationPipeline);
+    this.pipelineOrder.push(ScreenPipeline);
   }
 
   private static clearPipelines() {
