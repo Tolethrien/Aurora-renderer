@@ -1,3 +1,5 @@
+import { DeepPartial } from "../aurora/aurora";
+
 interface RGBA {
   r: number;
   g: number;
@@ -72,4 +74,58 @@ export function hslaToRgba(h: number, s: number, l: number, a: number): RGBA {
   }
 
   return { r: r, g: g, b: b, a: a };
+}
+export function deepMerge<T extends object>(
+  target: T,
+  source: DeepPartial<T>
+): T {
+  const output = { ...target } as T;
+
+  if (
+    target &&
+    typeof target === "object" &&
+    source &&
+    typeof source === "object"
+  ) {
+    for (const key in source) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        const sourceValue = source[key as keyof DeepPartial<T>];
+        const targetValue = target[key as keyof T];
+
+        if (
+          sourceValue &&
+          typeof sourceValue === "object" &&
+          !Array.isArray(sourceValue) &&
+          targetValue &&
+          typeof targetValue === "object" &&
+          !Array.isArray(targetValue)
+        ) {
+          (output as any)[key] = deepMerge(
+            targetValue as object,
+            sourceValue as object
+          );
+        } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+          (output as any)[key] = sourceValue;
+        } else {
+          (output as any)[key] = sourceValue;
+        }
+      }
+    }
+  }
+  return output;
+}
+export function flatObjectToValues(obj: Object) {
+  let values: number[] = [];
+
+  for (const key of Object.keys(obj)) {
+    const value = (obj as any)[key];
+    if (Array.isArray(value)) {
+      values = values.concat(value);
+    } else if (typeof value === "object" && value !== null) {
+      values = values.concat(flatObjectToValues(value));
+    } else {
+      values.push(value);
+    }
+  }
+  return values;
 }

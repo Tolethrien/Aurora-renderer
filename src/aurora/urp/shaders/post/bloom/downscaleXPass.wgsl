@@ -7,17 +7,17 @@ const weights = array<f32, 5>(0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216
 const offsets = array<f32, 5>(1,1,2,4,4); 
 
 @compute @workgroup_size(workgroupSize, workgroupSize)
-fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn computeMain(@builtin(global_invocation_id) globalD: vec3<u32>) {
     let outputSize = vec2<f32>(textureDimensions(outputTexture));
     
-    if (global_id.x >= u32(outputSize.x) || global_id.y >= u32(outputSize.y)) {
+    if (globalD.x >= u32(outputSize.x) || globalD.y >= u32(outputSize.y)) {
         return;
     }
 
     let inputSize = vec2<f32>(textureDimensions(inputTexture));
     let texelSize = 1.0 / inputSize;
     
-    let uv = (vec2<f32>(global_id.xy) * 2.0 + vec2<f32>(1.0)) / inputSize;
+    let uv = (vec2<f32>(globalD.xy) * 2.0 + vec2<f32>(1.0)) / inputSize;
     
     var final_color = textureSampleLevel(inputTexture, linearSampler, uv, 0.0) * weights[0];
 
@@ -27,5 +27,5 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color += textureSampleLevel(inputTexture, linearSampler, uv - offset, 0.0) * weights[i];
     }
 
-    textureStore(outputTexture, global_id.xy, final_color);
+    textureStore(outputTexture, globalD.xy, final_color);
 }

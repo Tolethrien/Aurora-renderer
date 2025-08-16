@@ -5,6 +5,7 @@ import jerseyImg from "../assets/Jersey25-Regular.png";
 import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
 import latoImg from "../assets/Lato-Regular.png";
 import latoJson from "../assets/Lato-Regular-msdf.json";
+import { deepMerge } from "../../../utils/utils";
 type RenderRes = "1900x1080" | "1600x900" | "800x600";
 type SortOrder = "none" | "y" | "y+x";
 type Profiler = "none" | "minimal" | "normal" | "extended";
@@ -84,41 +85,4 @@ export default function auroraConfig(props: DeepPartial<AuroraConfig>) {
     json: jerseyJson,
   });
   return config;
-}
-
-function deepMerge<T extends object>(target: T, source: DeepPartial<T>): T {
-  const output = { ...target } as T;
-
-  if (
-    target &&
-    typeof target === "object" &&
-    source &&
-    typeof source === "object"
-  ) {
-    for (const key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        const sourceValue = source[key as keyof DeepPartial<T>];
-        const targetValue = target[key as keyof T];
-
-        if (
-          sourceValue &&
-          typeof sourceValue === "object" &&
-          !Array.isArray(sourceValue) &&
-          targetValue &&
-          typeof targetValue === "object" &&
-          !Array.isArray(targetValue)
-        ) {
-          (output as any)[key] = deepMerge(
-            targetValue as object,
-            sourceValue as object
-          );
-        } else if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
-          (output as any)[key] = sourceValue;
-        } else {
-          (output as any)[key] = sourceValue;
-        }
-      }
-    }
-  }
-  return output;
 }

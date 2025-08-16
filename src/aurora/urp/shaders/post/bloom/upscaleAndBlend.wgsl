@@ -7,18 +7,18 @@
 override workgroupSize: u32 = 8;
 
 @compute @workgroup_size(workgroupSize, workgroupSize)
-fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn computeMain(@builtin(global_invocation_id) globalID: vec3<u32>) {
     let outputSize = vec2<f32>(textureDimensions(outputTexture));
     let uintSize = vec2<u32>(outputSize); 
-    if (global_id.x >= uintSize.x || global_id.y >= uintSize.y) {
+    if (globalID.x >= uintSize.x || globalID.y >= uintSize.y) {
         return;
     }
 
-    let uv = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / outputSize;
+    let uv = (vec2<f32>(globalID.xy) + vec2<f32>(0.5)) / outputSize;
 
     let upscaledBlurColor = textureSampleLevel(lowerResBlurTexture, linearSampler, uv, 0.0);
     let currentLevelColor = textureSampleLevel(currentLevelTexture, linearSampler, uv, 0.0);
     let blendedColor = upscaledBlurColor * 0.8 + currentLevelColor;
 
-    textureStore(outputTexture, global_id.xy, blendedColor);
+    textureStore(outputTexture, globalID.xy, blendedColor);
 }

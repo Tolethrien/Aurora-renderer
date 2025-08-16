@@ -1,4 +1,10 @@
-import { GPUAuroraTexture, PipelineBind, RGB, Size2D } from "../../aurora";
+import {
+  DeepPartial,
+  GPUAuroraTexture,
+  PipelineBind,
+  RGB,
+  Size2D,
+} from "../../aurora";
 import AuroraCamera from "../camera";
 import {
   compileShaders,
@@ -21,6 +27,7 @@ import ColorCorrection, {
 import Bloom from "../pipelines/bloom";
 import GuiPipeline from "../pipelines/gui";
 import ScreenPipeline from "../pipelines/screenPipeline";
+import PostProcessLDR, { PostLDR } from "../pipelines/postProcessLDR";
 
 interface PipelineStaticClass {
   usePipeline(): void;
@@ -91,6 +98,7 @@ export default class Renderer {
     if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
     if (config.feature.bloom) this.pipelineOrder.push(Bloom);
     this.pipelineOrder.push(ColorCorrection);
+    this.pipelineOrder.push(PostProcessLDR);
     this.pipelineOrder.push(GuiPipeline);
     this.pipelineOrder.push(ScreenPipeline);
   }
@@ -202,15 +210,15 @@ export default class Renderer {
         qRead.unmap();
       });
     }
-    const { drawnQuads, drawnLights, drawCalls, computeCalls } =
+    const { drawnQuads, drawnLights, drawCalls, computeCalls, drawnGui } =
       AuroraDebugInfo.getAllData;
     AuroraDebugInfo.setParam(
       "drawnTriangles",
-      drawnQuads * 2 + drawnLights * 2
+      drawnQuads * 2 + drawnLights * 2 + drawnGui * 2
     );
     AuroraDebugInfo.setParam(
       "drawnVertices",
-      drawnQuads * 2 * 6 + drawnLights * 2 * 6
+      drawnQuads * 2 * 6 + drawnLights * 2 * 6 + drawnGui * 6
     );
     AuroraDebugInfo.setParam("totalCalls", drawCalls + computeCalls);
   }
@@ -285,6 +293,15 @@ export default class Renderer {
   }
   public static setScreenSettings(settings: Partial<ColorCorrectionOptions>) {
     return ColorCorrection.setScreenSettings(settings);
+  }
+  public static setPostProcess(settings: PostLDR) {
+    return PostProcessLDR.setPostProcess(settings);
+  }
+  public static getPostProcess() {
+    return PostProcessLDR.getPostProcess();
+  }
+  public static usingPostProcess() {
+    return PostProcessLDR.isPostProcessLDRUsedInFrame();
   }
   public static get getEncoder() {
     return this.frameEncoder;

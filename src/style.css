@@ -50,6 +50,6 @@ body {
 }
 canvas {
   outline: 1px solid rgba(116, 116, 116, 0.66);
-  border-radius: 2%;
+  /* border-radius: 2%; */
   margin-right: 5px;
 }

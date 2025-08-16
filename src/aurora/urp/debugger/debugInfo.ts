@@ -6,11 +6,12 @@ import Renderer from "../renderer/renderer";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
-  "lightMap",
-  "finalDraw",
   "zBufferDump",
-  "bloomEffect",
+  "lightMap",
   "bloomThreshold",
+  "bloomEffect",
+  "finalDraw",
+  "PostLDR",
   "gui",
 ] as const;
 type textures = (typeof TEXTURES_TO_SHOW)[number];
@@ -27,6 +28,7 @@ interface DebugData {
   renderPasses: number;
   computePasses: number;
   drawnQuads: number;
+  drawnGui: number;
   drawnLights: number;
   drawnTriangles: number;
   drawnVertices: number;
@@ -48,6 +50,7 @@ const DATA_INIT: DebugData = {
   renderPasses: 0,
   computePasses: 0,
   drawnQuads: 0,
+  drawnGui: 0,
   drawnLights: 0,
   drawnTriangles: 0,
   drawnVertices: 0,

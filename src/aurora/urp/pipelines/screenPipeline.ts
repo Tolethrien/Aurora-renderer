@@ -11,40 +11,38 @@ type displayMode = "screen" | "debug";
  * final pass to show texture on screen
  */
 export default class ScreenPipeline {
-  private static displayNormalPipeline: GPURenderPipeline;
+  private static displayScreenPipeline: GPURenderPipeline;
   private static displayDebugPipeline: GPURenderPipeline;
-  private static displayNormalBind: PipelineBind;
   private static displayDebugBindLayout: PipelineBind[1];
+  private static displayScreenBindLayout: PipelineBind[1];
   private static displayMode: displayMode = "screen";
   private static displayedDebugTexture = "";
-  private static dataDirty = false;
   private static currentBindData: PipelineBind[0];
   private static debugOptionsBuffer: GPUBuffer;
+  private static bufferDirty = false;
+  private static textureDirty = true;
+  private static lastPostProcessState = false;
   public static clearPipeline() {}
   public static async createPipeline() {
     const normalShader = Aurora.createShader("screenShader", screen);
     const debugShader = Aurora.createShader("debugShader", debug);
-
-    this.displayNormalBind = Aurora.createBindGroup({
-      label: "screenBind",
+    this.displayScreenBindLayout = Aurora.createBindLayout({
+      label: "debugLayout",
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.FRAGMENT,
-          layout: { sampler: {} },
-          resource: Renderer.getSampler("linear"),
+          sampler: {},
         },
         {
           binding: 1,
           visibility: GPUShaderStage.FRAGMENT,
-          layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("finalDraw"),
+          texture: { viewDimension: "2d" },
         },
         {
           binding: 2,
           visibility: GPUShaderStage.FRAGMENT,
-          layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("gui"),
+          texture: { viewDimension: "2d" },
         },
       ],
     });
@@ -69,17 +67,17 @@ export default class ScreenPipeline {
       ],
     });
 
-    const normalPipelineLayout = Aurora.createPipelineLayout([
-      this.displayNormalBind[1],
+    const screenPipelineLayout = Aurora.createPipelineLayout([
+      this.displayScreenBindLayout,
     ]);
     const debugPipelineLayout = Aurora.createPipelineLayout([
       this.displayDebugBindLayout,
     ]);
-    this.displayNormalPipeline = await Aurora.createRenderPipeline({
+    this.displayScreenPipeline = await Aurora.createRenderPipeline({
       shader: normalShader,
       pipelineName: "PresentationPipeline",
       buffers: [],
-      pipelineLayout: normalPipelineLayout,
+      pipelineLayout: screenPipelineLayout,
     });
     this.displayDebugPipeline = await Aurora.createRenderPipeline({
       shader: debugShader,
@@ -97,18 +95,15 @@ export default class ScreenPipeline {
   }
 
   public static usePipeline(): void {
-    if (this.dataDirty && this.displayMode !== "screen") this.generateBind();
+    this.generateBind();
 
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
     const pipeline =
       this.displayMode === "screen"
-        ? this.displayNormalPipeline
+        ? this.displayScreenPipeline
         : this.displayDebugPipeline;
-    const bind =
-      this.displayMode === "screen"
-        ? this.displayNormalBind[0]
-        : this.currentBindData;
+    const bind = this.currentBindData;
     const passEncoder = commandEncoder.beginRenderPass({
       label: "presentationRenderPass",
       colorAttachments: [
@@ -137,7 +132,48 @@ export default class ScreenPipeline {
       `display:${this.displayMode}`,
     ]);
   }
+  public static setDisplayMode(mode: displayMode, texture: string) {
+    this.displayMode = mode;
+    this.displayedDebugTexture = texture;
+    this.bufferDirty = true;
+    this.textureDirty = true;
+  }
   private static generateBind() {
+    if (Renderer.usingPostProcess() !== this.lastPostProcessState)
+      this.textureDirty = true;
+
+    this.lastPostProcessState = Renderer.usingPostProcess();
+    if (this.displayMode === "screen") this.generateScreenBind();
+    else this.generateDebugBind();
+  }
+  private static generateScreenBind() {
+    if (!this.textureDirty) return;
+    const havePost = Renderer.usingPostProcess() ? "PostLDR" : "finalDraw";
+    const bind = Aurora.getNewBindGroupFromLayout(
+      {
+        label: "screenBind",
+        entries: [
+          {
+            binding: 0,
+            resource: Renderer.getSampler("linear"),
+          },
+          {
+            binding: 1,
+            resource: Renderer.getTextureView(havePost),
+          },
+          {
+            binding: 2,
+            resource: Renderer.getTextureView("gui"),
+          },
+        ],
+      },
+      this.displayScreenBindLayout
+    );
+    this.currentBindData = bind;
+    this.textureDirty = false;
+  }
+  private static generateDebugBind() {
+    if (!this.bufferDirty) return;
     const uniformData = new Uint32Array([0, 0]);
     const { meta } = Renderer.getTexture(this.displayedDebugTexture);
     if (meta.format === "r16float") {
@@ -167,12 +203,8 @@ export default class ScreenPipeline {
       this.displayDebugBindLayout
     );
     this.currentBindData = bind;
-    this.dataDirty = false;
+    this.bufferDirty = false;
+
     Aurora.device.queue.writeBuffer(this.debugOptionsBuffer, 0, uniformData, 0);
-  }
-  public static setDisplayMode(mode: displayMode, texture: string) {
-    this.displayMode = mode;
-    this.displayedDebugTexture = texture;
-    this.dataDirty = true;
   }
 }

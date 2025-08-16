@@ -13,8 +13,8 @@ struct BloomParams{
 
 @compute
 @workgroup_size(workgroupSize, workgroupSize)
-fn computeMain(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let outputCoords = global_id.xy;
+fn computeMain(@builtin(global_invocation_id) globalID: vec3<u32>) {
+    let outputCoords = globalID.xy;
 
     let inputSize = textureDimensions(inputTexture);
     let outputSize = inputSize;

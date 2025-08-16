@@ -70,7 +70,6 @@ fn vertexMain(props: VertexInput) -> VertexOutput {
 }
 
 
-
 @fragment
 fn fragmentMain(props: VertexOutput) -> FragmentOutput {
     var out: FragmentOutput;
@@ -82,24 +81,25 @@ fn fragmentMain(props: VertexOutput) -> FragmentOutput {
         discard;
     };
     
-    let half_size = props.size * 0.5;
-    let round_clamped = clamp(props.round, 0.0, 1.0);
-    let radii = half_size * round_clamped;
-    let sdf = sdRoundBox(props.centerSize, half_size, radii);
-    let antialias_width = fwidth(sdf);
-    let sharp_aa = antialias_width * 0.5; 
-    let alpha = smoothstep(sharp_aa, -sharp_aa, sdf);
+    let halfSize = props.size * 0.5;
+    let roundClamped = clamp(props.round, 0.0, 1.0);
+    let radii = halfSize * roundClamped;
+    let sdf = sdRoundBox(props.centerSize, halfSize, radii);
+    let antialiasWidth = fwidth(sdf);
+    let sharpAa = antialiasWidth * 0.5; 
+    let alpha = smoothstep(sharpAa, -sharpAa, sdf);
 
     if (alpha < 0.001) {
         discard;
     }
     
     let color = props.color / 255.0;
-    let final_rgb = texture.rgb * color.rgb * props.emissive;
+    let finalRgb = texture.rgb * color.rgb * props.emissive;
     
-    out.primary = vec4<f32>(final_rgb, texture.a * color.a * alpha);
+    out.primary = vec4<f32>(finalRgb, texture.a * color.a * alpha);
     return out;
 }
+
 fn sdRoundBox(p: vec2<f32>, s: vec2<f32>, r: vec2<f32>) -> f32 {
     if (r.x <= 0.001 && r.y <= 0.001) {
         let d = abs(p) - s;
@@ -107,11 +107,11 @@ fn sdRoundBox(p: vec2<f32>, s: vec2<f32>, r: vec2<f32>) -> f32 {
     }
         let q = abs(p) - s + r;
     
-    let q_corner_normalized = max(q, vec2<f32>(0.0)) / r;
-    let corner_dist = (length(q_corner_normalized) - 1.0) * min(r.x, r.y);
-    let edge_dist = min(max(q.x, q.y), 0.0);
+    let qCornerNormalized = max(q, vec2<f32>(0.0)) / r;
+    let cornerDist = (length(qCornerNormalized) - 1.0) * min(r.x, r.y);
+    let edgeDist = min(max(q.x, q.y), 0.0);
     
-    return corner_dist + edge_dist;
+    return cornerDist + edgeDist;
 }
 
 

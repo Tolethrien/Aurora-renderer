@@ -7,7 +7,6 @@ struct VertexInput {
 struct VertexOutput {
   @builtin(position) pos: vec4f,
   @location(1)  coords: vec2f,
-  
 };
 
 const quad = array(vec2f(-1,-1), vec2f(1,-1), vec2f(-1, 1), vec2f(1, 1));

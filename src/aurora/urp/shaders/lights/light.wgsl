@@ -48,18 +48,18 @@ fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     let intensity = color.a;
 
     let radius = props.size.x * 0.5;
-    let dist_pixels = length(props.centerPos);
-    let dist_norm = dist_pixels / radius;
+    let distPixels = length(props.centerPos);
+    let distNorm = distPixels / radius;
 
-    if (dist_norm > 1.0) {
+    if (distNorm > 1.0) {
         discard;
     }
 
-    let attenuation = pow(max(0.0, 1.0 - dist_norm * dist_norm), FALLOFF_EXPONENT);
-    let final_rgb = color.rgb * intensity * attenuation;
+    let attenuation = pow(max(0.0, 1.0 - distNorm * distNorm), FALLOFF_EXPONENT);
+    let finalRGB = color.rgb * intensity * attenuation;
     
     
-    return vec4<f32>(final_rgb, 0);
+    return vec4<f32>(finalRGB, 0);
 }
 
 

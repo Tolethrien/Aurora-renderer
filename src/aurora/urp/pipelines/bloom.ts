@@ -2,10 +2,10 @@ import { assert } from "../../../utils/utils";
 import Aurora from "../../core";
 import AuroraDebugInfo from "../debugger/debugInfo";
 import Renderer from "../renderer/renderer";
-import bloomX from "../shaders/bloom/downscaleXPass.wgsl?raw";
+import bloomX from "../shaders/post/bloom/downscaleXPass.wgsl?raw";
 import bloomY from "../shaders/general/gaussianY.wgsl?raw";
-import upscaleAndBlend from "../shaders/bloom/upscaleAndBlend.wgsl?raw";
-import threshold from "../shaders/bloom/bloomThreshold.wgsl?raw";
+import upscaleAndBlend from "../shaders/post/bloom/upscaleAndBlend.wgsl?raw";
+import threshold from "../shaders/post/bloom/bloomThreshold.wgsl?raw";
 import upscale from "../shaders/general/upscale.wgsl?raw";
 enum BloomParamsEnum {
   threshold,

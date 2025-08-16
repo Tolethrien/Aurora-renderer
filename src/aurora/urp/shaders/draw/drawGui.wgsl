@@ -59,30 +59,30 @@ fn fragmentMain(props: VertexOutput) -> @location(0) vec4<f32> {
     let texture = textureSampleLevel(userTextures, universalSampler, props.crop, index, 0);
     if (texture.a < 0.001) { discard; }
 
-    let half_size = props.size * 0.5;
-    let round_clamped = clamp(props.round, 0.0, 1.0);
+    let halfSize = props.size * 0.5;
+    let roundClamped = clamp(props.round, 0.0, 1.0);
 
-    let maxCorner = min(half_size.x, half_size.y);
-    let cornerRadius = maxCorner * round_clamped;
+    let maxCorner = min(halfSize.x, halfSize.y);
+    let cornerRadius = maxCorner * roundClamped;
     let radii = vec2<f32>(cornerRadius, cornerRadius);
 
-    let sdf = sdRoundBox(props.centerSize, half_size, radii);
-    let antialias_width = fwidth(sdf);
-    let sharp_aa = antialias_width * 0.5;
-    let alpha = smoothstep(sharp_aa, -sharp_aa, sdf);
+    let sdf = sdRoundBox(props.centerSize, halfSize, radii);
+    let antialiasWidth = fwidth(sdf);
+    let sharpAA = antialiasWidth * 0.5;
+    let alpha = smoothstep(sharpAA, -sharpAA, sdf);
 
     if (alpha < 0.001) { discard; }
 
     let color = props.color / 255.0;
-    let final_rgb = texture.rgb * color.rgb;
-    return vec4<f32>(final_rgb, texture.a * color.a * alpha);
+    let finalRgb = texture.rgb * color.rgb;
+    return vec4<f32>(finalRgb, texture.a * color.a * alpha);
 }
 
 fn sdRoundBox(p: vec2<f32>, b: vec2<f32>, r: vec2<f32>) -> f32 {
-    let r_clamped = min(r, b);
-    let q = abs(p) - b + r_clamped;
+    let rClamped = min(r, b);
+    let q = abs(p) - b + rClamped;
     let outside = max(q, vec2<f32>(0.0));
-    return length(outside) - r_clamped.x + min(max(q.x, q.y), 0.0);
+    return length(outside) - rClamped.x + min(max(q.x, q.y), 0.0);
 }
 
 

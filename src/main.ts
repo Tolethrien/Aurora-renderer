@@ -9,11 +9,11 @@ import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/renderer/config";
 import Renderer from "./aurora/urp/renderer/renderer";
 interface t {
-  lightcolor: [number, number, number];
-  intence: number;
+  lightColor: [number, number, number];
+  intense: number;
   pos: [number, number];
   size: [number, number];
-  emis: number;
+  emissive: number;
 }
 const arr = Array(50)
   .fill(0)
@@ -53,6 +53,10 @@ async function create() {
   await Renderer.initialize(config);
   const l = 50;
   Renderer.setGlobalIllumination([l, l, l]);
+  Renderer.setPostProcess({
+    chromaticAberration: { str: 1 },
+    vignette: { str: 0.5, radius: 0.9, color: [255, 50, 50] },
+  });
   Renderer.setScreenSettings({
     exposure: -0.2,
     saturation: 0.2,
@@ -63,7 +67,7 @@ let h = 0;
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
   Renderer.setScreenSettings({
-    hueShift: h,
+    hueShift: 0,
   });
   // h += 2;
   Renderer.beginBatch();
@@ -223,68 +227,68 @@ function showOrderOFDraw() {
 }
 function showLights() {
   makeLight({
-    intence: 0,
-    lightcolor: [255, 60, 60],
+    intense: 0,
+    lightColor: [255, 60, 60],
     pos: [300, 300],
     size: [5, 600],
-    emis: 3,
+    emissive: 3,
   });
   makeLight({
-    intence: 0,
-    lightcolor: [255, 255, 60],
+    intense: 0,
+    lightColor: [255, 255, 60],
     pos: [300, 350],
     size: [5, 600],
-    emis: 3,
+    emissive: 3,
   });
   makeLight({
-    intence: 0,
-    lightcolor: [60, 255, 60],
+    intense: 0,
+    lightColor: [60, 255, 60],
     pos: [300, 400],
     size: [5, 600],
-    emis: 3,
+    emissive: 3,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [255, 70, 255],
+    intense: 200,
+    lightColor: [255, 70, 255],
     pos: [50, 50],
     size: [50, 50],
-    emis: 3,
+    emissive: 3,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [255, 255, 255],
+    intense: 200,
+    lightColor: [255, 255, 255],
     pos: [500, 550],
     size: [50, 50],
-    emis: 2,
+    emissive: 2,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [255, 255, 50],
+    intense: 200,
+    lightColor: [255, 255, 50],
     pos: [50, 550],
     size: [50, 50],
-    emis: 2,
+    emissive: 2,
   });
   makeLight({
-    intence: 200,
-    lightcolor: [70, 70, 255],
+    intense: 200,
+    lightColor: [70, 70, 255],
     pos: [550, 50],
     size: [50, 50],
-    emis: 5,
+    emissive: 5,
   });
 }
 
-function makeLight({ intence, lightcolor, pos, size, emis }: t) {
+function makeLight({ emissive, lightColor, pos, size, intense }: t) {
   Draw.rect({
     position: { x: pos[0], y: pos[1] },
     size: { height: size[0], width: size[1] },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2], 255],
-    emissive: emis,
+    tint: [lightColor[0], lightColor[1], lightColor[2], 255],
+    emissive: emissive,
   });
   Draw.pointLight({
     position: { x: pos[0], y: pos[1] },
     size: { height: size[0] + 300, width: size[1] + 300 },
-    tint: [lightcolor[0], lightcolor[1], lightcolor[2]],
-    intensity: intence,
+    tint: [lightColor[0], lightColor[1], lightColor[2]],
+    intensity: intense,
   });
 }
 

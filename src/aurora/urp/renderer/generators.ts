@@ -42,7 +42,7 @@ export function generateInternalBuffers() {
 export function generateInternalTextures(res: Size2D, bloomMip: number) {
   const canvasWidth = res.width;
   const canvasHeight = res.height;
-
+  //stage 1
   const offscreen = Aurora.createTextureEmpty({
     size: {
       width: canvasWidth,
@@ -51,14 +51,7 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     format: "rgba16float",
     label: "offscreenCanvas",
   });
-  const gui = Aurora.createTextureEmpty({
-    size: {
-      width: canvasWidth,
-      height: canvasHeight,
-    },
-    format: "bgra8unorm",
-    label: "GUI",
-  });
+  //stage2
   const finalDraw = Aurora.createTextureEmpty({
     size: {
       width: canvasWidth,
@@ -67,6 +60,23 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     format: "rgba16float",
     label: "finalDraw",
     isStorage: true,
+  });
+  //stage2
+  const finalPostLDR = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "rgba16float",
+    label: "finalPostLDR",
+  });
+  const gui = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "bgra8unorm",
+    label: "GUI",
   });
   const depth = Aurora.createTextureEmpty({
     size: {
@@ -152,10 +162,29 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     isStorage: true,
     mipCount: bloomMip,
   });
+  const pingFull = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "rgba16float",
+    label: "pingFull",
+  });
+  const pongFull = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "rgba16float",
+    label: "pongFull",
+  });
   return new Map([
+    //draw stages
     ["offscreenCanvas", offscreen],
-    ["gui", gui],
     ["finalDraw", finalDraw],
+    ["PostLDR", finalPostLDR],
+    ["gui", gui],
+    //other
     ["depthTexture", depth],
     ["zBufferDump", zdump],
     ["lightMap", light],
@@ -163,6 +192,8 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     ["bloomEffect", bloomEffect],
     ["bloomXPass", bloomXPass],
     ["bloomYPass", bloomYPass],
+    ["pingX1", pingFull],
+    ["pongX1", pongFull],
   ]);
 }
 export function generateInternalSamplers() {

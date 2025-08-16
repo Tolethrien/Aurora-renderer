@@ -63,12 +63,15 @@ export default class SequentialDrawPipeline {
   public static usePipeline() {
     this.validateBufferSize();
 
-    const offscreenTexture = Renderer.getTextureView("gui");
+    const guiTexture = Renderer.getTextureView("gui");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
+
+    const offsets: number[] = [];
     let bufferByteOffset = 0;
     let vertexListOffset = 0;
     this.batchList.forEach((batch) => {
+      offsets.push(bufferByteOffset);
       this.verticesList.set(batch.vertices, vertexListOffset);
       Aurora.device.queue.writeBuffer(
         this.vertexBuffer,
@@ -76,19 +79,28 @@ export default class SequentialDrawPipeline {
         this.verticesList,
         vertexListOffset
       );
-      const loadOperation = bufferByteOffset === 0 ? "clear" : "load";
+      bufferByteOffset +=
+        batch.counter * this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT;
+      vertexListOffset += batch.vertices.length;
+    });
+
+    const passEncoder = commandEncoder.beginRenderPass({
+      label: "GUIRenderPass",
+      colorAttachments: [
+        {
+          view: guiTexture,
+          loadOp: "clear",
+          clearValue: [0, 0, 0, 0],
+          storeOp: "store",
+        },
+      ],
+    });
+
+    let drawOffset = 0;
+    this.batchList.forEach((batch) => {
+      const offset = offsets[drawOffset];
+
       const { bindList, pipeline } = this.getPipeline(batch.shader);
-      const passEncoder = commandEncoder.beginRenderPass({
-        label: `GUIRenderPass:${batch.shader}`,
-        colorAttachments: [
-          {
-            view: offscreenTexture,
-            loadOp: loadOperation,
-            clearValue: [0, 0, 0, 0],
-            storeOp: "store",
-          },
-        ],
-      });
       if (batch.clip !== undefined)
         passEncoder.setScissorRect(
           batch.clip.x,
@@ -97,17 +109,15 @@ export default class SequentialDrawPipeline {
           batch.clip.h
         );
       passEncoder.setPipeline(pipeline);
-      passEncoder.setVertexBuffer(0, this.vertexBuffer, bufferByteOffset);
+      passEncoder.setVertexBuffer(0, this.vertexBuffer, offset);
       bindList.forEach((bind, index) => passEncoder.setBindGroup(index, bind));
       passEncoder.setIndexBuffer(indexBuffer, "uint32");
       passEncoder.drawIndexed(6, batch.counter);
-      passEncoder.end();
-      bufferByteOffset +=
-        batch.counter * this.VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT;
-      vertexListOffset += batch.vertices.length;
-
       AuroraDebugInfo.accumulate("drawCalls", 1);
+      AuroraDebugInfo.accumulate("drawnGui", batch.counter);
+      drawOffset++;
     });
+    passEncoder.end();
     Renderer.pipelinesUsedInFrame.add("GUIDrawPipeline");
     AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.accumulate("pipelineInUse", ["GUI"]);
