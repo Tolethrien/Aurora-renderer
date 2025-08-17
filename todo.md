@@ -6,10 +6,11 @@
 - zrobic debuuger na process.env by dzialal tree-shaking
 - roundness nie dziala jak powinno, powinno miec 4 wartosci dla bokow i miec bardziej zaawansowany algo jak CSS
 - bloom powiniene miec passy dostosowywane do wielkosci tekstury bo teraz 6-7 passow robi artefakty
-- sprawdz bo ja chyba nie czekam na waity jak generuje pipeliny dynamicznie(loopem)
+- sprawdz bo ja chyba nie czekam na awaity jak generuje pipeliny dynamicznie(loopem)
 - fajnie by bylo dodac liczenie pamieci lacznie na gpu
-- dodaj clampowanie danych w colorCorr w opcji set
 - skonsolidowac wszystkie opcje w jeden set w rendererze(colorCorrecion,PPLDR,bloom,PPHDR)
+- getScreenSetting(tint) nie dziala, daje jeden numer
+- vinieta pozwala na przenikanie przezroczystych elementow jak cienie postaci
 
 # Done
 

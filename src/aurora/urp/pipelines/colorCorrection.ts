@@ -14,27 +14,7 @@ export interface ColorCorrectionOptions {
   invert: number;
   tint: RGBA;
 }
-//TEMPORARY
-const options: ColorCorrectionOptions = {
-  exposure: 0,
-  saturation: 0,
-  contrast: 0,
-  whiteBalance: 0,
-  hueShift: 0,
-  brightness: 0,
-  invert: 0,
-  tint: [0, 0, 0, 0],
-};
-const ranges = {
-  exposure: [-2, 2],
-  saturation: [-1, 1],
-  contrast: [-1, 1],
-  whiteBalance: [-1, 1],
-  hueShift: [0, 360], //wheel shift
-  brightness: [-1, 1],
-  invert: [0, 1],
-  tint: [1, 1, 0, 1], //rgb - color, a = nasilenie tintu
-};
+
 export enum ScreenSettings {
   exposure,
   saturation,
@@ -57,7 +37,7 @@ export default class ColorCorrection {
   ]);
 
   public static async createPipeline() {
-    this.addControl();
+    // this.addControl();
     const shader = Aurora.createShader("colorCorrectionShader", colorShader);
     this.uniformCorrection = Aurora.createBuffer({
       bufferType: "uniform",
@@ -183,71 +163,5 @@ export default class ColorCorrection {
       }
       this.options[index] = entry[1] as number;
     });
-  }
-  //TEMPORARY
-  public static addControl() {
-    const win = document.createElement("div");
-
-    win.style =
-      "display:flex;flex-direction:column;position:absolute;left:0%;top:12%;background-color:rgba(0,0,0,0.5);padding:0.1em";
-    win.id = "sdrgr";
-    const window = document.getElementsByTagName("body")[0];
-    window.appendChild(win);
-    Object.keys(options).forEach((option) => {
-      const opt = option as keyof typeof options;
-      if (Array.isArray(options[opt])) {
-        this.tinter();
-        return;
-      }
-      this.controller(ranges[opt][0], ranges[opt][1], options[opt], opt);
-    });
-  }
-  public static controller(
-    min: number,
-    max: number,
-    center: number | number[],
-    opt: keyof typeof options
-  ) {
-    const window = document.getElementById("sdrgr")!;
-
-    const slider = document.createElement("input");
-    const name = document.createElement("p");
-    name.innerText = `${opt}`;
-    slider.setAttribute("type", "range");
-    slider.setAttribute("min", String(min));
-    slider.setAttribute("max", String(max));
-    slider.setAttribute("value", String(center));
-    slider.step = String(0.01);
-    slider.addEventListener("input", (event) => {
-      const target = event.target as HTMLInputElement;
-      this.options[ScreenSettings[opt]] = Number(target.value);
-    });
-    window.appendChild(name);
-    window.appendChild(slider);
-  }
-  public static tinter() {
-    const indexStart = ScreenSettings["tint"];
-    Array(4)
-      .fill(0)
-      .forEach((_, index) => {
-        const color = ["TintRed", "TintGreen", "TintBlue", "TintBlend"];
-        const window = document.getElementById("sdrgr")!;
-
-        const slider = document.createElement("input");
-        const name = document.createElement("p");
-        name.innerText = `${color[index]}`;
-        slider.setAttribute("type", "range");
-        slider.setAttribute("min", String(0));
-        slider.setAttribute("max", String(1));
-        slider.setAttribute("value", String(0));
-        slider.step = String(0.01);
-        slider.addEventListener("input", (event) => {
-          const target = event.target as HTMLInputElement;
-
-          this.options[indexStart + index] = Number(target.value);
-        });
-        window.appendChild(name);
-        window.appendChild(slider);
-      });
   }
 }

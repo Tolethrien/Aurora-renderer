@@ -8,6 +8,7 @@ import vignetteShader from "../shaders/post/vignette.wgsl?raw";
 
 export interface PostLDR {
   chromaticAberration?: {
+    /**range [0-1] */
     str?: number;
   };
   vignette?: {

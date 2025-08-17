@@ -88,7 +88,7 @@ fn computeMain(@builtin(global_invocation_id) globalId: vec3<u32>) {
     }
 
     // Tint 
-    color = mix(color, colorCorrection.tint.rgb, colorCorrection.tint.a);
+    color = mix(color, colorCorrection.tint.rgb/255, colorCorrection.tint.a/255);
     
     //invert
     let invertedColor = vec3<f32>(1.0, 1.0, 1.0) - color;

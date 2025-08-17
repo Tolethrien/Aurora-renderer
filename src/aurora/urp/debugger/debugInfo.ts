@@ -1,8 +1,15 @@
-import { RGB } from "../../aurora";
+import { RGB, RGBA } from "../../aurora";
 import Aurora from "../../core";
 import ScreenPipeline from "../pipelines/screenPipeline";
 import { AuroraConfig } from "../renderer/config";
 import Renderer from "../renderer/renderer";
+import appendDebugMenu from "./debugMenu";
+import {
+  createColorPicker,
+  createMainMenu,
+  createSlider,
+  createSubMenu,
+} from "./elements";
 const TEXTURES_TO_SHOW = [
   "canvas",
   "offscreenCanvas",
@@ -92,6 +99,7 @@ export default class AuroraDebugInfo {
     });
     //@ts-ignore
     window.debugTextureNext = () => this.nextTexture();
+    this.createDebugMenu();
   }
 
   public static setParam<T extends keyof DebugData>(
@@ -196,5 +204,18 @@ export default class AuroraDebugInfo {
     if (!this.isGathering) return;
     const time = performance.now() - this.frameTimeStart;
     this.data["CPUTime"] = Number(time.toFixed(1));
+  }
+  public static setMenuVisible(isVisible: boolean) {
+    const menu = document.getElementById("debugMenu");
+    if (!menu) {
+      console.warn(
+        "trying to set visibility of a debug menu, but menu is not append to body.\nMake sure you turn on debugger in auroraConfig"
+      );
+      return;
+    }
+    menu.style.display = isVisible ? "flex" : "none";
+  }
+  private static createDebugMenu() {
+    appendDebugMenu();
   }
 }

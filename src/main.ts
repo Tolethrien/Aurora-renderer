@@ -8,6 +8,12 @@ import fjson from "./assets/ya-hei-ascii-msdf.json";
 import AuroraDebugInfo from "./aurora/urp/debugger/debugInfo";
 import auroraConfig from "./aurora/urp/renderer/config";
 import Renderer from "./aurora/urp/renderer/renderer";
+
+/**
+ * today:
+ * system sterowania zmiennymi
+ * resize i zmiana rozdzialki
+ */
 interface t {
   lightColor: [number, number, number];
   intense: number;
@@ -53,23 +59,14 @@ async function create() {
   await Renderer.initialize(config);
   const l = 50;
   Renderer.setGlobalIllumination([l, l, l]);
-  Renderer.setPostProcess({
-    chromaticAberration: { str: 1 },
-    vignette: { str: 0.5, radius: 0.9, color: [255, 50, 50] },
-  });
   Renderer.setScreenSettings({
     exposure: -0.2,
     saturation: 0.2,
   });
 }
-let h = 0;
-
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
-  Renderer.setScreenSettings({
-    hueShift: 0,
-  });
-  // h += 2;
+
   Renderer.beginBatch();
   showLights();
   // showText();
