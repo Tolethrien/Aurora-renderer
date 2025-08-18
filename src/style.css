@@ -16,24 +16,6 @@
   margin: 0;
 }
 
-.logo {
-  pointer-events: none;
-  position: absolute;
-  top: 1%;
-  left: 1%;
-  display: flex;
-  gap: 0.3em;
-  align-items: center;
-  justify-content: center;
-  /* background-color: aqua; */
-  padding: 5px;
-  font-size: larger;
-  font-weight: 600;
-  color: wheat;
-  img {
-    width: 36px;
-  }
-}
 body {
   margin: 0;
   display: flex;
@@ -46,7 +28,7 @@ body {
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: end;
+  justify-content: center;
 }
 canvas {
   outline: 1px solid rgba(116, 116, 116, 0.66);

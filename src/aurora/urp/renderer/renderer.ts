@@ -1,10 +1,4 @@
-import {
-  DeepPartial,
-  GPUAuroraTexture,
-  PipelineBind,
-  RGB,
-  Size2D,
-} from "../../aurora";
+import { GPUAuroraTexture, PipelineBind, RGB, Size2D } from "../../aurora";
 import AuroraCamera from "../camera";
 import {
   compileShaders,
@@ -12,8 +6,8 @@ import {
   generateInternalSamplers,
   generateInternalTextures,
 } from "./generators";
-import { AuroraConfig } from "./config";
-import { assert } from "../../../utils/utils";
+import { AuroraConfig, ChangeableRenderConfig, RenderRes } from "./config";
+import { assert, deepMerge } from "../../../utils/utils";
 import Aurora from "../../core";
 import FontGen from "./fontGen";
 import SequentialDrawPipeline from "../pipelines/sequentialDraw";
@@ -31,10 +25,14 @@ import PostProcessLDR, { PostLDR } from "../pipelines/postProcessLDR";
 
 interface PipelineStaticClass {
   usePipeline(): void;
-  clearPipeline(): void;
+  clearPipeline?(): void;
+  rebindPipeline?(): void;
   createPipeline(): void;
 }
 
+/**
+ * wyszukaj po RESIZE gdzie trza zmienic
+ */
 type DrawPipeline = typeof SortedDrawPipeline | typeof SequentialDrawPipeline;
 export default class Renderer {
   private static auroraConfig: AuroraConfig;
@@ -45,11 +43,12 @@ export default class Renderer {
   private static shaders: Map<string, GPUShaderModule>;
   private static globalBindGroups: Map<string, PipelineBind> = new Map();
   private static userFonts: Map<string, FontGen> = new Map();
-  private static pipelineOrder: PipelineStaticClass[] = [];
+  private static pipelineOrder: Set<PipelineStaticClass> = new Set();
   private static frameEncoder: GPUCommandEncoder;
+  private static drawPipelineRef: DrawPipeline;
   public static pipelinesUsedInFrame: Set<string> = new Set();
-  private static currentRes: Size2D = { width: 800, height: 600 };
-
+  private static currentRes: Size2D = { width: 0, height: 0 };
+  private static resolutionDirty = false;
   public static async initialize(config: AuroraConfig) {
     this.auroraConfig = config;
 
@@ -58,11 +57,12 @@ export default class Renderer {
     this.buffers = generateInternalBuffers();
     this.generateGlobalBindGroups();
     this.currentRes = this.getCurrentResolution();
+    Aurora.canvas.width = this.currentRes.width;
+    Aurora.canvas.height = this.currentRes.height;
     this.textures = generateInternalTextures(
       this.currentRes,
       this.auroraConfig.bloom.numberOfPasses
     );
-    // Aurora.adapter.
     this.samplers = generateInternalSamplers();
     this.shaders = compileShaders();
     await this.uploadUserTextures();
@@ -73,12 +73,25 @@ export default class Renderer {
     AuroraCamera.update(this.getBuffer("cameraMatrix"));
     await this.createPipelines();
   }
+  public static async setRendererSettings(config: ChangeableRenderConfig) {
+    Object.entries(config).forEach((category) => {
+      const categoryName = category[0] as keyof ChangeableRenderConfig;
+      const categoryData = category[1] as Object;
+      if (categoryName === "feature")
+        this.reevaluateFeatures(categoryData as AuroraConfig["feature"]);
+      else if (categoryName === "render")
+        this.reevaluateRender(categoryData as AuroraConfig["rendering"]);
+    });
+  }
+
   public static beginBatch() {
+    if (this.resolutionDirty) this.changeRenderResolution();
     this.frameEncoder = Aurora.device.createCommandEncoder();
     this.clearPipelines();
     AuroraCamera.update(this.getBuffer("cameraMatrix"));
   }
   public static endBatch() {
+    if (this.resolutionDirty) return;
     AuroraCamera.updateCameraBound(this.getBuffer("cameraBounds"));
     this.startPipelines();
 
@@ -94,31 +107,94 @@ export default class Renderer {
       config.rendering.sortOrder === "none"
         ? SequentialDrawPipeline
         : SortedDrawPipeline;
-    this.pipelineOrder.push(drawPipeline);
-    if (config.feature.lighting) this.pipelineOrder.push(LightsPipeline);
-    if (config.feature.bloom) this.pipelineOrder.push(Bloom);
-    this.pipelineOrder.push(ColorCorrection);
-    this.pipelineOrder.push(PostProcessLDR);
-    this.pipelineOrder.push(GuiPipeline);
-    this.pipelineOrder.push(ScreenPipeline);
+    this.drawPipelineRef = drawPipeline;
+    this.pipelineOrder.add(drawPipeline);
+    this.pipelineOrder.add(LightsPipeline);
+    this.pipelineOrder.add(Bloom);
+    this.pipelineOrder.add(ColorCorrection);
+    this.pipelineOrder.add(PostProcessLDR);
+    this.pipelineOrder.add(GuiPipeline);
+    this.pipelineOrder.add(ScreenPipeline);
   }
 
   private static clearPipelines() {
-    this.pipelineOrder.forEach((pipeline) => pipeline.clearPipeline());
+    this.pipelineOrder.forEach((pipeline) => pipeline.clearPipeline?.());
   }
   private static startPipelines() {
     this.pipelineOrder.forEach((pipeline) => pipeline.usePipeline());
   }
+  private static rebindPipelines() {
+    console.log("sdsds");
+    this.pipelineOrder.forEach((pipeline) => pipeline.rebindPipeline?.());
+  }
   private static async createPipelines() {
     try {
       await Promise.all(
-        this.pipelineOrder.map((pipe) => pipe.createPipeline())
+        Array.from(this.pipelineOrder).map((pipe) => pipe.createPipeline())
       );
     } catch (error) {
       throw new Error(`error while creating pipelines: ${error}`);
     }
   }
+  private static reevaluateFeatures(config: AuroraConfig["feature"]) {
+    const textures = {
+      bloom: Bloom,
+      lighting: LightsPipeline,
+    };
+    Object.entries(config).forEach((feature) => {
+      const featureName = feature[0] as keyof AuroraConfig["feature"];
+      const featureValue = feature[1];
+      if (this.auroraConfig.feature[featureName] === featureValue) return;
+      this.auroraConfig.feature[featureName] = featureValue;
+      textures[featureName].markToChange(featureValue);
+    });
+  }
+  private static async reevaluateRender(config: AuroraConfig["rendering"]) {
+    Object.entries(config).forEach((feature) => {
+      const featureName = feature[0] as keyof AuroraConfig["rendering"];
+      const featureValue = feature[1];
+      if (this.auroraConfig.rendering[featureName] === featureValue) return;
+      if (featureName === "renderRes") {
+        this.resolutionDirty = true;
+        const newRes = (featureValue as string).split("x");
+        const resValues = {
+          width: Number(newRes[0]),
+          height: Number(newRes[1]),
+        };
+        const error = `Trying to change resolution but w:${resValues.width} or h:${resValues.height} is NaN`;
+        assert(!Number.isNaN(resValues.width), error);
+        assert(!Number.isNaN(resValues.height), error);
+        this.resolutionDirty = true;
+        this.auroraConfig.rendering.renderRes = featureValue as RenderRes;
+        this.currentRes = resValues;
+        this.changeRenderResolution();
+      }
+    });
+  }
 
+  public static copyTextureToTexture(src: string, destination: string) {
+    const { meta, texture } = this.getTexture(src);
+    const emptyTexture = this.getTexture(destination).texture;
+
+    this.frameEncoder.copyTextureToTexture(
+      { texture: texture },
+      { texture: emptyTexture },
+      { width: meta.width, height: meta.height, depthOrArrayLayers: 1 }
+    );
+  }
+  private static async changeRenderResolution() {
+    const newRes = this.currentRes;
+    Aurora.canvas.width = newRes.width;
+    Aurora.canvas.height = newRes.height;
+    const userTextures = this.getTexture("userTexture");
+    this.textures = generateInternalTextures(
+      newRes,
+      this.auroraConfig.bloom.numberOfPasses
+    );
+    this.textures.set("userTexture", userTextures);
+    this.rebindPipelines();
+    this.resolutionDirty = false;
+  }
   private static async uploadUserTextures() {
     this.auroraConfig.userTextures.forEach((texture, index) => {
       this.userTextureIndexes.set(texture.name, index + 1);
@@ -321,7 +397,7 @@ export default class Renderer {
     return font;
   }
   public static getDrawPipeline() {
-    return this.pipelineOrder[0] as DrawPipeline;
+    return this.drawPipelineRef;
   }
 
   public static get getGlobalIllumination(): RGB {

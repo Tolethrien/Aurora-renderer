@@ -11,6 +11,11 @@
 - skonsolidowac wszystkie opcje w jeden set w rendererze(colorCorrecion,PPLDR,bloom,PPHDR)
 - getScreenSetting(tint) nie dziala, daje jeden numer
 - vinieta pozwala na przenikanie przezroczystych elementow jak cienie postaci
+- scizzor nie moze dzialac na pixelach bo jak zmineisz rozdzialke to sie wali, musi operowac na procentach albo dostosowywac sie do rozdzialek
+- po co miec init aurory i potem renderera jak to jedno i to samo
+- zmina resu wplywa na maxa na UI
+- oddzielic wielkosc canvasu od render resolution
+- usun globalneBindy z rendera albo faktycznie je dodaj xD
 
 # Done
 
@@ -60,6 +65,7 @@
 # Fjuczer Ficzer
 
 - po co robic za kazdym createPipeline i generowac dane z jsona dla textu do sensownej formy, po prostu zapisac juz gotowe i uzywac! ale to przy budowie bardziej zaawansowanego systemu ktory bedzie juz przerbial ttf pliki
+- mierzenie kazdego pipu ile zajmuje a nie tylko ogolne gpu
 
 ## Fiuczers
 

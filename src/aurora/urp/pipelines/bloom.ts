@@ -21,8 +21,12 @@ export default class Bloom {
   private static orderList: string[] = [];
   private static GROUP_SIZE = 8;
   private static DEBUG = false;
+  private static isEnable = true;
+  private static needCleanup = false;
 
   public static async createPipeline() {
+    this.isEnable = Renderer.getConfigGroup("feature").lighting;
+    this.GROUP_SIZE = Renderer.getConfigGroup("rendering").computeGroupSize;
     const config = Renderer.getConfigGroup("bloom");
     Object.entries(config).forEach((entry) => {
       this.bloomOptions[
@@ -36,11 +40,11 @@ export default class Bloom {
   }
 
   public static usePipeline() {
-    //TODO: zrobic klucz w frmie array z ktorego bedziesz po nazwach wyciagac dane
+    if (!this.isEnable) return;
+    const commandEncoder = Renderer.getEncoder;
     const bloomParamBuffer = Renderer.getBuffer("bloomParams");
     Aurora.device.queue.writeBuffer(bloomParamBuffer, 0, this.bloomOptions, 0);
 
-    const commandEncoder = Renderer.getEncoder;
     const [bloomParams] = Renderer.getBind("bloomParams");
     let currentMip = 0;
 
@@ -63,7 +67,37 @@ export default class Bloom {
     AuroraDebugInfo.accumulate("computePasses", 1);
     AuroraDebugInfo.accumulate("usedPostProcessing", ["bloom"]);
   }
-  public static clearPipeline() {}
+
+  public static clearPipeline() {
+    if (this.needCleanup) this.cleanTexture();
+  }
+  public static rebindPipeline() {
+    this.generateBinds();
+  }
+  public static markToChange(enable: boolean) {
+    if (enable) this.isEnable = true;
+    else {
+      this.needCleanup = true;
+      this.isEnable = false;
+    }
+  }
+  private static cleanTexture() {
+    const commandEncoder = Renderer.getEncoder;
+
+    const passEncoder = commandEncoder.beginRenderPass({
+      label: "BloomClearRenderPass",
+      colorAttachments: [
+        {
+          view: Renderer.getTextureView("bloomEffect"),
+          clearValue: [0, 0, 0, 0],
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+    passEncoder.end();
+    this.needCleanup = false;
+  }
   private static getGroupSize(passName: string, mip: number) {
     let textureName: string;
     let saveMip: number = mip;

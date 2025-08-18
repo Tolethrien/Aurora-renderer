@@ -23,6 +23,9 @@ export default class ScreenPipeline {
   private static textureDirty = true;
   private static lastPostProcessState = false;
   public static clearPipeline() {}
+  public static rebindPipeline() {
+    this.textureDirty = true;
+  }
   public static async createPipeline() {
     const normalShader = Aurora.createShader("screenShader", screen);
     const debugShader = Aurora.createShader("debugShader", debug);
@@ -103,9 +106,8 @@ export default class ScreenPipeline {
       this.displayMode === "screen"
         ? this.displayScreenPipeline
         : this.displayDebugPipeline;
-    const bind = this.currentBindData;
     const passEncoder = commandEncoder.beginRenderPass({
-      label: "presentationRenderPass",
+      label: "screenRenderPass",
       colorAttachments: [
         {
           view: Aurora.context.getCurrentTexture().createView(),
@@ -122,7 +124,7 @@ export default class ScreenPipeline {
         : undefined,
     });
     passEncoder.setPipeline(pipeline);
-    passEncoder.setBindGroup(0, bind);
+    passEncoder.setBindGroup(0, this.currentBindData);
     passEncoder.setIndexBuffer(indexBuffer, "uint32");
     passEncoder.drawIndexed(6, 1);
     passEncoder.end();

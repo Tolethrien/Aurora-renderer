@@ -21,7 +21,8 @@ export default class LightsPipeline {
   private static addBuffer: GPUBuffer;
   private static bufferNeedResize = false;
   private static globalIllumination: RGB = [255, 255, 255];
-
+  private static isEnable = true;
+  private static needCleanup = false;
   private static batch: BatchNode = {
     vertices: new Float32Array(this.INIT_BATCH_SIZE * this.VERTEX_STRIDE),
     counter: 0,
@@ -43,6 +44,7 @@ export default class LightsPipeline {
     return this.batch;
   }
   public static async createPipeline() {
+    this.isEnable = Renderer.getConfigGroup("feature").lighting;
     const shader = Aurora.createShader("lightsShader", lightsShader);
 
     const [_, cameraBindLayout] = Renderer.getBind("camera");
@@ -87,6 +89,7 @@ export default class LightsPipeline {
   public static clearPipeline() {
     this.batch.counter = 0;
     this.bufferNeedResize = false;
+    if (this.needCleanup) this.cleanTexture();
   }
   private static resizeBuffer() {
     this.batch.currentBatchSize;
@@ -99,10 +102,12 @@ export default class LightsPipeline {
     });
   }
   public static usePipeline(): void {
+    if (!this.isEnable) return;
     if (this.bufferNeedResize) this.resizeBuffer();
     const [cameraBind] = Renderer.getBind("camera");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
+
     const correction = this.getNormalizedIllumination;
     Aurora.device.queue.writeBuffer(
       this.vertexBuffer,
@@ -133,6 +138,29 @@ export default class LightsPipeline {
     AuroraDebugInfo.accumulate("renderPasses", 1);
     AuroraDebugInfo.setParam("drawnLights", this.batch.counter);
     AuroraDebugInfo.accumulate("pipelineInUse", ["Lights"]);
+  }
+  private static cleanTexture() {
+    const commandEncoder = Renderer.getEncoder;
+    const passEncoder = commandEncoder.beginRenderPass({
+      label: "lightsRenderPass",
+      colorAttachments: [
+        {
+          view: Renderer.getTextureView("lightMap"),
+          clearValue: [1, 1, 1, 0],
+          loadOp: "clear",
+          storeOp: "store",
+        },
+      ],
+    });
+    passEncoder.end();
+    this.needCleanup = false;
+  }
+  public static markToChange(enable: boolean) {
+    if (enable) this.isEnable = true;
+    else {
+      this.needCleanup = true;
+      this.isEnable = false;
+    }
   }
   public static getGlobalIllumination(): RGB {
     return this.globalIllumination;

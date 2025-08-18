@@ -28,7 +28,8 @@ export enum ScreenSettings {
 }
 export default class ColorCorrection {
   private static uniformCorrection: GPUBuffer;
-  private static textureBind: PipelineBind;
+  private static textureBindLayout: PipelineBind[1];
+  private static textureBind: PipelineBind[0];
   private static optionBind: PipelineBind;
   private static pipeline: GPUComputePipeline;
   private static groupSize: AuroraConfig["rendering"]["computeGroupSize"];
@@ -45,41 +46,37 @@ export default class ColorCorrection {
       dataType: "Float32Array",
       label: "ColorCorrectionOptions",
     });
-    this.textureBind = Aurora.createBindGroup({
+    this.textureBindLayout = Aurora.createBindLayout({
       label: "colorCorrectionBind",
       entries: [
         {
           binding: 0,
           visibility: GPUShaderStage.COMPUTE,
-          layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("offscreenCanvas"),
+          texture: { viewDimension: "2d" },
         },
         {
           binding: 1,
           visibility: GPUShaderStage.COMPUTE,
-          layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("lightMap"),
+          texture: { viewDimension: "2d" },
         },
         {
           binding: 2,
           visibility: GPUShaderStage.COMPUTE,
-          layout: { texture: { viewDimension: "2d" } },
-          resource: Renderer.getTextureView("bloomEffect"),
+          texture: { viewDimension: "2d" },
         },
         {
           binding: 3,
           visibility: GPUShaderStage.COMPUTE,
-          layout: {
-            storageTexture: {
-              access: "write-only",
-              format: "rgba16float",
-              viewDimension: "2d",
-            },
+
+          storageTexture: {
+            access: "write-only",
+            format: "rgba16float",
+            viewDimension: "2d",
           },
-          resource: Renderer.getTextureView("finalDraw"),
         },
       ],
     });
+    this.generateBind();
     this.optionBind = Aurora.createBindGroup({
       label: "colorCorrectionOptionsBind",
       entries: [
@@ -95,7 +92,7 @@ export default class ColorCorrection {
 
     this.groupSize = Renderer.getConfigGroup("rendering").computeGroupSize;
     const pipelineLayout = Aurora.createPipelineLayout([
-      this.textureBind[1],
+      this.textureBindLayout,
       this.optionBind[1],
       bloomParamsLayout,
     ]);
@@ -109,6 +106,7 @@ export default class ColorCorrection {
       },
     });
   }
+
   public static usePipeline() {
     const commandEncoder = Renderer.getEncoder;
     const { meta } = Renderer.getTexture("finalDraw");
@@ -122,7 +120,7 @@ export default class ColorCorrection {
       label: "colorCorrectionRenderPass",
     });
     passEncoder.setPipeline(this.pipeline);
-    passEncoder.setBindGroup(0, this.textureBind[0]);
+    passEncoder.setBindGroup(0, this.textureBind);
     passEncoder.setBindGroup(1, this.optionBind[0]);
     passEncoder.setBindGroup(2, bloomParams);
     passEncoder.dispatchWorkgroups(size.x, size.y);
@@ -132,7 +130,9 @@ export default class ColorCorrection {
     AuroraDebugInfo.accumulate("pipelineInUse", ["ColorCorr"]);
   }
   public static clearPipeline() {}
-
+  public static rebindPipeline() {
+    this.generateBind();
+  }
   public static get getAllScreenSettings() {
     const list: Partial<ColorCorrectionOptions & { padding: number }> = {};
     list["tint"] = [0, 0, 0, 0];
@@ -163,5 +163,31 @@ export default class ColorCorrection {
       }
       this.options[index] = entry[1] as number;
     });
+  }
+  private static generateBind() {
+    this.textureBind = Aurora.getNewBindGroupFromLayout(
+      {
+        label: "colorCorrectionBind",
+        entries: [
+          {
+            binding: 0,
+            resource: Renderer.getTextureView("offscreenCanvas"),
+          },
+          {
+            binding: 1,
+            resource: Renderer.getTextureView("lightMap"),
+          },
+          {
+            binding: 2,
+            resource: Renderer.getTextureView("bloomEffect"),
+          },
+          {
+            binding: 3,
+            resource: Renderer.getTextureView("finalDraw"),
+          },
+        ],
+      },
+      this.textureBindLayout
+    );
   }
 }

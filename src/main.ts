@@ -21,9 +21,9 @@ interface t {
   size: [number, number];
   emissive: number;
 }
-const arr = Array(50)
+let arr = Array(100)
   .fill(0)
-  .map(() => [Math.random() * 600, Math.random() * 600]);
+  .map(() => [Math.random() * 854, Math.random() * 480]);
 
 const yaFont = { fontName: "ya", img: ftex, json: fjson };
 const texA = { name: "main", url: spritesheet };
@@ -44,25 +44,34 @@ const config = auroraConfig({
   rendering: {
     toneMapping: "aces",
     sortOrder: "y",
-    renderRes: "800x600",
+    renderRes: "854x480",
     canvasColor: [125, 125, 125, 255],
   },
 });
-
+export function newSize(value: number) {
+  arr = Array(value * 100)
+    .fill(0)
+    .map(() => [
+      Math.random() * Aurora.canvas.width,
+      Math.random() * Aurora.canvas.height,
+    ]);
+}
 async function preload() {
   await Aurora.init();
   await create();
   start(0);
 }
-
 async function create() {
   await Renderer.initialize(config);
   const l = 50;
   Renderer.setGlobalIllumination([l, l, l]);
-  Renderer.setScreenSettings({
-    exposure: -0.2,
-    saturation: 0.2,
-  });
+  //   Renderer.setScreenSettings({
+  //     exposure: -0.2,
+  //     saturation: 0.2,
+  //   });
+  // Renderer.setPostProcess({
+  //   chromaticAberration: { str: 0.2 },
+  // });
 }
 function start(timestamp: number) {
   AuroraDebugInfo.startCount(timestamp);
@@ -104,13 +113,13 @@ function showUI() {
   });
 
   Draw.guiRect({
-    position: { x: centX + 0.5, y: centY + 5.5, mode: "percent" },
+    position: { x: centX + 0.5, y: centY + 7, mode: "percent" },
     size: { width: 132, height: 7, mode: "pixel" },
     rounded: 0.2,
     tint: [150, 0, 0, 255],
   });
   Draw.guiRect({
-    position: { x: centX + 0.5, y: centY + 6.5, mode: "percent" },
+    position: { x: centX + 0.5, y: centY + 8, mode: "percent" },
     size: { width: 132, height: 7, mode: "pixel" },
     rounded: 0.2,
     tint: [100, 0, 0, 255],
@@ -125,7 +134,7 @@ function showUI() {
   });
   Draw.clip({
     position: { x: clipX, y: clipY, mode: "percent" },
-    size: { width: 195, height: 100, mode: "pixel" },
+    size: { width: 195, height: 82, mode: "pixel" },
   });
   Draw.guiRect({
     position: { x: clipX, y: clipY, mode: "percent" },
@@ -226,21 +235,21 @@ function showLights() {
   makeLight({
     intense: 0,
     lightColor: [255, 60, 60],
-    pos: [300, 300],
+    pos: [400, 200],
     size: [5, 600],
     emissive: 3,
   });
   makeLight({
     intense: 0,
     lightColor: [255, 255, 60],
-    pos: [300, 350],
+    pos: [400, 250],
     size: [5, 600],
     emissive: 3,
   });
   makeLight({
     intense: 0,
     lightColor: [60, 255, 60],
-    pos: [300, 400],
+    pos: [400, 300],
     size: [5, 600],
     emissive: 3,
   });
@@ -254,21 +263,21 @@ function showLights() {
   makeLight({
     intense: 200,
     lightColor: [255, 255, 255],
-    pos: [500, 550],
+    pos: [800, 400],
     size: [50, 50],
     emissive: 2,
   });
   makeLight({
     intense: 200,
     lightColor: [255, 255, 50],
-    pos: [50, 550],
+    pos: [50, 400],
     size: [50, 50],
     emissive: 2,
   });
   makeLight({
     intense: 200,
     lightColor: [70, 70, 255],
-    pos: [550, 50],
+    pos: [800, 50],
     size: [50, 50],
     emissive: 5,
   });

@@ -178,6 +178,15 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     format: "rgba16float",
     label: "pongFull",
   });
+  //empty texture to clear other
+  const empty = Aurora.createTextureEmpty({
+    size: {
+      width: canvasWidth,
+      height: canvasHeight,
+    },
+    format: "rgba16float",
+    label: "EmptySwapTexture",
+  });
   return new Map([
     //draw stages
     ["offscreenCanvas", offscreen],
@@ -194,6 +203,7 @@ export function generateInternalTextures(res: Size2D, bloomMip: number) {
     ["bloomYPass", bloomYPass],
     ["pingX1", pingFull],
     ["pongX1", pongFull],
+    ["empty", empty],
   ]);
 }
 export function generateInternalSamplers() {

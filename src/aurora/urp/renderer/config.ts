@@ -6,12 +6,13 @@ import jerseyJson from "../assets/Jersey25-Regular-msdf.json";
 import latoImg from "../assets/Lato-Regular.png";
 import latoJson from "../assets/Lato-Regular-msdf.json";
 import { deepMerge } from "../../../utils/utils";
-type RenderRes = "1900x1080" | "1600x900" | "800x600";
+export type RenderRes = "1920x1080" | "1280x720" | "854x480" | "640x360";
 type SortOrder = "none" | "y" | "y+x";
 type Profiler = "none" | "minimal" | "normal" | "extended";
 type UserTexture = { name: string; url: string };
 // type CameraProjection = "ortho" | "perspective" | "isometric";
 type ToneMaps = "rainhard" | "aces" | "filmic" | "none";
+
 export enum ToneMapList {
   none,
   rainhard,
@@ -47,6 +48,16 @@ export interface AuroraConfig {
   userTextures: UserTexture[];
   userFonts: FontGenProps[];
 }
+export interface ChangeableRenderConfig {
+  render?: {
+    renderRes?: RenderRes;
+    canvasColor?: RGBA;
+  };
+  feature?: {
+    bloom?: boolean;
+    lighting?: boolean;
+  };
+}
 const INIT_OPTIONS: AuroraConfig = {
   feature: {
     bloom: true,
@@ -55,7 +66,7 @@ const INIT_OPTIONS: AuroraConfig = {
   bloom: { intense: 0.7, knee: 0.2, threshold: 1, numberOfPasses: 4 },
   rendering: {
     drawOrigin: "center",
-    renderRes: "800x600",
+    renderRes: "854x480",
     toneMapping: "aces",
     sortOrder: "y",
     transparentCanvas: false,

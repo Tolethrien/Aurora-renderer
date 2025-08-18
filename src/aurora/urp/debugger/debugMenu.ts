@@ -1,6 +1,12 @@
+import { arr, newSize } from "../../../main";
+import { RGB } from "../../aurora";
+import Aurora from "../../core";
+import { RenderRes } from "../renderer/config";
 import Renderer from "../renderer/renderer";
 import {
+  createCheckbox,
   createColorPicker,
+  createDropDown,
   createMainMenu,
   createSlider,
   createSubMenu,
@@ -12,6 +18,8 @@ import {
 export default function appendDebugMenu() {
   const screenSliders = screeSettingsMenu();
   const posts = postProc();
+  const configs = renderConfig();
+  const gameConfigs = gameStuff();
   const rendererMenu = createSubMenu({
     name: "ScreenSettings",
     children: screenSliders,
@@ -21,10 +29,14 @@ export default function appendDebugMenu() {
     children: posts,
   });
   const canvas = createSubMenu({
-    name: "Canvas",
-    children: [],
+    name: "Render",
+    children: configs,
   });
-  createMainMenu([rendererMenu, post, canvas]);
+  const world = createSubMenu({
+    name: "World",
+    children: gameConfigs,
+  });
+  createMainMenu([rendererMenu, post, canvas, world]);
 }
 function screeSettingsMenu() {
   const ranges = {
@@ -124,4 +136,61 @@ function postProc() {
     });
   });
   return postOpt;
+}
+function renderConfig() {
+  const configs: HTMLElement[] = [];
+  const res = Renderer.getCurrentResolution();
+  configs.push(
+    createDropDown({
+      name: "Render Res",
+      options: ["1920x1080", "1280x720", "854x480", "640x360"],
+      selected: `${res.width}x${res.height}`,
+      onClick: (value) =>
+        Renderer.setRendererSettings({
+          render: { renderRes: value as RenderRes },
+        }),
+    })
+  );
+  configs.push(
+    createCheckbox({
+      name: "Bloom",
+      active: true,
+      onChange: async (checked) => {
+        await Renderer.setRendererSettings({ feature: { bloom: checked } });
+      },
+    })
+  );
+  configs.push(
+    createCheckbox({
+      name: "Light",
+      active: true,
+      onChange: async (checked) => {
+        await Renderer.setRendererSettings({
+          feature: { lighting: checked },
+        });
+      },
+    })
+  );
+
+  return configs;
+}
+function gameStuff() {
+  const gameConfigs: HTMLElement[] = [];
+  gameConfigs.push(
+    createColorPicker({
+      name: "AmbientLight",
+      useAlpha: false,
+      action: ({ value }) => {
+        Renderer.setGlobalIllumination(value as RGB);
+      },
+    })
+  );
+  gameConfigs.push(
+    createSlider({
+      action: (value) => newSize(value),
+      name: "spirtes",
+      range: { min: 0, max: 1000, init: 1, step: 1 },
+    })
+  );
+  return gameConfigs;
 }

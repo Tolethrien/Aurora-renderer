@@ -75,6 +75,7 @@ export default class AuroraDebugInfo {
   private static readBuffer: GPUBuffer;
   private static lastFrameTime = 0;
   private static frameTimeStart = 0;
+  private static menuVisible = false;
   public static debugVisibleTextureIndex = new Uint32Array([0]);
   //0 offscreen/1 depth
 
@@ -99,6 +100,9 @@ export default class AuroraDebugInfo {
     });
     //@ts-ignore
     window.debugTextureNext = () => this.nextTexture();
+    document.addEventListener("keypress", (e) => {
+      if (e.key === "`") this.setMenuVisible(this.menuVisible);
+    });
     this.createDebugMenu();
   }
 
@@ -214,8 +218,10 @@ export default class AuroraDebugInfo {
       return;
     }
     menu.style.display = isVisible ? "flex" : "none";
+    this.menuVisible = !this.menuVisible;
   }
   private static createDebugMenu() {
+    //TODO: this is temporary for debugging, in engine will be change to proper tools
     appendDebugMenu();
   }
 }

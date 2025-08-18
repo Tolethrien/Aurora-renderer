@@ -1,5 +1,6 @@
 import { assert } from "../../../utils/utils";
 import { RGB, RGBA } from "../../aurora";
+import Renderer from "../renderer/renderer";
 import "./debugStyles.css";
 //slider
 //checkbox
@@ -39,14 +40,43 @@ interface SubMenu {
 interface Input {
   name: string;
 }
-
+interface DropDown {
+  name: string;
+  options: string[];
+  selected: string;
+  onClick: (value: string) => void;
+}
+interface Checkbox {
+  name: string;
+  active: boolean;
+  onChange: (active: boolean) => void;
+}
+function logo() {
+  const div = document.createElement("div");
+  div.classList.add("logo");
+  const logo = document.createElement("img");
+  logo.setAttribute("alt", "auroraIco");
+  logo.setAttribute("src", "./auroraIco128.png");
+  const name = document.createElement("p");
+  name.innerText = "Aurora";
+  const span = document.createElement("span");
+  span.innerText = "(Debug)";
+  div.appendChild(logo);
+  div.appendChild(name);
+  div.appendChild(span);
+  return div;
+}
 export function createMainMenu(children: HTMLElement[]) {
   const body = document.getElementsByTagName("body")[0];
   assert(body !== undefined, "whoa?! there is no body in HTML file?! HOW!!!!");
 
   const menu = document.createElement("div");
+  const buttons = document.createElement("div");
+  buttons.classList.add("menuButtons");
   menu.id = "debugMenu";
-  children.forEach((child) => menu.appendChild(child));
+  menu.appendChild(logo());
+  menu.appendChild(buttons);
+  children.forEach((child) => buttons.appendChild(child));
   body.appendChild(menu);
 }
 export function createSubMenu({ children, name }: SubMenu) {
@@ -80,6 +110,46 @@ export function displayText(text: string) {
   p.classList.add("titleText");
   p.innerText = text;
   return p;
+}
+export function createDropDown({ name, options, selected, onClick }: DropDown) {
+  const body = document.createElement("div");
+  body.classList.add("DropDown");
+
+  const select = document.createElement("select");
+  const nameElement = document.createElement("p");
+  nameElement.innerText = name;
+  options.forEach((option) => {
+    const optionElement = document.createElement("option");
+    optionElement.value = option;
+    optionElement.innerText = option;
+    if (option === selected) optionElement.selected = true;
+    select.appendChild(optionElement);
+  });
+  select.addEventListener("change", (event) => {
+    const selected = (event.target as HTMLSelectElement).value;
+    onClick(selected);
+  });
+  body.appendChild(nameElement);
+  body.appendChild(select);
+  return body;
+}
+export function createCheckbox({ name, active, onChange }: Checkbox) {
+  const body = document.createElement("div");
+  body.classList.add("checkbox");
+
+  const checkbox = document.createElement("input");
+  checkbox.setAttribute("type", "checkbox");
+  if (active) checkbox.checked = active;
+  checkbox.addEventListener("input", (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    onChange(checked);
+  });
+  const nameElement = document.createElement("p");
+  nameElement.innerText = name;
+
+  body.appendChild(nameElement);
+  body.appendChild(checkbox);
+  return body;
 }
 export function createInput({ name }: Input) {
   const body = document.createElement("div");
@@ -126,12 +196,14 @@ export function createColorPicker({
   const textValue = document.createElement("div");
   textValue.classList.add("debugColorName");
   const colorValue = document.createElement("p");
-  colorValue.innerText = `${name} RGBA(0,0,0,`;
+  colorValue.innerText = useAlpha
+    ? `${name} RGBA(0,0,0,`
+    : `${name} RGB(0,0,0)`;
   const alphaValue = document.createElement("p");
   alphaValue.innerText = "0)";
 
   textValue.appendChild(colorValue);
-  textValue.appendChild(alphaValue);
+  if (useAlpha) textValue.appendChild(alphaValue);
 
   const colorMenu = document.createElement("div");
   const colorWheel = document.createElement("input");
@@ -158,7 +230,10 @@ export function createColorPicker({
     const r = parseInt(value.slice(1, 3), 16);
     const g = parseInt(value.slice(3, 5), 16);
     const b = parseInt(value.slice(5, 7), 16);
-    colorValue.innerText = `${name} RGBA(${r},${g},${b},`;
+    const displayText = useAlpha
+      ? `${name} RGBA(${r},${g},${b},`
+      : `${name} RGB(${r},${g},${b})`;
+    colorValue.innerText = displayText;
     action({ mode: "color", value: [r, g, b] });
   });
   if (alphaSlider)
