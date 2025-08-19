@@ -7,7 +7,7 @@ import {
   generateInternalTextures,
 } from "./generators";
 import { AuroraConfig, ChangeableRenderConfig, RenderRes } from "./config";
-import { assert, deepMerge } from "../../../utils/utils";
+import { assert } from "../../../utils/utils";
 import Aurora from "../../core";
 import FontGen from "./fontGen";
 import SequentialDrawPipeline from "../pipelines/sequentialDraw";
@@ -268,8 +268,8 @@ export default class Renderer {
     this.globalBindGroups.set("fonts", FontBind);
   }
   private static updateQuery() {
-    const { qRead, qSet, qWrite } = AuroraDebugInfo.getQuery();
-    this.frameEncoder.resolveQuerySet(qSet, 0, 2, qWrite, 0);
+    const { qRead, qSet, qWrite, count } = AuroraDebugInfo.getQuery();
+    this.frameEncoder.resolveQuerySet(qSet, 0, count, qWrite, 0);
     if (qRead.mapState === "unmapped") {
       this.frameEncoder.copyBufferToBuffer(qWrite, 0, qRead, 0, qRead.size);
     }
@@ -280,9 +280,7 @@ export default class Renderer {
     if (qRead.mapState === "unmapped") {
       qRead.mapAsync(GPUMapMode.READ).then(() => {
         const times = new BigInt64Array(qRead.getMappedRange());
-        const time = Number(times[1] - times[0]);
-        const gpuTime = Number((time / 1000 / 1000).toFixed(1));
-        AuroraDebugInfo.setParam("GPUTime", gpuTime);
+        AuroraDebugInfo.updateTimes(times);
         qRead.unmap();
       });
     }

@@ -2,7 +2,6 @@
 
 - przeleciec wszystko w config i sprawic by tam dzialalo, by wszystkie te rzeczy tam byly zaimpementowane itp
 - lekkie pulsowanie podczas zoomu camery(zapewe subpixelowe)
-- jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
 - zrobic debuuger na process.env by dzialal tree-shaking
 - roundness nie dziala jak powinno, powinno miec 4 wartosci dla bokow i miec bardziej zaawansowany algo jak CSS
 - bloom powiniene miec passy dostosowywane do wielkosci tekstury bo teraz 6-7 passow robi artefakty
@@ -19,6 +18,8 @@
 
 # Done
 
+- jak bedzie wiecej opcji w debugInfo to zmien sposob czyszczenia ich
+- liczenie kazdego pipelinu czasu
 - zmienic debugInfo by zawieral teraz passy oraz calle
 - jeden render/compute pass dla pipelinu jak nie zmienias targetow
 - depth moze miec discard load bo nie uzywasz go juz potem o ile masz 1 renderpass

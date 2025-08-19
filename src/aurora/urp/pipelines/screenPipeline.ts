@@ -116,12 +116,7 @@ export default class ScreenPipeline {
           storeOp: "store",
         },
       ],
-      timestampWrites: AuroraDebugInfo.isWorking
-        ? {
-            querySet: AuroraDebugInfo.getQuery().qSet,
-            endOfPassWriteIndex: 1,
-          }
-        : undefined,
+      timestampWrites: AuroraDebugInfo.setTimestamp("screenStart", "totalEnd"),
     });
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, this.currentBindData);

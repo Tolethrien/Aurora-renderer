@@ -78,8 +78,6 @@ export default class SortedDrawPipeline {
     const zBufferTexture = Renderer.getTextureView("zBufferDump");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
-    const timestamp = this.getFrameQuery();
-    const zDumpTarget = this.getZDump(zBufferTexture);
 
     const canvasColor = Renderer.getConfigGroup("rendering").canvasColor;
     const normalizedColor = [
@@ -109,7 +107,7 @@ export default class SortedDrawPipeline {
           clearValue: normalizedColor,
           storeOp: "store",
         },
-        zDumpTarget,
+        this.getZDump(zBufferTexture),
       ],
       depthStencilAttachment: {
         view: Renderer.getTextureView("depthTexture"),
@@ -117,7 +115,7 @@ export default class SortedDrawPipeline {
         depthClearValue: 0.0,
         depthStoreOp: "discard",
       },
-      timestampWrites: timestamp,
+      timestampWrites: AuroraDebugInfo.setTimestamp("totalStart", "drawEnd"),
     });
 
     drawOffset = 0;
@@ -279,13 +277,7 @@ export default class SortedDrawPipeline {
     });
     return [pipe, bindsDataList];
   }
-  private static getFrameQuery() {
-    if (!AuroraDebugInfo.isWorking) return undefined;
-    return {
-      querySet: AuroraDebugInfo.getQuery().qSet,
-      beginningOfPassWriteIndex: 0,
-    };
-  }
+
   private static getZDump(texture: GPUTextureView) {
     if (!AuroraDebugInfo.isWorking) return undefined;
     return {

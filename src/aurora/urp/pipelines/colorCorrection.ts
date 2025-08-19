@@ -118,6 +118,10 @@ export default class ColorCorrection {
     Aurora.device.queue.writeBuffer(this.uniformCorrection, 0, this.options, 0);
     const passEncoder = commandEncoder.beginComputePass({
       label: "colorCorrectionRenderPass",
+      timestampWrites: AuroraDebugInfo.setTimestamp(
+        "colorCorStart",
+        "colorCorEnd"
+      ),
     });
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, this.textureBind);

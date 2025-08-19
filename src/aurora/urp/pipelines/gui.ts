@@ -94,6 +94,7 @@ export default class SequentialDrawPipeline {
           storeOp: "store",
         },
       ],
+      timestampWrites: AuroraDebugInfo.setTimestamp("guiStart", "guiEnd"),
     });
 
     let drawOffset = 0;

@@ -64,7 +64,6 @@ export default class SequentialDrawPipeline {
     const offscreenTexture = Renderer.getTextureView("offscreenCanvas");
     const indexBuffer = Renderer.getBuffer("index");
     const commandEncoder = Renderer.getEncoder;
-    const timestamp = this.getFrameQuery();
 
     const canvasColor = Renderer.getConfigGroup("rendering").canvasColor;
     const normalizedColor = [
@@ -101,7 +100,7 @@ export default class SequentialDrawPipeline {
           storeOp: "store",
         },
       ],
-      timestampWrites: timestamp,
+      timestampWrites: AuroraDebugInfo.setTimestamp("totalStart", "drawEnd"),
     });
 
     let drawOffset = 0;

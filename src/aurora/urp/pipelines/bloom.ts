@@ -19,14 +19,14 @@ export default class Bloom {
   private static bindLayouts: Map<string, GPUBindGroupLayout> = new Map();
   private static pipelines: Map<string, GPUComputePipeline> = new Map();
   private static orderList: string[] = [];
-  private static GROUP_SIZE = 8;
+  private static groupSIze = 8;
   private static DEBUG = false;
   private static isEnable = true;
   private static needCleanup = false;
 
   public static async createPipeline() {
     this.isEnable = Renderer.getConfigGroup("feature").lighting;
-    this.GROUP_SIZE = Renderer.getConfigGroup("rendering").computeGroupSize;
+    this.groupSIze = Renderer.getConfigGroup("rendering").computeGroupSize;
     const config = Renderer.getConfigGroup("bloom");
     Object.entries(config).forEach((entry) => {
       this.bloomOptions[
@@ -50,6 +50,7 @@ export default class Bloom {
 
     const passEncoder = commandEncoder.beginComputePass({
       label: `bloomPass`,
+      timestampWrites: AuroraDebugInfo.setTimestamp("bloomStart", "bloomEnd"),
     });
     this.orderList.forEach((passName, index) => {
       const size = this.getGroupSize(passName, currentMip);
@@ -110,8 +111,8 @@ export default class Bloom {
     const width = Math.max(1, Math.floor(meta.width / (1 << saveMip)));
     const height = Math.max(1, Math.floor(meta.height / (1 << saveMip)));
     return {
-      x: Math.ceil(width / this.GROUP_SIZE),
-      y: Math.ceil(height / this.GROUP_SIZE),
+      x: Math.ceil(width / this.groupSIze),
+      y: Math.ceil(height / this.groupSIze),
     };
   }
   private static generateBinds() {
@@ -427,7 +428,7 @@ export default class Bloom {
       pipelineName: "bloomXPassPipeline",
       pipelineLayout: pipelineXLayout,
       consts: {
-        workgroupSize: this.GROUP_SIZE,
+        workgroupSize: this.groupSIze,
       },
     });
     const pipelineY = await Aurora.createComputePipeline({
@@ -435,7 +436,7 @@ export default class Bloom {
       pipelineName: "bloomYPassPipeline",
       pipelineLayout: pipelineYLayout,
       consts: {
-        workgroupSize: this.GROUP_SIZE,
+        workgroupSize: this.groupSIze,
       },
     });
 
@@ -444,7 +445,7 @@ export default class Bloom {
       pipelineName: "bloomUpscalePassPipeline",
       pipelineLayout: pipelineUpScaleLayout,
       consts: {
-        workgroupSize: this.GROUP_SIZE,
+        workgroupSize: this.groupSIze,
       },
     });
     const thresholdPipeline = await Aurora.createComputePipeline({
@@ -452,7 +453,7 @@ export default class Bloom {
       pipelineName: "bloomThresholdPassPipeline",
       pipelineLayout: treshLayout,
       consts: {
-        workgroupSize: this.GROUP_SIZE,
+        workgroupSize: this.groupSIze,
       },
     });
     const presentation = await Aurora.createComputePipeline({
@@ -460,7 +461,7 @@ export default class Bloom {
       pipelineName: "bloomPresentPassPipeline",
       pipelineLayout: presentLayout,
       consts: {
-        workgroupSize: this.GROUP_SIZE,
+        workgroupSize: this.groupSIze,
       },
     });
     this.pipelines = new Map([

@@ -1,8 +1,9 @@
-import { arr, newSize } from "../../../main";
+import { newSize } from "../../../main";
 import { RGB } from "../../aurora";
-import Aurora from "../../core";
+import ScreenPipeline from "../pipelines/screenPipeline";
 import { RenderRes } from "../renderer/config";
 import Renderer from "../renderer/renderer";
+import AuroraDebugInfo, { TEXTURES_TO_SHOW } from "./debugInfo";
 import {
   createCheckbox,
   createColorPicker,
@@ -108,7 +109,7 @@ function postProc() {
           createColorPicker({
             name: "tint",
             useAlpha: false,
-            action: ({ mode, value }) => {
+            action: ({ value }) => {
               Renderer.setPostProcess({
                 [postProcessName]: { [entyName]: value },
               });
@@ -149,6 +150,26 @@ function renderConfig() {
         Renderer.setRendererSettings({
           render: { renderRes: value as RenderRes },
         }),
+    })
+  );
+  configs.push(
+    createDropDown({
+      name: "DisplayTexture",
+      selected: "screen",
+      options: TEXTURES_TO_SHOW as unknown as string[],
+      onClick: (value) => {
+        const index = TEXTURES_TO_SHOW.findIndex((string) => value === string);
+        if (index === -1) {
+          console.warn(
+            `trying to change to texture with value: ${value}, but there is no texture`
+          );
+          return;
+        }
+        AuroraDebugInfo.debugVisibleTextureIndex[0] = index;
+        AuroraDebugInfo.setParam("displayedTexture", TEXTURES_TO_SHOW[index]);
+        const mode = TEXTURES_TO_SHOW[index] === "canvas" ? "screen" : "debug";
+        ScreenPipeline.setDisplayMode(mode, TEXTURES_TO_SHOW[index]);
+      },
     })
   );
   configs.push(

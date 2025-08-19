@@ -126,6 +126,7 @@ export default class LightsPipeline {
           storeOp: "store",
         },
       ],
+      timestampWrites: AuroraDebugInfo.setTimestamp("lightsStart", "lightsEnd"),
     });
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setBindGroup(0, cameraBind);

@@ -102,13 +102,17 @@ export default class PostProcessLDR {
     let writeToTexture = "pingX1";
     let currentPass = 0;
 
-    this.postUsedInFrame.forEach((post) => {
+    this.postUsedInFrame.forEach((post, index) => {
       const isLastPass = currentPass === this.postUsedInFrame.size - 1;
       if (isLastPass) writeToTexture = "PostLDR";
-
+      const timestamp = AuroraDebugInfo.setTimestamp(
+        currentPass === 0 ? "postLDRStart" : undefined,
+        isLastPass ? "postLDREnd" : undefined
+      );
       const texture = Renderer.getTextureView(writeToTexture);
       const bind = this.generateBind(post, readFromTexture);
       const pipeline = this.getPipeline(post);
+
       const passEncoder = commandEncoder.beginRenderPass({
         label: "PostProcessRenderPass",
         colorAttachments: [
@@ -119,6 +123,7 @@ export default class PostProcessLDR {
             storeOp: "store",
           },
         ],
+        timestampWrites: timestamp,
       });
       passEncoder.setPipeline(pipeline);
       passEncoder.setBindGroup(0, bind);

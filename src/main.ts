@@ -85,7 +85,8 @@ function start(timestamp: number) {
 
   Renderer.endBatch();
   AuroraDebugInfo.endCount();
-  AuroraDebugInfo.displayEveryFrame(60, true);
+  // AuroraDebugInfo.displayEveryFrame(2, true);
+  AuroraDebugInfo.displayPipelinesTime(1, true);
   requestAnimationFrame(start);
 }
 function showUI() {
