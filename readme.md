@@ -27,7 +27,7 @@ Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
 
     WebGPU is in experimental state, it may not work on every devices and show weird behavior. It is recommended to use it on chromium-based browsers or projects like electron
 
-## Features!
+## V1 Features!
 
 - [x] Multi-shader rendering
 
@@ -45,25 +45,29 @@ Aurora provides a modern GPU-accelerated 2D rendering pipeline with:
 
 - [x] HDR bloom with tone mapping
 
-- [ ] Additional primitive shapes beyond quads
+- [x] Adjustable render resolution and resize support
+
+- [x] Post Process
+
+## Roadmap
+
+- [ ] GPU-side rotation
+
+- [ ] More lights shape
+
+- [ ] Multiple camera views (orthographic, perspective)
+
+- [ ] Normal and shadow maps
 
 - [ ] Polygon rendering via Path2D
+
+- [ ] Additional primitive shapes beyond quads
+
+- [ ] Full migration to a render graph architecture with a resource manager
 
 - [ ] Video rendering
 
 - [ ] GIF rendering
-
-- [ ] GPU-side rotation
-
-- [ ] Normal and shadow maps
-
-- [x] Adjustable render resolution and resize support
-
-- [ ] Multiple camera views (orthographic, perspective)
-
-## Roadmap
-
-- Full migration to a render graph architecture with a resource manager
 
 ## Screenshots from current State
 

@@ -1,7 +1,7 @@
 type lookType = [number, number, number];
 
 export default class Mat4 {
-  private matrix: Float32Array;
+  private matrix: Float32Array<ArrayBuffer>;
   private static EPSILON = 0.000001;
   private constructor(data: number[]) {
     this.matrix = new Float32Array(data);
